@@ -213,6 +213,95 @@ public:
                 ImGui::OpenPopup("add node");
             }
 
+            if (ImGui::BeginPopup("add node"))
+            {
+                const ImVec2 click_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
+
+                if (ImGui::MenuItem("add"))
+                {
+                    const Node value(NodeType::value, 0.f);
+                    const Node op(NodeType::add);
+
+                    UiNode ui_node;
+                    ui_node.type = UiNodeType::add;
+                    ui_node.ui.add.lhs = graph_.insert_node(value);
+                    ui_node.ui.add.rhs = graph_.insert_node(value);
+                    ui_node.id = graph_.insert_node(op);
+
+                    graph_.insert_edge(ui_node.id, ui_node.ui.add.lhs);
+                    graph_.insert_edge(ui_node.id, ui_node.ui.add.rhs);
+
+                    nodes_.push_back(ui_node);
+                    ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
+                }
+
+                if (ImGui::MenuItem("multiply"))
+                {
+                    const Node value(NodeType::value, 0.f);
+                    const Node op(NodeType::multiply);
+
+                    UiNode ui_node;
+                    ui_node.type = UiNodeType::multiply;
+                    ui_node.ui.multiply.lhs = graph_.insert_node(value);
+                    ui_node.ui.multiply.rhs = graph_.insert_node(value);
+                    ui_node.id = graph_.insert_node(op);
+
+                    graph_.insert_edge(ui_node.id, ui_node.ui.multiply.lhs);
+                    graph_.insert_edge(ui_node.id, ui_node.ui.multiply.rhs);
+
+                    nodes_.push_back(ui_node);
+                    ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
+                }
+
+                if (ImGui::MenuItem("output") && root_node_id_ == -1)
+                {
+                    const Node value(NodeType::value, 0.f);
+                    const Node out(NodeType::output);
+
+                    UiNode ui_node;
+                    ui_node.type = UiNodeType::output;
+                    ui_node.ui.output.r = graph_.insert_node(value);
+                    ui_node.ui.output.g = graph_.insert_node(value);
+                    ui_node.ui.output.b = graph_.insert_node(value);
+                    ui_node.id = graph_.insert_node(out);
+
+                    graph_.insert_edge(ui_node.id, ui_node.ui.output.r);
+                    graph_.insert_edge(ui_node.id, ui_node.ui.output.g);
+                    graph_.insert_edge(ui_node.id, ui_node.ui.output.b);
+
+                    nodes_.push_back(ui_node);
+                    ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
+                    root_node_id_ = ui_node.id;
+                }
+
+                if (ImGui::MenuItem("sine"))
+                {
+                    const Node value(NodeType::value, 0.f);
+                    const Node op(NodeType::sine);
+
+                    UiNode ui_node;
+                    ui_node.type = UiNodeType::sine;
+                    ui_node.ui.sine.input = graph_.insert_node(value);
+                    ui_node.id = graph_.insert_node(op);
+
+                    graph_.insert_edge(ui_node.id, ui_node.ui.sine.input);
+
+                    nodes_.push_back(ui_node);
+                    ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
+                }
+
+                if (ImGui::MenuItem("time"))
+                {
+                    UiNode ui_node;
+                    ui_node.type = UiNodeType::time;
+                    ui_node.id = graph_.insert_node(Node(NodeType::time));
+
+                    nodes_.push_back(ui_node);
+                    ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
+                }
+
+                ImGui::EndPopup();
+            }
             ImGui::PopStyleVar();
         }
 
