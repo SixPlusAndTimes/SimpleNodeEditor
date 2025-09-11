@@ -128,42 +128,141 @@ public:
     {
     }
 
-    void show()
+    void AddNodes()
     {
-        // Update timer context
-        current_time_seconds = 0.001f * SDL_GetTicks();
+        const bool open_popup = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
+                                ImNodes::IsEditorHovered() && ImGui::IsKeyReleased(ImGuiKey_A);
 
-        auto flags = ImGuiWindowFlags_MenuBar;
-
-        // The node editor window
-        ImGui::Begin("color node editor", NULL, flags);
-
-        if (ImGui::BeginMenuBar())
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.f, 8.f));
+        if (!ImGui::IsAnyItemHovered() && open_popup)
         {
-            if (ImGui::BeginMenu("Mini-map"))
-            {
-                const char* names[] = {
-                    "Top Left",
-                    "Top Right",
-                    "Bottom Left",
-                    "Bottom Right",
-                };
-                int locations[] = {
-                    ImNodesMiniMapLocation_TopLeft,
-                    ImNodesMiniMapLocation_TopRight,
-                    ImNodesMiniMapLocation_BottomLeft,
-                    ImNodesMiniMapLocation_BottomRight,
-                };
+            ImGui::OpenPopup("add node");
+        }
 
-                for (int i = 0; i < 4; i++)
-                {
-                    bool selected = minimap_location_ == locations[i];
-                    if (ImGui::MenuItem(names[i], NULL, &selected))
-                        minimap_location_ = locations[i];
-                }
-                ImGui::EndMenu();
+        if (ImGui::BeginPopup("add node"))
+        {
+            const ImVec2 click_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
+
+            if (ImGui::MenuItem("add"))
+            {
+                const Node value(NodeType::value, 0.f);
+                const Node op(NodeType::add);
+
+                UiNode ui_node;
+                ui_node.type = UiNodeType::add;
+                ui_node.ui.add.lhs = graph_.insert_node(value);
+                ui_node.ui.add.rhs = graph_.insert_node(value);
+                ui_node.id = graph_.insert_node(op);
+
+                graph_.insert_edge(ui_node.id, ui_node.ui.add.lhs);
+                graph_.insert_edge(ui_node.id, ui_node.ui.add.rhs);
+
+                nodes_.push_back(ui_node);
+                ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
             }
 
+            if (ImGui::MenuItem("multiply"))
+            {
+                const Node value(NodeType::value, 0.f);
+                const Node op(NodeType::multiply);
+
+                UiNode ui_node;
+                ui_node.type = UiNodeType::multiply;
+                ui_node.ui.multiply.lhs = graph_.insert_node(value);
+                ui_node.ui.multiply.rhs = graph_.insert_node(value);
+                ui_node.id = graph_.insert_node(op);
+
+                graph_.insert_edge(ui_node.id, ui_node.ui.multiply.lhs);
+                graph_.insert_edge(ui_node.id, ui_node.ui.multiply.rhs);
+
+                nodes_.push_back(ui_node);
+                ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
+            }
+
+            if (ImGui::MenuItem("output") && root_node_id_ == -1)
+            {
+                const Node value(NodeType::value, 0.f);
+                const Node out(NodeType::output);
+
+                UiNode ui_node;
+                ui_node.type = UiNodeType::output;
+                ui_node.ui.output.r = graph_.insert_node(value);
+                ui_node.ui.output.g = graph_.insert_node(value);
+                ui_node.ui.output.b = graph_.insert_node(value);
+                ui_node.id = graph_.insert_node(out);
+
+                graph_.insert_edge(ui_node.id, ui_node.ui.output.r);
+                graph_.insert_edge(ui_node.id, ui_node.ui.output.g);
+                graph_.insert_edge(ui_node.id, ui_node.ui.output.b);
+
+                nodes_.push_back(ui_node);
+                ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
+                root_node_id_ = ui_node.id;
+            }
+
+            if (ImGui::MenuItem("sine"))
+            {
+                const Node value(NodeType::value, 0.f);
+                const Node op(NodeType::sine);
+
+                UiNode ui_node;
+                ui_node.type = UiNodeType::sine;
+                ui_node.ui.sine.input = graph_.insert_node(value);
+                ui_node.id = graph_.insert_node(op);
+
+                graph_.insert_edge(ui_node.id, ui_node.ui.sine.input);
+
+                nodes_.push_back(ui_node);
+                ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
+            }
+
+            if (ImGui::MenuItem("time"))
+            {
+                UiNode ui_node;
+                ui_node.type = UiNodeType::time;
+                ui_node.id = graph_.insert_node(Node(NodeType::time));
+
+                nodes_.push_back(ui_node);
+                ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
+            }
+
+            ImGui::EndPopup();
+        }
+        ImGui::PopStyleVar();
+    }
+
+    void ShowMiniMapMenu()
+    {
+        if (ImGui::BeginMenu("Mini-map"))
+        {
+            const char* names[] = {
+                "Top Left",
+                "Top Right",
+                "Bottom Left",
+                "Bottom Right",
+            };
+            int locations[] = {
+                ImNodesMiniMapLocation_TopLeft,
+                ImNodesMiniMapLocation_TopRight,
+                ImNodesMiniMapLocation_BottomLeft,
+                ImNodesMiniMapLocation_BottomRight,
+            };
+
+            for (int i = 0; i < 4; i++)
+            {
+                bool selected = minimap_location_ == locations[i];
+                if (ImGui::MenuItem(names[i], NULL, &selected))
+                    minimap_location_ = locations[i];
+            }
+            ImGui::EndMenu();
+        }
+    }
+    
+    void ShowMenu()
+    {
+        if (ImGui::BeginMenuBar())
+        {
+            ShowMiniMapMenu();
             if (ImGui::BeginMenu("Style"))
             {
                 if (ImGui::MenuItem("Classic"))
@@ -186,7 +285,9 @@ public:
 
             ImGui::EndMenuBar();
         }
-
+    }
+    void ShowInfos()
+    {
         ImGui::TextUnformatted("Edit the color of the output color window using nodes.");
         ImGui::Columns(2);
         ImGui::TextUnformatted("A -- add node");
@@ -198,114 +299,11 @@ public:
                 emulate_three_button_mouse ? &ImGui::GetIO().KeyAlt : NULL;
         }
         ImGui::Columns(1);
+    }
 
-        ImNodes::BeginNodeEditor();
-
-        // Handle new nodes
-        // These are driven by the user, so we place this code before rendering the nodes
-        {
-            const bool open_popup = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
-                                    ImNodes::IsEditorHovered() && ImGui::IsKeyReleased(ImGuiKey_A);
-
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.f, 8.f));
-            if (!ImGui::IsAnyItemHovered() && open_popup)
-            {
-                ImGui::OpenPopup("add node");
-            }
-
-            if (ImGui::BeginPopup("add node"))
-            {
-                const ImVec2 click_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
-
-                if (ImGui::MenuItem("add"))
-                {
-                    const Node value(NodeType::value, 0.f);
-                    const Node op(NodeType::add);
-
-                    UiNode ui_node;
-                    ui_node.type = UiNodeType::add;
-                    ui_node.ui.add.lhs = graph_.insert_node(value);
-                    ui_node.ui.add.rhs = graph_.insert_node(value);
-                    ui_node.id = graph_.insert_node(op);
-
-                    graph_.insert_edge(ui_node.id, ui_node.ui.add.lhs);
-                    graph_.insert_edge(ui_node.id, ui_node.ui.add.rhs);
-
-                    nodes_.push_back(ui_node);
-                    ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
-                }
-
-                if (ImGui::MenuItem("multiply"))
-                {
-                    const Node value(NodeType::value, 0.f);
-                    const Node op(NodeType::multiply);
-
-                    UiNode ui_node;
-                    ui_node.type = UiNodeType::multiply;
-                    ui_node.ui.multiply.lhs = graph_.insert_node(value);
-                    ui_node.ui.multiply.rhs = graph_.insert_node(value);
-                    ui_node.id = graph_.insert_node(op);
-
-                    graph_.insert_edge(ui_node.id, ui_node.ui.multiply.lhs);
-                    graph_.insert_edge(ui_node.id, ui_node.ui.multiply.rhs);
-
-                    nodes_.push_back(ui_node);
-                    ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
-                }
-
-                if (ImGui::MenuItem("output") && root_node_id_ == -1)
-                {
-                    const Node value(NodeType::value, 0.f);
-                    const Node out(NodeType::output);
-
-                    UiNode ui_node;
-                    ui_node.type = UiNodeType::output;
-                    ui_node.ui.output.r = graph_.insert_node(value);
-                    ui_node.ui.output.g = graph_.insert_node(value);
-                    ui_node.ui.output.b = graph_.insert_node(value);
-                    ui_node.id = graph_.insert_node(out);
-
-                    graph_.insert_edge(ui_node.id, ui_node.ui.output.r);
-                    graph_.insert_edge(ui_node.id, ui_node.ui.output.g);
-                    graph_.insert_edge(ui_node.id, ui_node.ui.output.b);
-
-                    nodes_.push_back(ui_node);
-                    ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
-                    root_node_id_ = ui_node.id;
-                }
-
-                if (ImGui::MenuItem("sine"))
-                {
-                    const Node value(NodeType::value, 0.f);
-                    const Node op(NodeType::sine);
-
-                    UiNode ui_node;
-                    ui_node.type = UiNodeType::sine;
-                    ui_node.ui.sine.input = graph_.insert_node(value);
-                    ui_node.id = graph_.insert_node(op);
-
-                    graph_.insert_edge(ui_node.id, ui_node.ui.sine.input);
-
-                    nodes_.push_back(ui_node);
-                    ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
-                }
-
-                if (ImGui::MenuItem("time"))
-                {
-                    UiNode ui_node;
-                    ui_node.type = UiNodeType::time;
-                    ui_node.id = graph_.insert_node(Node(NodeType::time));
-
-                    nodes_.push_back(ui_node);
-                    ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
-                }
-
-                ImGui::EndPopup();
-            }
-            ImGui::PopStyleVar();
-        }
-
-        for (const UiNode& node : nodes_)
+    void ShowNodes()
+    {
+                for (const UiNode& node : nodes_)
         {
             switch (node.type)
             {
@@ -535,7 +533,31 @@ public:
             break;
             }
         }
+    }
+    void HandleNewNodes()
+    {
+        int start_attr, end_attr;
+        if (ImNodes::IsLinkCreated(&start_attr, &end_attr))
+        {
+            const NodeType start_type = graph_.node(start_attr).type;
+            const NodeType end_type = graph_.node(end_attr).type;
 
+            const bool valid_link = start_type != end_type;
+            if (valid_link)
+            {
+                // Ensure the edge is always directed from the value to
+                // whatever produces the value
+                if (start_type != NodeType::value)
+                {
+                    std::swap(start_attr, end_attr);
+                }
+                graph_.insert_edge(start_attr, end_attr);
+            }
+        }
+    }
+
+    void ShowEdges()
+    {
         for (const auto& edge : graph_.edges())
         {
             // If edge doesn't start at value, then it's an internal edge, i.e.
@@ -546,110 +568,115 @@ public:
 
             ImNodes::Link(edge.id, edge.from, edge.to);
         }
+    }
 
-        ImNodes::MiniMap(0.2f, minimap_location_);
-        ImNodes::EndNodeEditor();
+    void HandleDeletedEdges()
+    {
 
-        // Handle new links
-        // These are driven by Imnodes, so we place the code after EndNodeEditor().
-
+        // erase selected links
+        const int num_selected = ImNodes::NumSelectedLinks();
+        if (num_selected > 0 && ImGui::IsKeyReleased(ImGuiKey_X))
         {
-            int start_attr, end_attr;
-            if (ImNodes::IsLinkCreated(&start_attr, &end_attr))
+            static std::vector<int> selected_links;
+            selected_links.resize(static_cast<size_t>(num_selected));
+            ImNodes::GetSelectedLinks(selected_links.data());
+            for (const int edge_id : selected_links)
             {
-                const NodeType start_type = graph_.node(start_attr).type;
-                const NodeType end_type = graph_.node(end_attr).type;
+                graph_.erase_edge(edge_id);
+            }
+        }
 
-                const bool valid_link = start_type != end_type;
-                if (valid_link)
+        // erase selected nodes
+        const int num_selected_nodes = ImNodes::NumSelectedNodes();
+        if (num_selected_nodes > 0 && ImGui::IsKeyReleased(ImGuiKey_X))
+        {
+            static std::vector<int> selected_nodes;
+            selected_nodes.resize(static_cast<size_t>(num_selected_nodes));
+            ImNodes::GetSelectedNodes(selected_nodes.data());
+            for (const int node_id : selected_nodes)
+            {
+                graph_.erase_node(node_id);
+                auto iter = std::find_if(
+                    nodes_.begin(), nodes_.end(), [node_id](const UiNode& node) -> bool {
+                        return node.id == node_id;
+                    });
+                // Erase any additional internal nodes
+                switch (iter->type)
                 {
-                    // Ensure the edge is always directed from the value to
-                    // whatever produces the value
-                    if (start_type != NodeType::value)
-                    {
-                        std::swap(start_attr, end_attr);
-                    }
-                    graph_.insert_edge(start_attr, end_attr);
+                case UiNodeType::add:
+                    graph_.erase_node(iter->ui.add.lhs);
+                    graph_.erase_node(iter->ui.add.rhs);
+                    break;
+                case UiNodeType::multiply:
+                    graph_.erase_node(iter->ui.multiply.lhs);
+                    graph_.erase_node(iter->ui.multiply.rhs);
+                    break;
+                case UiNodeType::output:
+                    graph_.erase_node(iter->ui.output.r);
+                    graph_.erase_node(iter->ui.output.g);
+                    graph_.erase_node(iter->ui.output.b);
+                    root_node_id_ = -1;
+                    break;
+                case UiNodeType::sine:
+                    graph_.erase_node(iter->ui.sine.input);
+                    break;
+                default:
+                    break;
                 }
+                nodes_.erase(iter);
             }
         }
 
-        // Handle deleted links
-
+        // if a link is detached from a pin of node, erase it 
+        int link_id;
+        if (ImNodes::IsLinkDestroyed(&link_id))
         {
-            int link_id;
-            if (ImNodes::IsLinkDestroyed(&link_id))
-            {
-                graph_.erase_edge(link_id);
-            }
+            graph_.erase_edge(link_id);
         }
 
-        {
-            const int num_selected = ImNodes::NumSelectedLinks();
-            if (num_selected > 0 && ImGui::IsKeyReleased(ImGuiKey_X))
-            {
-                static std::vector<int> selected_links;
-                selected_links.resize(static_cast<size_t>(num_selected));
-                ImNodes::GetSelectedLinks(selected_links.data());
-                for (const int edge_id : selected_links)
-                {
-                    graph_.erase_edge(edge_id);
-                }
-            }
-        }
+    }
 
-        {
-            const int num_selected = ImNodes::NumSelectedNodes();
-            if (num_selected > 0 && ImGui::IsKeyReleased(ImGuiKey_X))
-            {
-                static std::vector<int> selected_nodes;
-                selected_nodes.resize(static_cast<size_t>(num_selected));
-                ImNodes::GetSelectedNodes(selected_nodes.data());
-                for (const int node_id : selected_nodes)
-                {
-                    graph_.erase_node(node_id);
-                    auto iter = std::find_if(
-                        nodes_.begin(), nodes_.end(), [node_id](const UiNode& node) -> bool {
-                            return node.id == node_id;
-                        });
-                    // Erase any additional internal nodes
-                    switch (iter->type)
-                    {
-                    case UiNodeType::add:
-                        graph_.erase_node(iter->ui.add.lhs);
-                        graph_.erase_node(iter->ui.add.rhs);
-                        break;
-                    case UiNodeType::multiply:
-                        graph_.erase_node(iter->ui.multiply.lhs);
-                        graph_.erase_node(iter->ui.multiply.rhs);
-                        break;
-                    case UiNodeType::output:
-                        graph_.erase_node(iter->ui.output.r);
-                        graph_.erase_node(iter->ui.output.g);
-                        graph_.erase_node(iter->ui.output.b);
-                        root_node_id_ = -1;
-                        break;
-                    case UiNodeType::sine:
-                        graph_.erase_node(iter->ui.sine.input);
-                        break;
-                    default:
-                        break;
-                    }
-                    nodes_.erase(iter);
-                }
-            }
-        }
+    void show()
+    {
+        // Update timer context
+        current_time_seconds = 0.001f * SDL_GetTicks();
+
+        auto flags = ImGuiWindowFlags_MenuBar;
+
+        // The node editor window
+        ImGui::Begin("color node editor", NULL, flags);
+
+            ShowMenu();
+            ShowInfos();
+
+            ImNodes::BeginNodeEditor();
+
+            // Handle new nodes
+            // These are driven by the user, so we place this code before rendering the nodes
+            AddNodes();
+
+            ShowNodes();
+            ShowEdges();
+
+            ImNodes::MiniMap(0.2f, minimap_location_);
+            ImNodes::EndNodeEditor();
+
+            // Handle new links
+            // These are driven by Imnodes, so we place the code after EndNodeEditor().
+            HandleNewNodes();
+
+            // Handle deleted links
+            HandleDeletedEdges();
 
         ImGui::End();
 
         // The color output window
-
-        const ImU32 color =
-            root_node_id_ != -1 ? evaluate(graph_, root_node_id_) : IM_COL32(255, 20, 147, 255);
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
+        // const ImU32 color =
+        //     root_node_id_ != -1 ? evaluate(graph_, root_node_id_) : IM_COL32(255, 20, 147, 255);
+        // ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
         ImGui::Begin("output color");
         ImGui::End();
-        ImGui::PopStyleColor();
+        // ImGui::PopStyleColor();
     }
 
 private:
