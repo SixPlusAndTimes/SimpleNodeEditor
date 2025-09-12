@@ -218,6 +218,7 @@ enum ImNodesMiniMapLocation_
 
 struct ImGuiContext;
 struct ImVec2;
+struct ImRect;
 
 struct ImNodesContext;
 
@@ -291,6 +292,10 @@ void EndNode();
 
 ImVec2 GetNodeDimensions(int id);
 
+ImRect GetNodeRect(int node_id);
+ImRect GetNodeTitleContentRect(int node_id);
+
+int getsasd();
 // Place your node title bar content (such as the node title, using ImGui::Text) between the
 // following function calls. These functions have to be called before adding any attributes, or the
 // layout of the node will be incorrect.

@@ -10,6 +10,9 @@
 #include <chrono>
 #include <cmath>
 #include <vector>
+#include <unordered_map>
+#include <imgui_internal.h>
+#include "spdlog/spdlog.h"
 
 namespace example
 {
@@ -127,6 +130,15 @@ public:
           minimap_location_(ImNodesMiniMapLocation_BottomRight)
     {
     }
+    std::vector<std::string> nodeNameVec{"add", "multiply"};
+
+    std::unordered_map<std::string, NodeType> nodeNameTypeMap
+    {
+        {"add", NodeType::add},
+        {"multiply", NodeType::multiply},
+        {"output", NodeType::output},
+        {"sine", NodeType::sine},
+    };
 
     void AddNodes()
     {
@@ -150,12 +162,12 @@ public:
 
                 UiNode ui_node;
                 ui_node.type = UiNodeType::add;
-                ui_node.ui.add.lhs = graph_.insert_node(value);
-                ui_node.ui.add.rhs = graph_.insert_node(value);
+                // ui_node.ui.add.lhs = graph_.insert_node(value);
+                // ui_node.ui.add.rhs = graph_.insert_node(value);
                 ui_node.id = graph_.insert_node(op);
 
-                graph_.insert_edge(ui_node.id, ui_node.ui.add.lhs);
-                graph_.insert_edge(ui_node.id, ui_node.ui.add.rhs);
+                // graph_.insert_edge(ui_node.id, ui_node.ui.add.lhs);
+                // graph_.insert_edge(ui_node.id, ui_node.ui.add.rhs);
 
                 nodes_.push_back(ui_node);
                 ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
@@ -300,6 +312,17 @@ public:
         }
         ImGui::Columns(1);
     }
+    void DebugDrawRect(ImRect rect)
+    {
+
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        ImU32 border_color = IM_COL32(255, 0, 0, 255); // Example: red border
+
+        float rounding = 0.0f; // No corner rounding
+        float thickness = 1.0f; // Border thickness
+        draw_list->AddRect(rect.Min, rect.Max, border_color, rounding, 0, thickness);
+
+    }
 
     void ShowNodes()
     {
@@ -311,39 +334,31 @@ public:
             {
                 const float node_width = 100.f;
                 ImNodes::BeginNode(node.id);
-
                 ImNodes::BeginNodeTitleBar();
                 ImGui::TextUnformatted("add");
                 ImNodes::EndNodeTitleBar();
+
+                ImRect nodeRect = ImNodes::GetNodeRect(node.id);
+                ImRect nodeTitleRect = ImNodes::GetNodeTitleContentRect(node.id);
+                SPDLOG_INFO("Node Rect: Min({}, {}), Max({}, {})\n", nodeRect.Min.x, nodeRect.Min.y, nodeRect.Max.x, nodeRect.Max.y);
+                SPDLOG_INFO("NodeTitle Rect: Min({}, {}), Max({}, {})\n", nodeTitleRect.Min.x, nodeTitleRect.Min.y, nodeTitleRect.Max.x, nodeTitleRect.Max.y);
+
+                ImVec2 top_left = ImVec2(nodeRect.Min.x, nodeRect.Min.y); // Rectangle top-left corner
+                ImVec2 bottom_right = ImVec2(nodeRect.Min.x + 100.f, nodeRect.Min.y + 100.f); // Rectangle bottom-right corner
                 {
                     ImNodes::BeginInputAttribute(node.ui.add.lhs);
-                    const float label_width = ImGui::CalcTextSize("left").x;
                     ImGui::TextUnformatted("left");
-                    if (graph_.num_edges_from_node(node.ui.add.lhs) == 0ull)
-                    {
-                        ImGui::SameLine();
-                        ImGui::PushItemWidth(node_width - label_width);
-                        ImGui::DragFloat("##hidelabel", &graph_.node(node.ui.add.lhs).value, 0.01f);
-                        ImGui::PopItemWidth();
-                    }
+                    // if (graph_.num_edges_from_node(node.ui.add.lhs) == 0ull)
+                    // {
+                    //     ImGui::SameLine();
+                    //     ImGui::PushItemWidth(node_width - label_width);
+                    //     ImGui::DragFloat("##hidelabel", &graph_.node(node.ui.add.lhs).value, 0.01f);
+                    //     ImGui::PopItemWidth();
+                    // }
                     ImNodes::EndInputAttribute();
                 }
 
-                {
-                    ImNodes::BeginInputAttribute(node.ui.add.rhs);
-                    const float label_width = ImGui::CalcTextSize("right").x;
-                    ImGui::TextUnformatted("right");
-                    if (graph_.num_edges_from_node(node.ui.add.rhs) == 0ull)
-                    {
-                        ImGui::SameLine();
-                        ImGui::PushItemWidth(node_width - label_width);
-                        ImGui::DragFloat("##hidelabel", &graph_.node(node.ui.add.rhs).value, 0.01f);
-                        ImGui::PopItemWidth();
-                    }
-                    ImNodes::EndInputAttribute();
-                }
-
-                ImGui::Spacing();
+                ImGui::SameLine();
 
                 {
                     ImNodes::BeginOutputAttribute(node.id);
@@ -351,6 +366,12 @@ public:
                     ImGui::Indent(node_width - label_width);
                     ImGui::TextUnformatted("result");
                     ImNodes::EndOutputAttribute();
+                }
+                ImGui::Spacing();
+                {
+                    ImNodes::BeginInputAttribute(node.ui.add.rhs);
+                    ImGui::TextUnformatted("right");
+                    ImNodes::EndInputAttribute();
                 }
 
                 ImNodes::EndNode();

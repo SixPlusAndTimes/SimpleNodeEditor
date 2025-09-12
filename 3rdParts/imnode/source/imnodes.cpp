@@ -2521,6 +2521,25 @@ ImVec2 GetNodeDimensions(int node_id)
     return node.Rect.GetSize();
 }
 
+ImRect GetNodeRect(int node_id)
+{
+    ImNodesEditorContext& editor = EditorContextGet();
+    const int             node_idx = ObjectPoolFind(editor.Nodes, node_id);
+    IM_ASSERT(node_idx != -1); // invalid node_id
+    const ImNodeData& node = editor.Nodes.Pool[node_idx];
+    return node.Rect;
+}
+
+ImRect GetNodeTitleContentRect(int node_id)
+{
+
+    ImNodesEditorContext& editor = EditorContextGet();
+    const int             node_idx = ObjectPoolFind(editor.Nodes, node_id);
+    IM_ASSERT(node_idx != -1); // invalid node_id
+    const ImNodeData& node = editor.Nodes.Pool[node_idx];
+    return node.TitleBarContentRect;
+}
+
 void BeginNodeTitleBar()
 {
     IM_ASSERT(GImNodes->CurrentScope == ImNodesScope_Node);
