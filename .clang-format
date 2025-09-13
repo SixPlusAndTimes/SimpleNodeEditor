@@ -1,0 +1,60 @@
+
+# LLVM  Google
+BasedOnStyle: Google
+
+# 强制花括号遵循 Allman 风格, 即第一个扩行换行
+BreakBeforeBraces: Allman
+
+Language: Cpp
+
+# 对齐连续的宏定义
+AlignConsecutiveMacros: AcrossEmptyLinesAndComments
+
+#  对齐尾部注释
+AlignTrailingComments: Leave
+ 
+# 访问修饰符偏移 
+AccessModifierOffset: -4 # -4就是public顶格
+
+# 允许短函数在单行上
+AllowShortFunctionsOnASingleLine: Empty
+
+ # 允许短语法块在单行上
+AllowShortBlocksOnASingleLine: Empty
+
+# 总是把短语句放在单行上
+AllowShortIfStatementsOnASingleLine: WithoutElse
+
+# 允许短匿Lambda函数在单行上
+AllowShortLambdasOnASingleLine: All
+
+# 允许合并短循环到单行上
+AllowShortLoopsOnASingleLine: true
+
+# 控制行宽，避免行太长
+ColumnLimit: 100
+
+# 对头文件排序
+SortIncludes: Never
+ 
+# 控制空格和标点符号风格
+SpaceBeforeParens: ControlStatements  # 控制语句的括号前有空格
+SpaceBeforeAssignmentOperators: true  # 赋值操作符前插入空格
+ 
+# 缩进设置
+IndentWidth: 4  # 使用4个空格缩进
+ 
+# 控制每行最大空行数（避免空行过多）
+MaxEmptyLinesToKeep: 1
+ 
+# 注释前保留一个空格
+SpacesBeforeTrailingComments: 1  
+
+# 左括号(左圆括号、左尖括号、左方括号)后的对齐: Align, DontAlign, AlwaysBreak(总是在左括号后换行)
+AlignAfterOpenBracket: Align
+ 
+# 连续赋值时，对齐所有等号
+AlignConsecutiveAssignments: true
+ 
+# 连续声明时，对齐所有声明的变量名
+AlignConsecutiveDeclarations: true

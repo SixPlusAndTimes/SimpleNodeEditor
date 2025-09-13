@@ -38,20 +38,20 @@ struct Node
     Node(const NodeType t, const float v) : type(t), value(v) {}
 };
 
-template<class T>
+template <class T>
 T clamp(T x, T a, T b)
 {
     return std::min(b, std::max(x, a));
 }
 
-static float current_time_seconds = 0.f;
+static float current_time_seconds       = 0.f;
 static bool  emulate_three_button_mouse = false;
 
 ImU32 evaluate(const Graph<Node>& graph, const int root_node)
 {
     std::stack<int> postorder;
-    dfs_traverse(
-        graph, root_node, [&postorder](const int node_id) -> void { postorder.push(node_id); });
+    dfs_traverse(graph, root_node,
+                 [&postorder](const int node_id) -> void { postorder.push(node_id); });
 
     std::stack<float> value_stack;
     while (!postorder.empty())
@@ -62,50 +62,51 @@ ImU32 evaluate(const Graph<Node>& graph, const int root_node)
 
         switch (node.type)
         {
-        case NodeType::add:
-        {
-            const float rhs = value_stack.top();
-            value_stack.pop();
-            const float lhs = value_stack.top();
-            value_stack.pop();
-            value_stack.push(lhs + rhs);
-        }
-        break;
-        case NodeType::multiply:
-        {
-            const float rhs = value_stack.top();
-            value_stack.pop();
-            const float lhs = value_stack.top();
-            value_stack.pop();
-            value_stack.push(rhs * lhs);
-        }
-        break;
-        case NodeType::sine:
-        {
-            const float x = value_stack.top();
-            value_stack.pop();
-            const float res = std::abs(std::sin(x));
-            value_stack.push(res);
-        }
-        break;
-        case NodeType::time:
-        {
-            value_stack.push(current_time_seconds);
-        }
-        break;
-        case NodeType::value:
-        {
-            // If the edge does not have an edge connecting to another node, then just use the value
-            // at this node. It means the node's input pin has not been connected to anything and
-            // the value comes from the node's UI.
-            if (graph.num_edges_from_node(id) == 0ull)
+            case NodeType::add:
             {
-                value_stack.push(node.value);
+                const float rhs = value_stack.top();
+                value_stack.pop();
+                const float lhs = value_stack.top();
+                value_stack.pop();
+                value_stack.push(lhs + rhs);
             }
-        }
-        break;
-        default:
             break;
+            case NodeType::multiply:
+            {
+                const float rhs = value_stack.top();
+                value_stack.pop();
+                const float lhs = value_stack.top();
+                value_stack.pop();
+                value_stack.push(rhs * lhs);
+            }
+            break;
+            case NodeType::sine:
+            {
+                const float x = value_stack.top();
+                value_stack.pop();
+                const float res = std::abs(std::sin(x));
+                value_stack.push(res);
+            }
+            break;
+            case NodeType::time:
+            {
+                value_stack.push(current_time_seconds);
+            }
+            break;
+            case NodeType::value:
+            {
+                // If the edge does not have an edge connecting to another node,
+                // then just use the value at this node. It means the node's
+                // input pin has not been connected to anything and the value
+                // comes from the node's UI.
+                if (graph.num_edges_from_node(id) == 0ull)
+                {
+                    value_stack.push(node.value);
+                }
+            }
+            break;
+            default:
+                break;
         }
     }
 
@@ -126,14 +127,15 @@ class ColorNodeEditor
 {
 public:
     ColorNodeEditor()
-        : graph_(), nodes_(), root_node_id_(-1),
+        : graph_(),
+          nodes_(),
+          root_node_id_(-1),
           minimap_location_(ImNodesMiniMapLocation_BottomRight)
     {
     }
     std::vector<std::string> nodeNameVec{"add", "multiply"};
 
-    std::unordered_map<std::string, NodeType> nodeNameTypeMap
-    {
+    std::unordered_map<std::string, NodeType> nodeNameTypeMap{
         {"add", NodeType::add},
         {"multiply", NodeType::multiply},
         {"output", NodeType::output},
@@ -179,10 +181,10 @@ public:
                 const Node op(NodeType::multiply);
 
                 UiNode ui_node;
-                ui_node.type = UiNodeType::multiply;
+                ui_node.type            = UiNodeType::multiply;
                 ui_node.ui.multiply.lhs = graph_.insert_node(value);
                 ui_node.ui.multiply.rhs = graph_.insert_node(value);
-                ui_node.id = graph_.insert_node(op);
+                ui_node.id              = graph_.insert_node(op);
 
                 graph_.insert_edge(ui_node.id, ui_node.ui.multiply.lhs);
                 graph_.insert_edge(ui_node.id, ui_node.ui.multiply.rhs);
@@ -197,11 +199,11 @@ public:
                 const Node out(NodeType::output);
 
                 UiNode ui_node;
-                ui_node.type = UiNodeType::output;
+                ui_node.type        = UiNodeType::output;
                 ui_node.ui.output.r = graph_.insert_node(value);
                 ui_node.ui.output.g = graph_.insert_node(value);
                 ui_node.ui.output.b = graph_.insert_node(value);
-                ui_node.id = graph_.insert_node(out);
+                ui_node.id          = graph_.insert_node(out);
 
                 graph_.insert_edge(ui_node.id, ui_node.ui.output.r);
                 graph_.insert_edge(ui_node.id, ui_node.ui.output.g);
@@ -218,9 +220,9 @@ public:
                 const Node op(NodeType::sine);
 
                 UiNode ui_node;
-                ui_node.type = UiNodeType::sine;
+                ui_node.type          = UiNodeType::sine;
                 ui_node.ui.sine.input = graph_.insert_node(value);
-                ui_node.id = graph_.insert_node(op);
+                ui_node.id            = graph_.insert_node(op);
 
                 graph_.insert_edge(ui_node.id, ui_node.ui.sine.input);
 
@@ -232,7 +234,7 @@ public:
             {
                 UiNode ui_node;
                 ui_node.type = UiNodeType::time;
-                ui_node.id = graph_.insert_node(Node(NodeType::time));
+                ui_node.id   = graph_.insert_node(Node(NodeType::time));
 
                 nodes_.push_back(ui_node);
                 ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
@@ -263,13 +265,12 @@ public:
             for (int i = 0; i < 4; i++)
             {
                 bool selected = minimap_location_ == locations[i];
-                if (ImGui::MenuItem(names[i], NULL, &selected))
-                    minimap_location_ = locations[i];
+                if (ImGui::MenuItem(names[i], NULL, &selected)) minimap_location_ = locations[i];
             }
             ImGui::EndMenu();
         }
     }
-    
+
     void ShowMenu()
     {
         if (ImGui::BeginMenuBar())
@@ -314,244 +315,247 @@ public:
     }
     void DebugDrawRect(ImRect rect)
     {
+        ImDrawList* draw_list    = ImGui::GetWindowDrawList();
+        ImU32       border_color = IM_COL32(255, 0, 0, 255); // Example: red border
 
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        ImU32 border_color = IM_COL32(255, 0, 0, 255); // Example: red border
-
-        float rounding = 0.0f; // No corner rounding
+        float rounding  = 0.0f; // No corner rounding
         float thickness = 1.0f; // Border thickness
         draw_list->AddRect(rect.Min, rect.Max, border_color, rounding, 0, thickness);
-
     }
 
     void ShowNodes()
     {
-                for (const UiNode& node : nodes_)
+        for (const UiNode& node : nodes_)
         {
             switch (node.type)
             {
-            case UiNodeType::add:
-            {
-                const float node_width = 100.f;
-                ImNodes::BeginNode(node.id);
-                ImNodes::BeginNodeTitleBar();
-                ImGui::TextUnformatted("add");
-                ImNodes::EndNodeTitleBar();
-
-                ImRect nodeRect = ImNodes::GetNodeRect(node.id);
-                ImRect nodeTitleRect = ImNodes::GetNodeTitleContentRect(node.id);
-                SPDLOG_INFO("Node Rect: Min({}, {}), Max({}, {})\n", nodeRect.Min.x, nodeRect.Min.y, nodeRect.Max.x, nodeRect.Max.y);
-                SPDLOG_INFO("NodeTitle Rect: Min({}, {}), Max({}, {})\n", nodeTitleRect.Min.x, nodeTitleRect.Min.y, nodeTitleRect.Max.x, nodeTitleRect.Max.y);
-
-                ImVec2 top_left = ImVec2(nodeRect.Min.x, nodeRect.Min.y); // Rectangle top-left corner
-                ImVec2 bottom_right = ImVec2(nodeRect.Min.x + 100.f, nodeRect.Min.y + 100.f); // Rectangle bottom-right corner
+                case UiNodeType::add:
                 {
-                    ImNodes::BeginInputAttribute(node.ui.add.lhs);
-                    ImGui::TextUnformatted("left");
-                    // if (graph_.num_edges_from_node(node.ui.add.lhs) == 0ull)
-                    // {
-                    //     ImGui::SameLine();
-                    //     ImGui::PushItemWidth(node_width - label_width);
-                    //     ImGui::DragFloat("##hidelabel", &graph_.node(node.ui.add.lhs).value, 0.01f);
-                    //     ImGui::PopItemWidth();
-                    // }
-                    ImNodes::EndInputAttribute();
-                }
+                    const float node_width = 100.f;
+                    ImNodes::BeginNode(node.id);
+                    ImNodes::BeginNodeTitleBar();
+                    ImGui::TextUnformatted("add");
+                    ImNodes::EndNodeTitleBar();
 
-                ImGui::SameLine();
+                    ImRect nodeRect      = ImNodes::GetNodeRect(node.id);
+                    ImRect nodeTitleRect = ImNodes::GetNodeTitleContentRect(node.id);
+                    SPDLOG_INFO("Node Rect: Min({}, {}), Max({}, {})\n", nodeRect.Min.x,
+                                nodeRect.Min.y, nodeRect.Max.x, nodeRect.Max.y);
+                    SPDLOG_INFO("NodeTitle Rect: Min({}, {}), Max({}, {})\n", nodeTitleRect.Min.x,
+                                nodeTitleRect.Min.y, nodeTitleRect.Max.x, nodeTitleRect.Max.y);
 
-                {
-                    ImNodes::BeginOutputAttribute(node.id);
-                    const float label_width = ImGui::CalcTextSize("result").x;
-                    ImGui::Indent(node_width - label_width);
-                    ImGui::TextUnformatted("result");
-                    ImNodes::EndOutputAttribute();
-                }
-                ImGui::Spacing();
-                {
-                    ImNodes::BeginInputAttribute(node.ui.add.rhs);
-                    ImGui::TextUnformatted("right");
-                    ImNodes::EndInputAttribute();
-                }
-
-                ImNodes::EndNode();
-            }
-            break;
-            case UiNodeType::multiply:
-            {
-                const float node_width = 100.0f;
-                ImNodes::BeginNode(node.id);
-
-                ImNodes::BeginNodeTitleBar();
-                ImGui::TextUnformatted("multiply");
-                ImNodes::EndNodeTitleBar();
-
-                {
-                    ImNodes::BeginInputAttribute(node.ui.multiply.lhs);
-                    const float label_width = ImGui::CalcTextSize("left").x;
-                    ImGui::TextUnformatted("left");
-                    if (graph_.num_edges_from_node(node.ui.multiply.lhs) == 0ull)
+                    ImVec2 top_left = ImVec2(nodeRect.Min.x,
+                                             nodeRect.Min.y); // Rectangle top-left corner
+                    ImVec2 bottom_right =
+                        ImVec2(nodeRect.Min.x + 100.f,
+                               nodeRect.Min.y + 100.f); // Rectangle bottom-right corner
                     {
-                        ImGui::SameLine();
-                        ImGui::PushItemWidth(node_width - label_width);
-                        ImGui::DragFloat(
-                            "##hidelabel", &graph_.node(node.ui.multiply.lhs).value, 0.01f);
-                        ImGui::PopItemWidth();
+                        ImNodes::BeginInputAttribute(node.ui.add.lhs);
+                        ImGui::TextUnformatted("left");
+                        // if (graph_.num_edges_from_node(node.ui.add.lhs) ==
+                        // 0ull)
+                        // {
+                        //     ImGui::SameLine();
+                        //     ImGui::PushItemWidth(node_width - label_width);
+                        //     ImGui::DragFloat("##hidelabel",
+                        //     &graph_.node(node.ui.add.lhs).value, 0.01f);
+                        //     ImGui::PopItemWidth();
+                        // }
+                        ImNodes::EndInputAttribute();
                     }
-                    ImNodes::EndInputAttribute();
-                }
 
-                {
-                    ImNodes::BeginInputAttribute(node.ui.multiply.rhs);
-                    const float label_width = ImGui::CalcTextSize("right").x;
-                    ImGui::TextUnformatted("right");
-                    if (graph_.num_edges_from_node(node.ui.multiply.rhs) == 0ull)
+                    ImGui::SameLine();
+
                     {
-                        ImGui::SameLine();
-                        ImGui::PushItemWidth(node_width - label_width);
-                        ImGui::DragFloat(
-                            "##hidelabel", &graph_.node(node.ui.multiply.rhs).value, 0.01f);
-                        ImGui::PopItemWidth();
+                        ImNodes::BeginOutputAttribute(node.id);
+                        const float label_width = ImGui::CalcTextSize("result").x;
+                        ImGui::Indent(node_width - label_width);
+                        ImGui::TextUnformatted("result");
+                        ImNodes::EndOutputAttribute();
                     }
-                    ImNodes::EndInputAttribute();
-                }
-
-                ImGui::Spacing();
-
-                {
-                    ImNodes::BeginOutputAttribute(node.id);
-                    const float label_width = ImGui::CalcTextSize("result").x;
-                    ImGui::Indent(node_width - label_width);
-                    ImGui::TextUnformatted("result");
-                    ImNodes::EndOutputAttribute();
-                }
-
-                ImNodes::EndNode();
-            }
-            break;
-            case UiNodeType::output:
-            {
-                const float node_width = 100.0f;
-                ImNodes::PushColorStyle(ImNodesCol_TitleBar, IM_COL32(11, 109, 191, 255));
-                ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, IM_COL32(45, 126, 194, 255));
-                ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, IM_COL32(81, 148, 204, 255));
-                ImNodes::BeginNode(node.id);
-
-                ImNodes::BeginNodeTitleBar();
-                ImGui::TextUnformatted("output");
-                ImNodes::EndNodeTitleBar();
-
-                ImGui::Dummy(ImVec2(node_width, 0.f));
-                {
-                    ImNodes::BeginInputAttribute(node.ui.output.r);
-                    const float label_width = ImGui::CalcTextSize("r").x;
-                    ImGui::TextUnformatted("r");
-                    if (graph_.num_edges_from_node(node.ui.output.r) == 0ull)
+                    ImGui::Spacing();
                     {
-                        ImGui::SameLine();
-                        ImGui::PushItemWidth(node_width - label_width);
-                        ImGui::DragFloat(
-                            "##hidelabel", &graph_.node(node.ui.output.r).value, 0.01f, 0.f, 1.0f);
-                        ImGui::PopItemWidth();
+                        ImNodes::BeginInputAttribute(node.ui.add.rhs);
+                        ImGui::TextUnformatted("right");
+                        ImNodes::EndInputAttribute();
                     }
-                    ImNodes::EndInputAttribute();
+
+                    ImNodes::EndNode();
                 }
-
-                ImGui::Spacing();
-
+                break;
+                case UiNodeType::multiply:
                 {
-                    ImNodes::BeginInputAttribute(node.ui.output.g);
-                    const float label_width = ImGui::CalcTextSize("g").x;
-                    ImGui::TextUnformatted("g");
-                    if (graph_.num_edges_from_node(node.ui.output.g) == 0ull)
+                    const float node_width = 100.0f;
+                    ImNodes::BeginNode(node.id);
+
+                    ImNodes::BeginNodeTitleBar();
+                    ImGui::TextUnformatted("multiply");
+                    ImNodes::EndNodeTitleBar();
+
                     {
-                        ImGui::SameLine();
-                        ImGui::PushItemWidth(node_width - label_width);
-                        ImGui::DragFloat(
-                            "##hidelabel", &graph_.node(node.ui.output.g).value, 0.01f, 0.f, 1.f);
-                        ImGui::PopItemWidth();
+                        ImNodes::BeginInputAttribute(node.ui.multiply.lhs);
+                        const float label_width = ImGui::CalcTextSize("left").x;
+                        ImGui::TextUnformatted("left");
+                        if (graph_.num_edges_from_node(node.ui.multiply.lhs) == 0ull)
+                        {
+                            ImGui::SameLine();
+                            ImGui::PushItemWidth(node_width - label_width);
+                            ImGui::DragFloat("##hidelabel",
+                                             &graph_.node(node.ui.multiply.lhs).value, 0.01f);
+                            ImGui::PopItemWidth();
+                        }
+                        ImNodes::EndInputAttribute();
                     }
-                    ImNodes::EndInputAttribute();
-                }
 
-                ImGui::Spacing();
-
-                {
-                    ImNodes::BeginInputAttribute(node.ui.output.b);
-                    const float label_width = ImGui::CalcTextSize("b").x;
-                    ImGui::TextUnformatted("b");
-                    if (graph_.num_edges_from_node(node.ui.output.b) == 0ull)
                     {
-                        ImGui::SameLine();
-                        ImGui::PushItemWidth(node_width - label_width);
-                        ImGui::DragFloat(
-                            "##hidelabel", &graph_.node(node.ui.output.b).value, 0.01f, 0.f, 1.0f);
-                        ImGui::PopItemWidth();
+                        ImNodes::BeginInputAttribute(node.ui.multiply.rhs);
+                        const float label_width = ImGui::CalcTextSize("right").x;
+                        ImGui::TextUnformatted("right");
+                        if (graph_.num_edges_from_node(node.ui.multiply.rhs) == 0ull)
+                        {
+                            ImGui::SameLine();
+                            ImGui::PushItemWidth(node_width - label_width);
+                            ImGui::DragFloat("##hidelabel",
+                                             &graph_.node(node.ui.multiply.rhs).value, 0.01f);
+                            ImGui::PopItemWidth();
+                        }
+                        ImNodes::EndInputAttribute();
                     }
-                    ImNodes::EndInputAttribute();
-                }
-                ImNodes::EndNode();
-                ImNodes::PopColorStyle();
-                ImNodes::PopColorStyle();
-                ImNodes::PopColorStyle();
-            }
-            break;
-            case UiNodeType::sine:
-            {
-                const float node_width = 100.0f;
-                ImNodes::BeginNode(node.id);
 
-                ImNodes::BeginNodeTitleBar();
-                ImGui::TextUnformatted("sine");
-                ImNodes::EndNodeTitleBar();
+                    ImGui::Spacing();
 
-                {
-                    ImNodes::BeginInputAttribute(node.ui.sine.input);
-                    const float label_width = ImGui::CalcTextSize("number").x;
-                    ImGui::TextUnformatted("number");
-                    if (graph_.num_edges_from_node(node.ui.sine.input) == 0ull)
                     {
-                        ImGui::SameLine();
-                        ImGui::PushItemWidth(node_width - label_width);
-                        ImGui::DragFloat(
-                            "##hidelabel",
-                            &graph_.node(node.ui.sine.input).value,
-                            0.01f,
-                            0.f,
-                            1.0f);
-                        ImGui::PopItemWidth();
+                        ImNodes::BeginOutputAttribute(node.id);
+                        const float label_width = ImGui::CalcTextSize("result").x;
+                        ImGui::Indent(node_width - label_width);
+                        ImGui::TextUnformatted("result");
+                        ImNodes::EndOutputAttribute();
                     }
-                    ImNodes::EndInputAttribute();
+
+                    ImNodes::EndNode();
                 }
-
-                ImGui::Spacing();
-
+                break;
+                case UiNodeType::output:
                 {
-                    ImNodes::BeginOutputAttribute(node.id);
-                    const float label_width = ImGui::CalcTextSize("output").x;
-                    ImGui::Indent(node_width - label_width);
+                    const float node_width = 100.0f;
+                    ImNodes::PushColorStyle(ImNodesCol_TitleBar, IM_COL32(11, 109, 191, 255));
+                    ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered,
+                                            IM_COL32(45, 126, 194, 255));
+                    ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected,
+                                            IM_COL32(81, 148, 204, 255));
+                    ImNodes::BeginNode(node.id);
+
+                    ImNodes::BeginNodeTitleBar();
                     ImGui::TextUnformatted("output");
-                    ImNodes::EndOutputAttribute();
+                    ImNodes::EndNodeTitleBar();
+
+                    ImGui::Dummy(ImVec2(node_width, 0.f));
+                    {
+                        ImNodes::BeginInputAttribute(node.ui.output.r);
+                        const float label_width = ImGui::CalcTextSize("r").x;
+                        ImGui::TextUnformatted("r");
+                        if (graph_.num_edges_from_node(node.ui.output.r) == 0ull)
+                        {
+                            ImGui::SameLine();
+                            ImGui::PushItemWidth(node_width - label_width);
+                            ImGui::DragFloat("##hidelabel", &graph_.node(node.ui.output.r).value,
+                                             0.01f, 0.f, 1.0f);
+                            ImGui::PopItemWidth();
+                        }
+                        ImNodes::EndInputAttribute();
+                    }
+
+                    ImGui::Spacing();
+
+                    {
+                        ImNodes::BeginInputAttribute(node.ui.output.g);
+                        const float label_width = ImGui::CalcTextSize("g").x;
+                        ImGui::TextUnformatted("g");
+                        if (graph_.num_edges_from_node(node.ui.output.g) == 0ull)
+                        {
+                            ImGui::SameLine();
+                            ImGui::PushItemWidth(node_width - label_width);
+                            ImGui::DragFloat("##hidelabel", &graph_.node(node.ui.output.g).value,
+                                             0.01f, 0.f, 1.f);
+                            ImGui::PopItemWidth();
+                        }
+                        ImNodes::EndInputAttribute();
+                    }
+
+                    ImGui::Spacing();
+
+                    {
+                        ImNodes::BeginInputAttribute(node.ui.output.b);
+                        const float label_width = ImGui::CalcTextSize("b").x;
+                        ImGui::TextUnformatted("b");
+                        if (graph_.num_edges_from_node(node.ui.output.b) == 0ull)
+                        {
+                            ImGui::SameLine();
+                            ImGui::PushItemWidth(node_width - label_width);
+                            ImGui::DragFloat("##hidelabel", &graph_.node(node.ui.output.b).value,
+                                             0.01f, 0.f, 1.0f);
+                            ImGui::PopItemWidth();
+                        }
+                        ImNodes::EndInputAttribute();
+                    }
+                    ImNodes::EndNode();
+                    ImNodes::PopColorStyle();
+                    ImNodes::PopColorStyle();
+                    ImNodes::PopColorStyle();
                 }
+                break;
+                case UiNodeType::sine:
+                {
+                    const float node_width = 100.0f;
+                    ImNodes::BeginNode(node.id);
 
-                ImNodes::EndNode();
-            }
-            break;
-            case UiNodeType::time:
-            {
-                ImNodes::BeginNode(node.id);
+                    ImNodes::BeginNodeTitleBar();
+                    ImGui::TextUnformatted("sine");
+                    ImNodes::EndNodeTitleBar();
 
-                ImNodes::BeginNodeTitleBar();
-                ImGui::TextUnformatted("time");
-                ImNodes::EndNodeTitleBar();
+                    {
+                        ImNodes::BeginInputAttribute(node.ui.sine.input);
+                        const float label_width = ImGui::CalcTextSize("number").x;
+                        ImGui::TextUnformatted("number");
+                        if (graph_.num_edges_from_node(node.ui.sine.input) == 0ull)
+                        {
+                            ImGui::SameLine();
+                            ImGui::PushItemWidth(node_width - label_width);
+                            ImGui::DragFloat("##hidelabel", &graph_.node(node.ui.sine.input).value,
+                                             0.01f, 0.f, 1.0f);
+                            ImGui::PopItemWidth();
+                        }
+                        ImNodes::EndInputAttribute();
+                    }
 
-                ImNodes::BeginOutputAttribute(node.id);
-                ImGui::Text("output");
-                ImNodes::EndOutputAttribute();
+                    ImGui::Spacing();
 
-                ImNodes::EndNode();
-            }
-            break;
+                    {
+                        ImNodes::BeginOutputAttribute(node.id);
+                        const float label_width = ImGui::CalcTextSize("output").x;
+                        ImGui::Indent(node_width - label_width);
+                        ImGui::TextUnformatted("output");
+                        ImNodes::EndOutputAttribute();
+                    }
+
+                    ImNodes::EndNode();
+                }
+                break;
+                case UiNodeType::time:
+                {
+                    ImNodes::BeginNode(node.id);
+
+                    ImNodes::BeginNodeTitleBar();
+                    ImGui::TextUnformatted("time");
+                    ImNodes::EndNodeTitleBar();
+
+                    ImNodes::BeginOutputAttribute(node.id);
+                    ImGui::Text("output");
+                    ImNodes::EndOutputAttribute();
+
+                    ImNodes::EndNode();
+                }
+                break;
             }
         }
     }
@@ -561,7 +565,7 @@ public:
         if (ImNodes::IsLinkCreated(&start_attr, &end_attr))
         {
             const NodeType start_type = graph_.node(start_attr).type;
-            const NodeType end_type = graph_.node(end_attr).type;
+            const NodeType end_type   = graph_.node(end_attr).type;
 
             const bool valid_link = start_type != end_type;
             if (valid_link)
@@ -584,8 +588,7 @@ public:
             // If edge doesn't start at value, then it's an internal edge, i.e.
             // an edge which links a node's operation to its input. We don't
             // want to render node internals with visible links.
-            if (graph_.node(edge.from).type != NodeType::value)
-                continue;
+            if (graph_.node(edge.from).type != NodeType::value) continue;
 
             ImNodes::Link(edge.id, edge.from, edge.to);
         }
@@ -593,7 +596,6 @@ public:
 
     void HandleDeletedEdges()
     {
-
         // erase selected links
         const int num_selected = ImNodes::NumSelectedLinks();
         if (num_selected > 0 && ImGui::IsKeyReleased(ImGuiKey_X))
@@ -617,44 +619,42 @@ public:
             for (const int node_id : selected_nodes)
             {
                 graph_.erase_node(node_id);
-                auto iter = std::find_if(
-                    nodes_.begin(), nodes_.end(), [node_id](const UiNode& node) -> bool {
-                        return node.id == node_id;
-                    });
+                auto iter =
+                    std::find_if(nodes_.begin(), nodes_.end(), [node_id](const UiNode& node) -> bool
+                                 { return node.id == node_id; });
                 // Erase any additional internal nodes
                 switch (iter->type)
                 {
-                case UiNodeType::add:
-                    graph_.erase_node(iter->ui.add.lhs);
-                    graph_.erase_node(iter->ui.add.rhs);
-                    break;
-                case UiNodeType::multiply:
-                    graph_.erase_node(iter->ui.multiply.lhs);
-                    graph_.erase_node(iter->ui.multiply.rhs);
-                    break;
-                case UiNodeType::output:
-                    graph_.erase_node(iter->ui.output.r);
-                    graph_.erase_node(iter->ui.output.g);
-                    graph_.erase_node(iter->ui.output.b);
-                    root_node_id_ = -1;
-                    break;
-                case UiNodeType::sine:
-                    graph_.erase_node(iter->ui.sine.input);
-                    break;
-                default:
-                    break;
+                    case UiNodeType::add:
+                        graph_.erase_node(iter->ui.add.lhs);
+                        graph_.erase_node(iter->ui.add.rhs);
+                        break;
+                    case UiNodeType::multiply:
+                        graph_.erase_node(iter->ui.multiply.lhs);
+                        graph_.erase_node(iter->ui.multiply.rhs);
+                        break;
+                    case UiNodeType::output:
+                        graph_.erase_node(iter->ui.output.r);
+                        graph_.erase_node(iter->ui.output.g);
+                        graph_.erase_node(iter->ui.output.b);
+                        root_node_id_ = -1;
+                        break;
+                    case UiNodeType::sine:
+                        graph_.erase_node(iter->ui.sine.input);
+                        break;
+                    default:
+                        break;
                 }
                 nodes_.erase(iter);
             }
         }
 
-        // if a link is detached from a pin of node, erase it 
+        // if a link is detached from a pin of node, erase it
         int link_id;
         if (ImNodes::IsLinkDestroyed(&link_id))
         {
             graph_.erase_edge(link_id);
         }
-
     }
 
     void show()
@@ -667,33 +667,36 @@ public:
         // The node editor window
         ImGui::Begin("color node editor", NULL, flags);
 
-            ShowMenu();
-            ShowInfos();
+        ShowMenu();
+        ShowInfos();
 
-            ImNodes::BeginNodeEditor();
+        ImNodes::BeginNodeEditor();
 
-            // Handle new nodes
-            // These are driven by the user, so we place this code before rendering the nodes
-            AddNodes();
+        // Handle new nodes
+        // These are driven by the user, so we place this code before rendering
+        // the nodes
+        AddNodes();
 
-            ShowNodes();
-            ShowEdges();
+        ShowNodes();
+        ShowEdges();
 
-            ImNodes::MiniMap(0.2f, minimap_location_);
-            ImNodes::EndNodeEditor();
+        ImNodes::MiniMap(0.2f, minimap_location_);
+        ImNodes::EndNodeEditor();
 
-            // Handle new links
-            // These are driven by Imnodes, so we place the code after EndNodeEditor().
-            HandleNewNodes();
+        // Handle new links
+        // These are driven by Imnodes, so we place the code after
+        // EndNodeEditor().
+        HandleNewNodes();
 
-            // Handle deleted links
-            HandleDeletedEdges();
+        // Handle deleted links
+        HandleDeletedEdges();
 
         ImGui::End();
 
         // The color output window
         // const ImU32 color =
-        //     root_node_id_ != -1 ? evaluate(graph_, root_node_id_) : IM_COL32(255, 20, 147, 255);
+        //     root_node_id_ != -1 ? evaluate(graph_, root_node_id_) :
+        //     IM_COL32(255, 20, 147, 255);
         // ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
         ImGui::Begin("output color");
         ImGui::End();
@@ -753,11 +756,14 @@ static ColorNodeEditor color_editor;
 
 void NodeEditorInitialize()
 {
-    ImNodesIO& io = ImNodes::GetIO();
+    ImNodesIO& io                           = ImNodes::GetIO();
     io.LinkDetachWithModifierClick.Modifier = &ImGui::GetIO().KeyCtrl;
 }
 
-void NodeEditorShow() { color_editor.show(); }
+void NodeEditorShow()
+{
+    color_editor.show();
+}
 
 void NodeEditorShutdown() {}
 } // namespace example
