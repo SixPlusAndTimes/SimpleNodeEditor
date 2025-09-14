@@ -16,6 +16,7 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_sinks.h"
 
+#include "NodeEditor.hpp"
 int main(int, char**)
 {
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e][%l][%s:%#]: %v");
@@ -76,7 +77,9 @@ int main(int, char**)
     (void)io;
 
     ImNodes::CreateContext();
-    example::NodeEditorInitialize();
+    NodeEditor nodeEditor;
+    nodeEditor.NodeEditorInitialize();
+    // example::NodeEditorInitialize();
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
@@ -109,8 +112,9 @@ int main(int, char**)
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        example::NodeEditorShow();
+        // example::NodeEditorShow();
 
+        nodeEditor.NodeEditorShow();
         // Rendering
         ImGui::Render();
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
@@ -127,7 +131,8 @@ int main(int, char**)
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
-    example::NodeEditorShutdown();
+    // example::NodeEditorShutdown();
+    nodeEditor.NodeEditorDestroy();
     ImNodes::DestroyContext();
     ImGui::DestroyContext();
 
