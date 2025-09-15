@@ -5,6 +5,7 @@
 class NodeEditor
 {
 public:
+    NodeEditor();
     // bool AddNode(int a);
     // bool DeleteNode();
     // bool AddEdge();
@@ -22,8 +23,14 @@ private:
     // void HandleDeletedEdges();
 private:
     std::unordered_map<Node::NodeUniqueId, Node>
-        m_nodes; // port entity is owned by nodes, edge reference port by portuid
+        m_nodes; // storage nodes that will be rendered on canvas
+    
     std::unordered_map<Edge::EdgeUniqueId, Edge> m_edges;
+
+    // uniqueid generators
+    UniqueIdGenerator<Node::NodeUniqueId> m_nodeUidGenerator;
+    UniqueIdGenerator<Port::PortUniqueId> m_portUidGenerator;
+    UniqueIdGenerator<Edge::EdgeUniqueId> m_edgeUidGenerator;
 };
 
 #endif // NODEEDITOR_H

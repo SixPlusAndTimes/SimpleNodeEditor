@@ -9,6 +9,16 @@
 #include <vector>
 #include <string>
 
+template <typename T>
+struct UniqueIdGenerator
+{
+    T m_Uid{};
+    T AllocUniqueID()
+    {
+        return ++m_Uid;
+    }
+};
+
 class Port
 {
 public: // type def
@@ -24,8 +34,8 @@ public:
     void SetPortId(PortId portId);
 
     std::string_view GetPortname(const std::string& name) const;
-    PortId           GetPortId(PortId portId) const;
-    PortUniqueId     GetPortUniqueId(PortUniqueId portUid) const;
+    PortId           GetPortId() const;
+    PortUniqueId     GetPortUniqueId() const;
 
 private:
     PortUniqueId m_portUid;
@@ -78,12 +88,14 @@ public: // type def
 public:
     Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle,
          float nodeWidth = 100.f);
-    void             SetNodePosition(const ImVec2& pos);
-    void             AddInputPort(const InputPort& inPort);
-    void             AddOutputPort(const OutputPort& ourPort);
-    void             SetNodeTitle(const std::string& nodeTitle);
-    std::string_view GetNodeTitle();
-    NodeUniqueId     GetNodeUniqueId() const;
+    void                          SetNodePosition(const ImVec2& pos);
+    void                          AddInputPort(const InputPort& inPort);
+    void                          AddOutputPort(const OutputPort& ourPort);
+    void                          SetNodeTitle(const std::string& nodeTitle);
+    const std::string_view              GetNodeTitle() const;
+    NodeUniqueId                  GetNodeUniqueId() const;
+    const std::vector<InputPort>&  GetInputPorts() const;
+    const std::vector<OutputPort>& GetOutputPorts() const;
 
 private:
     // imnode lib need nodeuid to differentiate between nodes

@@ -4,6 +4,15 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "spdlog/spdlog.h"
+NodeEditor::NodeEditor()
+: m_nodes()
+, m_edges()
+, m_nodeUidGenerator()
+, m_portUidGenerator()
+, m_edgeUidGenerator()
+{
+
+}
 void DebugDrawRect(ImRect rect)
 {
     ImDrawList* draw_list    = ImGui::GetWindowDrawList();
@@ -81,9 +90,11 @@ void NodeEditor::HandleAddNodes()
 
             if (ImGui::MenuItem("add"))
             {
-                Node addNode(0, Node::NodeType::NormalNode, "ADD");
-
-                const auto& iterRet = m_nodes.insert({addNode.GetNodeUniqueId(), std::move(addNode)});
+                Node addNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, "ADD");
+                addNode.AddInputPort({m_portUidGenerator.AllocUniqueID(), 0, "input1"});
+                addNode.AddInputPort({m_portUidGenerator.AllocUniqueID(), 1, "input2"});
+                addNode.AddOutputPort({m_portUidGenerator.AllocUniqueID(), 0, "output1"});
+                const auto& iterRet = m_nodes.insert({addNode.GetNodeUniqueId(), addNode}); // can not move addNode here, cause it will be used in afterwards
                 if (!iterRet.second) {
                    SPDLOG_ERROR("insert new node fail! check it out!");
                 }
@@ -100,34 +111,28 @@ void NodeEditor::HandleAddNodes()
 
 void NodeEditor::ShowNodes()
 {
-    for (auto&[nodeUid, node] : m_nodes)
+    for (const auto&[nodeUid, node] : m_nodes)
     {
         ImNodes::BeginNode(nodeUid);
         ImNodes::BeginNodeTitleBar();
         ImGui::TextUnformatted(node.GetNodeTitle().data());
         ImNodes::EndNodeTitleBar();
 
+        for (auto& port : node.GetInputPorts())
         {
-            ImNodes::BeginInputAttribute(0); // TODO: 
+            ImNodes::BeginInputAttribute(port.GetPortUniqueId()); // TODO: 
             ImGui::TextUnformatted("left");
             ImNodes::EndInputAttribute();
         }
 
-        ImGui::SameLine();
-
-        {
-            ImNodes::BeginOutputAttribute(nodeUid);
-            const float label_width = ImGui::CalcTextSize("result").x;
-            ImGui::Indent(100.f - label_width);
-            ImGui::TextUnformatted("result");
-            ImNodes::EndOutputAttribute();
-        }
+        // ImGui::SameLine();
 
         ImGui::Spacing();
         
+        for (auto& port : node.GetOutputPorts())
         {
-            ImNodes::BeginInputAttribute(1);
-            ImGui::TextUnformatted("right");
+            ImNodes::BeginOutputAttribute(port.GetPortUniqueId()); // TODO: 
+            ImGui::TextUnformatted("left");
             ImNodes::EndInputAttribute();
         }
 

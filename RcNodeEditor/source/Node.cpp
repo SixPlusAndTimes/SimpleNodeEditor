@@ -1,7 +1,7 @@
 #include "Node.hpp"
 
 Port::Port(PortUniqueId portUid, PortId portId, const std::string& name)
-    : m_portUid(portId), m_portId(portUid), m_portName(name)
+    : m_portUid(portUid), m_portId(portId), m_portName(name)
 {
 }
 
@@ -19,12 +19,12 @@ std::string_view Port::GetPortname(const std::string& name) const
     return m_portName;
 }
 
-Port::PortId Port::GetPortId(PortId portId) const
+Port::PortId Port::GetPortId() const
 {
     return m_portId;
 }
 
-Port::PortUniqueId Port::GetPortUniqueId(PortUniqueId portUid) const
+Port::PortUniqueId Port::GetPortUniqueId() const
 {
     return m_portUid;
 }
@@ -75,7 +75,17 @@ void Node::SetNodeTitle(const std::string& nodeTitle)
     m_nodeTitle = nodeTitle;
 }
 
-std::string_view Node::GetNodeTitle()
+const std::string_view Node::GetNodeTitle() const
 {
     return m_nodeTitle;
+}
+
+const std::vector<InputPort>&  Node::GetInputPorts() const
+{
+    return m_inputPorts;
+}
+
+const std::vector<OutputPort>& Node::GetOutputPorts() const
+{
+    return m_outputPorts;
 }
