@@ -67,9 +67,14 @@ public:
     using EdgeUniqueId = int32_t;
     using EdgeUPtr     = std::unique_ptr<Edge>;
 
+public:
+    Edge(Port::PortUniqueId inputPortUid, Port::PortUniqueId outputPortUid, EdgeUniqueId edgeUid);
+    EdgeUniqueId GetEdgeUniqueId() const;
+    Port::PortUniqueId GetInputPortUid() const;
+    Port::PortUniqueId GetOutputPortUid() const;
 private:
-    Port::PortUniqueId m_inputPortId;
-    Port::PortUniqueId m_outputPortId;
+    Port::PortUniqueId m_inputPortUid;
+    Port::PortUniqueId m_outputPortUid;
     EdgeUniqueId       m_edgeUid;
 };
 
@@ -88,12 +93,12 @@ public: // type def
 public:
     Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle,
          float nodeWidth = 100.f);
-    void                          SetNodePosition(const ImVec2& pos);
-    void                          AddInputPort(const InputPort& inPort);
-    void                          AddOutputPort(const OutputPort& ourPort);
-    void                          SetNodeTitle(const std::string& nodeTitle);
-    const std::string_view              GetNodeTitle() const;
-    NodeUniqueId                  GetNodeUniqueId() const;
+    void                           SetNodePosition(const ImVec2& pos);
+    void                           AddInputPort(const InputPort& inPort);
+    void                           AddOutputPort(const OutputPort& ourPort);
+    void                           SetNodeTitle(const std::string& nodeTitle);
+    const std::string_view         GetNodeTitle() const;
+    NodeUniqueId                   GetNodeUniqueId() const;
     const std::vector<InputPort>&  GetInputPorts() const;
     const std::vector<OutputPort>& GetOutputPorts() const;
 

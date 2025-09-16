@@ -18,8 +18,8 @@ private:
     void ShowInfos();
     void HandleAddNodes();
     void ShowNodes();
-    // void ShowEdges();
-    // void HandleAddEdges();
+    void ShowEdges();
+    void HandleAddEdges();
     // void HandleDeletedEdges();
 private:
     std::unordered_map<Node::NodeUniqueId, Node>

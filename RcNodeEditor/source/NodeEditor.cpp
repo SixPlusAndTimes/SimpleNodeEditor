@@ -140,6 +140,43 @@ void NodeEditor::ShowNodes()
     }
 }
 
+void NodeEditor::HandleAddEdges()
+{
+            int start_attr, end_attr;
+        if (ImNodes::IsLinkCreated(&start_attr, &end_attr))
+        {
+            // const NodeType start_type = graph_.node(start_attr).type;
+            // const NodeType end_type   = graph_.node(end_attr).type;
+
+            // const bool valid_link = start_type != end_type;
+            // if (valid_link)
+            // {
+            //     // Ensure the edge is always directed from the value to
+            //     // whatever produces the value
+            //     if (start_type != NodeType::value)
+            //     {
+            //         std::swap(start_attr, end_attr);
+            //     }
+            //     graph_.insert_edge(start_attr, end_attr);
+            // }
+            Edge newEdge(start_attr, end_attr, m_edgeUidGenerator.AllocUniqueID());
+            m_edges.emplace(newEdge.GetEdgeUniqueId(), std::move(newEdge));
+        }
+
+}
+
+void NodeEditor::ShowEdges()
+{
+    for (const auto&[edgeUid, edge] : m_edges)
+    {
+        // If edge doesn't start at value, then it's an internal edge, i.e.
+        // an edge which links a node's operation to its input. We don't
+        // want to render node internals with visible links.
+        // if (graph_.node(edge.from).type != NodeType::value) continue;
+
+        ImNodes::Link(edge.GetEdgeUniqueId(), edge.GetInputPortUid(), edge.GetOutputPortUid());
+    }
+}
 void NodeEditor::NodeEditorShow()
 {
     // Update timer context
@@ -156,12 +193,12 @@ void NodeEditor::NodeEditorShow()
     HandleAddNodes();
 
     ShowNodes();
-    // ShowEdges();
+    ShowEdges();
 
     // ImNodes::MiniMap(0.2f, minimap_location_);
     ImNodes::EndNodeEditor();
 
-    // HandleAddEdges();
+    HandleAddEdges();
 
     // HandleDeletedEdges();
 
