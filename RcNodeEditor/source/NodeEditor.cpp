@@ -61,16 +61,8 @@ void NodeEditor::ShowMenu()
 void NodeEditor::ShowInfos()
 {
     ImGui::TextUnformatted("Edit the color of the output color window using nodes.");
-        // ImGui::Columns(2);
     ImGui::TextUnformatted("A -- add node");
     ImGui::TextUnformatted("X -- delete selected node or link");
-        // ImGui::NextColumn();
-        // if (ImGui::Checkbox("emulate_three_button_mouse", &emulate_three_button_mouse))
-        // {
-        //     ImNodes::GetIO().EmulateThreeButtonMouse.Modifier =
-        //         emulate_three_button_mouse ? &ImGui::GetIO().KeyAlt : NULL;
-        // }
-        // ImGui::Columns(1);
 }
 
 void NodeEditor::HandleAddNodes()
@@ -118,24 +110,43 @@ void NodeEditor::ShowNodes()
         ImGui::TextUnformatted(node.GetNodeTitle().data());
         ImNodes::EndNodeTitleBar();
 
-        for (auto& port : node.GetInputPorts())
+        size_t min_count = std::min(node.GetInputPorts().size(), node.GetOutputPorts().size());
+
+        for (size_t i = 0; i < min_count; i++) 
         {
-            ImNodes::BeginInputAttribute(port.GetPortUniqueId()); // TODO: 
+            // draw input port
+            SPDLOG_INFO("node InputportId[{}] uniqueid[{}]", i, node.GetInputPorts()[i].GetPortUniqueId()) ;
+            ImNodes::BeginInputAttribute(node.GetInputPorts()[i].GetPortUniqueId()); // TODO: 
             ImGui::TextUnformatted("left");
             ImNodes::EndInputAttribute();
+
+            // put output port on the same line
+            ImGui::SameLine();
+            
+            // draw output port
+            SPDLOG_INFO("node OutputportId[{}] uniqueid[{}]", i, node.GetOutputPorts()[i].GetPortUniqueId()) ;
+            ImNodes::BeginOutputAttribute(node.GetOutputPorts()[i].GetPortUniqueId()); // TODO: 
+            ImGui::TextUnformatted("right");
+            ImNodes::EndOutputAttribute();
         }
 
-        // ImGui::SameLine();
-
-        ImGui::Spacing();
-        
-        for (auto& port : node.GetOutputPorts())
+        if (min_count < node.GetInputPorts().size())
         {
-            ImNodes::BeginOutputAttribute(port.GetPortUniqueId()); // TODO: 
-            ImGui::TextUnformatted("left");
-            ImNodes::EndInputAttribute();
+            for (size_t i = min_count; i < node.GetInputPorts().size(); i++) 
+            {
+                ImNodes::BeginInputAttribute(node.GetInputPorts()[i].GetPortUniqueId()); 
+                ImGui::TextUnformatted("left");
+                ImNodes::EndInputAttribute();
+            }
+        } else if (min_count  < node.GetOutputPorts().size())
+        {
+            for (size_t i = min_count; i < node.GetOutputPorts().size(); i++) 
+            {
+                ImNodes::BeginOutputAttribute(node.GetOutputPorts()[i].GetPortUniqueId());
+                ImGui::TextUnformatted("right");
+                ImNodes::EndOutputAttribute();
+            }
         }
-
         ImNodes::EndNode();
     }
 }
@@ -145,20 +156,6 @@ void NodeEditor::HandleAddEdges()
             int start_attr, end_attr;
         if (ImNodes::IsLinkCreated(&start_attr, &end_attr))
         {
-            // const NodeType start_type = graph_.node(start_attr).type;
-            // const NodeType end_type   = graph_.node(end_attr).type;
-
-            // const bool valid_link = start_type != end_type;
-            // if (valid_link)
-            // {
-            //     // Ensure the edge is always directed from the value to
-            //     // whatever produces the value
-            //     if (start_type != NodeType::value)
-            //     {
-            //         std::swap(start_attr, end_attr);
-            //     }
-            //     graph_.insert_edge(start_attr, end_attr);
-            // }
             Edge newEdge(start_attr, end_attr, m_edgeUidGenerator.AllocUniqueID());
             m_edges.emplace(newEdge.GetEdgeUniqueId(), std::move(newEdge));
         }
@@ -169,11 +166,6 @@ void NodeEditor::ShowEdges()
 {
     for (const auto&[edgeUid, edge] : m_edges)
     {
-        // If edge doesn't start at value, then it's an internal edge, i.e.
-        // an edge which links a node's operation to its input. We don't
-        // want to render node internals with visible links.
-        // if (graph_.node(edge.from).type != NodeType::value) continue;
-
         ImNodes::Link(edge.GetEdgeUniqueId(), edge.GetInputPortUid(), edge.GetOutputPortUid());
     }
 }
