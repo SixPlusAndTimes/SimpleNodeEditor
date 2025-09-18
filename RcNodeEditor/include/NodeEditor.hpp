@@ -13,6 +13,7 @@ public:
     void NodeEditorInitialize();
     void NodeEditorShow();
     void NodeEditorDestroy();
+    void HandleDeletingNodes();
 private:
     void ShowMenu();
     void ShowInfos();
@@ -20,7 +21,7 @@ private:
     void ShowNodes();
     void ShowEdges();
     void HandleAddEdges();
-    // void HandleDeletedEdges();
+    void HandleDeletingEdges();
 private:
     std::unordered_map<Node::NodeUniqueId, Node>
         m_nodes; // storage nodes that will be rendered on canvas

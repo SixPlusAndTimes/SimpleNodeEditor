@@ -115,8 +115,7 @@ void NodeEditor::ShowNodes()
         for (size_t i = 0; i < min_count; i++) 
         {
             // draw input port
-            SPDLOG_INFO("node InputportId[{}] uniqueid[{}]", i, node.GetInputPorts()[i].GetPortUniqueId()) ;
-            ImNodes::BeginInputAttribute(node.GetInputPorts()[i].GetPortUniqueId()); // TODO: 
+            ImNodes::BeginInputAttribute(node.GetInputPorts()[i].GetPortUniqueId());
             ImGui::TextUnformatted("left");
             ImNodes::EndInputAttribute();
 
@@ -124,8 +123,7 @@ void NodeEditor::ShowNodes()
             ImGui::SameLine();
             
             // draw output port
-            SPDLOG_INFO("node OutputportId[{}] uniqueid[{}]", i, node.GetOutputPorts()[i].GetPortUniqueId()) ;
-            ImNodes::BeginOutputAttribute(node.GetOutputPorts()[i].GetPortUniqueId()); // TODO: 
+            ImNodes::BeginOutputAttribute(node.GetOutputPorts()[i].GetPortUniqueId());
             ImGui::TextUnformatted("right");
             ImNodes::EndOutputAttribute();
         }
@@ -153,7 +151,7 @@ void NodeEditor::ShowNodes()
 
 void NodeEditor::HandleAddEdges()
 {
-            int start_attr, end_attr;
+        int start_attr, end_attr;
         if (ImNodes::IsLinkCreated(&start_attr, &end_attr))
         {
             Edge newEdge(start_attr, end_attr, m_edgeUidGenerator.AllocUniqueID());
@@ -169,6 +167,53 @@ void NodeEditor::ShowEdges()
         ImNodes::Link(edge.GetEdgeUniqueId(), edge.GetInputPortUid(), edge.GetOutputPortUid());
     }
 }
+
+void NodeEditor::HandleDeletingNodes()
+{
+    // erase selected nodes
+    const int num_selected_nodes = ImNodes::NumSelectedNodes();
+    if (num_selected_nodes > 0 && ImGui::IsKeyReleased(ImGuiKey_X))
+    {
+        std::vector<int> selected_nodes;
+        selected_nodes.resize(num_selected_nodes);
+        ImNodes::GetSelectedNodes(selected_nodes.data());
+        for (const Node::NodeUniqueId nodeUid: selected_nodes)
+        {
+            m_nodes.erase(nodeUid);
+        }
+    }
+}
+
+void NodeEditor::HandleDeletingEdges()
+{
+        // erase selected links
+        const int num_selected = ImNodes::NumSelectedLinks();
+        if (num_selected > 0 && ImGui::IsKeyReleased(ImGuiKey_X))
+        {
+            std::vector<int> selected_links;
+            selected_links.resize(num_selected);
+            ImNodes::GetSelectedLinks(selected_links.data());
+            for (const Edge::EdgeUniqueId edgeUid : selected_links)
+            {
+                m_edges.erase(edgeUid);
+            }
+        }
+
+        // if a link is detached from a pin of node, erase it
+        Edge::EdgeUniqueId detachedEdgeUId;
+        if (ImNodes::IsLinkDestroyed(&detachedEdgeUId)) // is this function usefull? which situation?
+        {
+            SPDLOG_ERROR("destroyed link id{}", detachedEdgeUId);
+            m_edges.erase(detachedEdgeUId);
+        }
+
+        // Edge::EdgeUniqueId dropedEdgeUId;
+        // if (ImNodes::IsLinkDropped(&dropedEdgeUId))  // usefull?
+        // {
+        //     SPDLOG_ERROR("dropped link id{}", dropedEdgeUId);
+        // }
+}
+
 void NodeEditor::NodeEditorShow()
 {
     // Update timer context
@@ -182,17 +227,18 @@ void NodeEditor::NodeEditorShow()
 
     ImNodes::BeginNodeEditor();
 
-    HandleAddNodes();
-
-    ShowNodes();
-    ShowEdges();
+        HandleAddNodes();
+        ShowNodes();
+        ShowEdges();
 
     // ImNodes::MiniMap(0.2f, minimap_location_);
     ImNodes::EndNodeEditor();
 
     HandleAddEdges();
 
-    // HandleDeletedEdges();
+    HandleDeletingEdges();
+    HandleDeletingNodes();
+
 
     ImGui::End();
 }
