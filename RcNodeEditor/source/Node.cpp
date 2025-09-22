@@ -1,4 +1,5 @@
 #include "Node.hpp"
+#include <algorithm>
 
 Port::Port(PortUniqueId portUid, PortId portId, const std::string& name)
     : m_portUid(portUid), m_portId(portId), m_portName(name)
@@ -60,6 +61,11 @@ PortUniqueId Edge::GetOutputPortUid() const
     return m_outputPortUid;
 }
 
+Node::Node()
+: Node(-1, NodeType::Unknown, "Default")
+{
+    
+}
 
 Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle, float nodeWidth)
     : m_nodeUid(nodeUid),
@@ -103,12 +109,76 @@ const std::string_view Node::GetNodeTitle() const
     return m_nodeTitle;
 }
 
-const std::vector<InputPort>&  Node::GetInputPorts() const
+std::vector<InputPort>& Node::GetInputPorts() 
 {
     return m_inputPorts;
 }
 
-const std::vector<OutputPort>& Node::GetOutputPorts() const
+
+InputPort* Node::GetInputPort(PortUniqueId portUid)
+{
+    auto iter = std::find_if(m_inputPorts.begin(), m_inputPorts.end(), [portUid](const InputPort& inPort) {
+        return portUid == inPort.GetPortUniqueId();
+    });
+
+    if (iter != m_inputPorts.end()) {
+        return &(*iter);
+    } 
+    else 
+    {
+        return nullptr;
+    }
+    
+}
+
+void InputPort::SetEdgeUid(EdgeUniqueId edgeUid)
+{
+    m_linkFrom = edgeUid;
+}
+
+EdgeUniqueId InputPort::GetEdgeUid()
+{
+    return m_linkFrom;
+}
+
+std::vector<OutputPort>& Node::GetOutputPorts()
 {
     return m_outputPorts;
+}
+
+void OutputPort::PushEdge(EdgeUniqueId edgeUid)
+{
+    m_linkTos.push_back(edgeUid);
+}
+
+void OutputPort::DeletEdge(EdgeUniqueId edgeUid)
+{
+    std::remove_if(m_linkTos.begin(), m_linkTos.end(), [edgeUid](EdgeUniqueId traverseEle){
+        return edgeUid == traverseEle;
+    });
+}
+
+std::vector<EdgeUniqueId>& OutputPort::GetEdgeUids()
+{
+    return m_linkTos;
+}
+
+void OutputPort::ClearEdges()
+{
+    std::vector<EdgeUniqueId>().swap(m_linkTos);
+}
+
+OutputPort* Node::GetOutputPort(PortUniqueId portUid)
+{
+    auto iter = std::find_if(m_outputPorts.begin(), m_outputPorts.end(), [portUid](const OutputPort& outPort) {
+        return portUid == outPort.GetPortUniqueId();
+    });
+
+    if (iter != m_outputPorts.end()) {
+        return &(*iter);
+    } 
+    else 
+    {
+        return nullptr;
+    }
 }

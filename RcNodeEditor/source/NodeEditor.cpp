@@ -83,15 +83,25 @@ void NodeEditor::HandleAddNodes()
             if (ImGui::MenuItem("add"))
             {
                 Node addNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, "ADD");
-                addNode.AddInputPort({m_portUidGenerator.AllocUniqueID(), 0, "input1"});
-                addNode.AddInputPort({m_portUidGenerator.AllocUniqueID(), 1, "input2"});
-                addNode.AddOutputPort({m_portUidGenerator.AllocUniqueID(), 0, "output1"});
-                const auto& iterRet = m_nodes.insert({addNode.GetNodeUniqueId(), addNode}); // can not move addNode here, cause it will be used in afterwards
+                InputPort inport1(m_portUidGenerator.AllocUniqueID(), 0, "input1");
+                InputPort inport2(m_portUidGenerator.AllocUniqueID(), 1, "input2");
+                OutputPort outport1(m_portUidGenerator.AllocUniqueID(), 0, "output1");
+                // Node owns their ports
+                addNode.AddInputPort(inport1);
+                addNode.AddInputPort(inport2);
+                addNode.AddOutputPort(outport1);
+                // Node editor refer to ports using pointers
+                m_inportPorts.emplace(inport1.GetPortUniqueId(), addNode.GetInputPort(inport1.GetPortUniqueId()));
+                m_inportPorts.emplace(inport2.GetPortUniqueId(), addNode.GetInputPort(inport2.GetPortUniqueId()));
+                m_outportPorts.emplace(outport1.GetPortUniqueId(), addNode.GetOutputPort(outport1.GetPortUniqueId()));
+
+                ImNodes::SetNodeScreenSpacePos(addNode.GetNodeUniqueId(), click_pos);
+
+                const auto& iterRet = m_nodes.insert({addNode.GetNodeUniqueId(), std::move(addNode)});
                 if (!iterRet.second) {
                    SPDLOG_ERROR("insert new node fail! check it out!");
                 }
 
-                ImNodes::SetNodeScreenSpacePos(addNode.GetNodeUniqueId(), click_pos);
             }
 
 
@@ -103,7 +113,7 @@ void NodeEditor::HandleAddNodes()
 
 void NodeEditor::ShowNodes()
 {
-    for (const auto&[nodeUid, node] : m_nodes)
+    for (auto&[nodeUid, node] : m_nodes)
     {
         ImNodes::BeginNode(nodeUid);
         ImNodes::BeginNodeTitleBar();
@@ -151,10 +161,33 @@ void NodeEditor::ShowNodes()
 
 void NodeEditor::HandleAddEdges()
 {
-        int start_attr, end_attr;
-        if (ImNodes::IsLinkCreated(&start_attr, &end_attr))
+        PortUniqueId startPortId, endPortId;
+        if (ImNodes::IsLinkCreated(&startPortId, &endPortId))
         {
-            Edge newEdge(start_attr, end_attr, m_edgeUidGenerator.AllocUniqueID());
+            Edge newEdge(startPortId, endPortId, m_edgeUidGenerator.AllocUniqueID());
+
+            // set inportport edgeid
+            if (m_inportPorts.count(endPortId) != 0 && m_inportPorts[endPortId] != nullptr)
+            {
+                InputPort& inputPort = *m_inportPorts[endPortId];
+                inputPort.SetEdgeUid(newEdge.GetEdgeUniqueId());
+            }
+            else 
+            {
+                SPDLOG_ERROR("not find input port or the pointer is nullptr when handling new edges, check it! endPortId is{}", endPortId);
+            }
+
+            // set outportport edgeid
+            if (m_outportPorts.count(startPortId) != 0 && m_outportPorts[startPortId] != nullptr)
+            {
+                OutputPort& outpurPort = *m_outportPorts[startPortId];
+                outpurPort.PushEdge(newEdge.GetEdgeUniqueId());
+            }
+            else
+            {
+                SPDLOG_ERROR("not find output port or the pointer is nullptr when handling new edges, check it! startPortId is {}", startPortId);
+            }
+
             m_edges.emplace(newEdge.GetEdgeUniqueId(), std::move(newEdge));
         }
 
@@ -165,6 +198,31 @@ void NodeEditor::ShowEdges()
     for (const auto&[edgeUid, edge] : m_edges)
     {
         ImNodes::Link(edge.GetEdgeUniqueId(), edge.GetInputPortUid(), edge.GetOutputPortUid());
+    }
+}
+
+void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid)
+{
+    if (m_nodes.count(nodeUid) == 0) 
+    {
+        SPDLOG_ERROR("handling an nonexisting node, please check it! nodeUid = {}", nodeUid);
+        return;
+    }
+
+    Node& node = m_nodes[nodeUid]; // implies that Node has a default constructor
+    for (InputPort& inPort : node.GetInputPorts())
+    {
+        m_edges.erase(inPort.GetEdgeUid());
+        inPort.SetEdgeUid(-1);
+    }
+
+    for (OutputPort& outPort : node.GetOutputPorts())
+    {
+        for (EdgeUniqueId edgeUid : outPort.GetEdgeUids())
+        {
+            m_edges.erase(edgeUid);
+        }
+        outPort.ClearEdges();
     }
 }
 
@@ -179,6 +237,13 @@ void NodeEditor::HandleDeletingNodes()
         ImNodes::GetSelectedNodes(selected_nodes.data());
         for (const NodeUniqueId nodeUid: selected_nodes)
         {
+            if (m_nodes.count(nodeUid) == 0) 
+            {
+                SPDLOG_ERROR("deleting a nonexisting node, please check it! nodeUid = {}", nodeUid);
+                continue;
+            }
+            // before we erase the node, we need delete the linked edge first
+            DeleteEdgesBeforDeleteNode(nodeUid);
             m_nodes.erase(nodeUid);
         }
     }
@@ -201,14 +266,14 @@ void NodeEditor::HandleDeletingEdges()
 
         // if a link is detached from a pin of node, erase it
         EdgeUniqueId detachedEdgeUId;
-        if (ImNodes::IsLinkDestroyed(&detachedEdgeUId)) // is this function usefull? which situation?
+        if (ImNodes::IsLinkDestroyed(&detachedEdgeUId)) // is this function usefull? in which situation?
         {
             SPDLOG_ERROR("destroyed link id{}", detachedEdgeUId);
             m_edges.erase(detachedEdgeUId);
         }
 
         // Edge::EdgeUniqueId dropedEdgeUId;
-        // if (ImNodes::IsLinkDropped(&dropedEdgeUId))  // usefull?
+        // if (ImNodes::IsLinkDropped(&dropedEdgeUId))  // is this api usefull?
         // {
         //     SPDLOG_ERROR("dropped link id{}", dropedEdgeUId);
         // }

@@ -50,6 +50,8 @@ class InputPort : public Port
 {
 public:
     InputPort(PortUniqueId portUid, PortId portId, const std::string& name);
+    void SetEdgeUid(EdgeUniqueId);
+    EdgeUniqueId GetEdgeUid();
 
 private:
     EdgeUniqueId m_linkFrom;
@@ -59,7 +61,10 @@ class OutputPort : public Port
 {
 public:
     OutputPort(PortUniqueId portUid, PortId portId, const std::string& name);
-
+    void PushEdge(EdgeUniqueId);
+    void DeletEdge(EdgeUniqueId);
+    std::vector<EdgeUniqueId>& GetEdgeUids();
+    void ClearEdges();
 private:
     std::vector<EdgeUniqueId> m_linkTos; // outports have multiple edges
 };
@@ -88,12 +93,14 @@ public: // type def
     {
         SourceNode,
         NormalNode,
-        SinkNode
+        SinkNode,
+        Unknown
     };
-    using NodeUPtr = std::unique_ptr<Node>;
+    using NodeUPtr   = std::unique_ptr<Node>;
     using NodeYamlId = int32_t;
 
 public:
+    Node();
     Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle,
          float nodeWidth = 100.f);
     void                           SetNodePosition(const ImVec2& pos);
@@ -102,8 +109,10 @@ public:
     void                           SetNodeTitle(const std::string& nodeTitle);
     const std::string_view         GetNodeTitle() const;
     NodeUniqueId                   GetNodeUniqueId() const;
-    const std::vector<InputPort>&  GetInputPorts() const;
-    const std::vector<OutputPort>& GetOutputPorts() const;
+    std::vector<InputPort>&  GetInputPorts();
+    std::vector<OutputPort>& GetOutputPorts();
+    InputPort* GetInputPort(PortUniqueId portUid);
+    OutputPort* GetOutputPort(PortUniqueId portUid);
 
 private:
     // imnode lib need nodeuid to differentiate between nodes
