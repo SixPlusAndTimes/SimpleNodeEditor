@@ -19,11 +19,14 @@ struct UniqueIdGenerator
     }
 };
 
+using PortUniqueId = int32_t; // used by imnodes, imnode lib need nodeuid to differentiate between
+                              // nodes links and ports
+using EdgeUniqueId = int32_t;
+using NodeUniqueId = int32_t;
+
 class Port
 {
 public: // type def
-    using PortUniqueId =
-        int32_t; // used by imnodes, imnode lib need nodeuid to differentiate between nodes
     using PortId =
         int32_t; // normally, every node's inputports/ourports' Id is increased from 0 in steps of 1
     using PortUPtr = std::unique_ptr<Port>;
@@ -49,7 +52,7 @@ public:
     InputPort(PortUniqueId portUid, PortId portId, const std::string& name);
 
 private:
-    Port::PortUniqueId m_linkedOutport; // input port have multiple edges
+    EdgeUniqueId m_linkFrom;
 };
 
 class OutputPort : public Port
@@ -58,24 +61,24 @@ public:
     OutputPort(PortUniqueId portUid, PortId portId, const std::string& name);
 
 private:
-    std::vector<Port::PortUniqueId> m_linkedInports; // note that outports only have one edge
+    std::vector<EdgeUniqueId> m_linkTos; // outports have multiple edges
 };
 
 class Edge
 {
 public:
-    using EdgeUniqueId = int32_t;
-    using EdgeUPtr     = std::unique_ptr<Edge>;
+    using EdgeUPtr = std::unique_ptr<Edge>;
 
 public:
-    Edge(Port::PortUniqueId inputPortUid, Port::PortUniqueId outputPortUid, EdgeUniqueId edgeUid);
+    Edge(PortUniqueId inputPortUid, PortUniqueId outputPortUid, EdgeUniqueId edgeUid);
     EdgeUniqueId GetEdgeUniqueId() const;
-    Port::PortUniqueId GetInputPortUid() const;
-    Port::PortUniqueId GetOutputPortUid() const;
+    PortUniqueId GetInputPortUid() const;
+    PortUniqueId GetOutputPortUid() const;
+
 private:
-    Port::PortUniqueId m_inputPortUid;
-    Port::PortUniqueId m_outputPortUid;
-    EdgeUniqueId       m_edgeUid;
+    PortUniqueId m_inputPortUid;
+    PortUniqueId m_outputPortUid;
+    EdgeUniqueId m_edgeUid;
 };
 
 class Node
@@ -87,8 +90,8 @@ public: // type def
         NormalNode,
         SinkNode
     };
-    using NodeUniqueId = int32_t;
-    using NodeUPtr     = std::unique_ptr<Node>;
+    using NodeUPtr = std::unique_ptr<Node>;
+    using NodeYamlId = int32_t;
 
 public:
     Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle,
@@ -106,6 +109,7 @@ private:
     // imnode lib need nodeuid to differentiate between nodes
     NodeUniqueId            m_nodeUid;
     NodeType                m_nodeType;
+    NodeYamlId              m_nodeYamlId;
     float                   m_nodeWidth;
     std::string             m_nodeTitle;
     ImVec2                  m_nodePos;

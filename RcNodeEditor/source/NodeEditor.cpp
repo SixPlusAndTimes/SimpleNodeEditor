@@ -177,7 +177,7 @@ void NodeEditor::HandleDeletingNodes()
         std::vector<int> selected_nodes;
         selected_nodes.resize(num_selected_nodes);
         ImNodes::GetSelectedNodes(selected_nodes.data());
-        for (const Node::NodeUniqueId nodeUid: selected_nodes)
+        for (const NodeUniqueId nodeUid: selected_nodes)
         {
             m_nodes.erase(nodeUid);
         }
@@ -193,14 +193,14 @@ void NodeEditor::HandleDeletingEdges()
             std::vector<int> selected_links;
             selected_links.resize(num_selected);
             ImNodes::GetSelectedLinks(selected_links.data());
-            for (const Edge::EdgeUniqueId edgeUid : selected_links)
+            for (const EdgeUniqueId edgeUid : selected_links)
             {
                 m_edges.erase(edgeUid);
             }
         }
 
         // if a link is detached from a pin of node, erase it
-        Edge::EdgeUniqueId detachedEdgeUId;
+        EdgeUniqueId detachedEdgeUId;
         if (ImNodes::IsLinkDestroyed(&detachedEdgeUId)) // is this function usefull? which situation?
         {
             SPDLOG_ERROR("destroyed link id{}", detachedEdgeUId);

@@ -24,38 +24,38 @@ Port::PortId Port::GetPortId() const
     return m_portId;
 }
 
-Port::PortUniqueId Port::GetPortUniqueId() const
+PortUniqueId Port::GetPortUniqueId() const
 {
     return m_portUid;
 }
 
 InputPort::InputPort(PortUniqueId portUid, PortId portId, const std::string& name)
-    : Port(portUid, portId, name), m_linkedOutport(-1)
+    : Port(portUid, portId, name), m_linkFrom(-1)
 {
 }
 
 OutputPort::OutputPort(PortUniqueId portUid, PortId portId, const std::string& name)
-    : Port(portUid, portId, name), m_linkedInports()
+    : Port(portUid, portId, name), m_linkTos()
 {
 }
 
-Edge::Edge(Port::PortUniqueId inputPortUid, Port::PortUniqueId outputPortUid, EdgeUniqueId edgeUid)
+Edge::Edge(PortUniqueId inputPortUid, PortUniqueId outputPortUid, EdgeUniqueId edgeUid)
 : m_inputPortUid(inputPortUid)
 , m_outputPortUid(outputPortUid)
 , m_edgeUid(edgeUid)
 { }
 
-Edge::EdgeUniqueId Edge::GetEdgeUniqueId() const
+EdgeUniqueId Edge::GetEdgeUniqueId() const
 {
     return m_edgeUid;
 }
 
-Port::PortUniqueId Edge::GetInputPortUid() const
+PortUniqueId Edge::GetInputPortUid() const
 {
     return m_inputPortUid;
 }
 
-Port::PortUniqueId Edge::GetOutputPortUid() const
+PortUniqueId Edge::GetOutputPortUid() const
 {
     return m_outputPortUid;
 }
@@ -64,6 +64,7 @@ Port::PortUniqueId Edge::GetOutputPortUid() const
 Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle, float nodeWidth)
     : m_nodeUid(nodeUid),
       m_nodeType(nodeType),
+      m_nodeYamlId(-1),
       m_nodeWidth(nodeWidth),
       m_nodeTitle(nodeTitle),
       m_nodePos(),
@@ -87,7 +88,7 @@ void Node::AddOutputPort(const OutputPort& outPort)
     m_outputPorts.push_back(outPort);
 }
 
-Node::NodeUniqueId Node::GetNodeUniqueId() const
+NodeUniqueId Node::GetNodeUniqueId() const
 {
     return m_nodeUid;
 }
