@@ -41,10 +41,9 @@ OutputPort::OutputPort(PortUniqueId portUid, PortId portId, const std::string& n
 }
 
 Edge::Edge(PortUniqueId inputPortUid, PortUniqueId outputPortUid, EdgeUniqueId edgeUid)
-: m_inputPortUid(inputPortUid)
-, m_outputPortUid(outputPortUid)
-, m_edgeUid(edgeUid)
-{ }
+    : m_inputPortUid(inputPortUid), m_outputPortUid(outputPortUid), m_edgeUid(edgeUid)
+{
+}
 
 EdgeUniqueId Edge::GetEdgeUniqueId() const
 {
@@ -61,11 +60,7 @@ PortUniqueId Edge::GetOutputPortUid() const
     return m_outputPortUid;
 }
 
-Node::Node()
-: Node(-1, NodeType::Unknown, "Default")
-{
-    
-}
+Node::Node() : Node(-1, NodeType::Unknown, "Default") {}
 
 Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle, float nodeWidth)
     : m_nodeUid(nodeUid),
@@ -109,26 +104,25 @@ const std::string_view Node::GetNodeTitle() const
     return m_nodeTitle;
 }
 
-std::vector<InputPort>& Node::GetInputPorts() 
+std::vector<InputPort>& Node::GetInputPorts()
 {
     return m_inputPorts;
 }
 
-
 InputPort* Node::GetInputPort(PortUniqueId portUid)
 {
-    auto iter = std::find_if(m_inputPorts.begin(), m_inputPorts.end(), [portUid](const InputPort& inPort) {
-        return portUid == inPort.GetPortUniqueId();
-    });
+    auto iter =
+        std::find_if(m_inputPorts.begin(), m_inputPorts.end(), [portUid](const InputPort& inPort)
+                     { return portUid == inPort.GetPortUniqueId(); });
 
-    if (iter != m_inputPorts.end()) {
+    if (iter != m_inputPorts.end())
+    {
         return &(*iter);
-    } 
-    else 
+    }
+    else
     {
         return nullptr;
     }
-    
 }
 
 void InputPort::SetEdgeUid(EdgeUniqueId edgeUid)
@@ -153,9 +147,8 @@ void OutputPort::PushEdge(EdgeUniqueId edgeUid)
 
 void OutputPort::DeletEdge(EdgeUniqueId edgeUid)
 {
-    std::remove_if(m_linkTos.begin(), m_linkTos.end(), [edgeUid](EdgeUniqueId traverseEle){
-        return edgeUid == traverseEle;
-    });
+    std::remove_if(m_linkTos.begin(), m_linkTos.end(),
+                   [edgeUid](EdgeUniqueId traverseEle) { return edgeUid == traverseEle; });
 }
 
 std::vector<EdgeUniqueId>& OutputPort::GetEdgeUids()
@@ -170,14 +163,15 @@ void OutputPort::ClearEdges()
 
 OutputPort* Node::GetOutputPort(PortUniqueId portUid)
 {
-    auto iter = std::find_if(m_outputPorts.begin(), m_outputPorts.end(), [portUid](const OutputPort& outPort) {
-        return portUid == outPort.GetPortUniqueId();
-    });
+    auto iter = std::find_if(m_outputPorts.begin(), m_outputPorts.end(),
+                             [portUid](const OutputPort& outPort)
+                             { return portUid == outPort.GetPortUniqueId(); });
 
-    if (iter != m_outputPorts.end()) {
+    if (iter != m_outputPorts.end())
+    {
         return &(*iter);
-    } 
-    else 
+    }
+    else
     {
         return nullptr;
     }

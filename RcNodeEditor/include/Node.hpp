@@ -50,7 +50,7 @@ class InputPort : public Port
 {
 public:
     InputPort(PortUniqueId portUid, PortId portId, const std::string& name);
-    void SetEdgeUid(EdgeUniqueId);
+    void         SetEdgeUid(EdgeUniqueId);
     EdgeUniqueId GetEdgeUid();
 
 private:
@@ -61,10 +61,11 @@ class OutputPort : public Port
 {
 public:
     OutputPort(PortUniqueId portUid, PortId portId, const std::string& name);
-    void PushEdge(EdgeUniqueId);
-    void DeletEdge(EdgeUniqueId);
+    void                       PushEdge(EdgeUniqueId);
+    void                       DeletEdge(EdgeUniqueId);
     std::vector<EdgeUniqueId>& GetEdgeUids();
-    void ClearEdges();
+    void                       ClearEdges();
+
 private:
     std::vector<EdgeUniqueId> m_linkTos; // outports have multiple edges
 };
@@ -103,16 +104,16 @@ public:
     Node();
     Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle,
          float nodeWidth = 100.f);
-    void                           SetNodePosition(const ImVec2& pos);
-    void                           AddInputPort(const InputPort& inPort);
-    void                           AddOutputPort(const OutputPort& ourPort);
-    void                           SetNodeTitle(const std::string& nodeTitle);
-    const std::string_view         GetNodeTitle() const;
-    NodeUniqueId                   GetNodeUniqueId() const;
+    void                     SetNodePosition(const ImVec2& pos);
+    void                     AddInputPort(const InputPort& inPort);
+    void                     AddOutputPort(const OutputPort& ourPort);
+    void                     SetNodeTitle(const std::string& nodeTitle);
+    const std::string_view   GetNodeTitle() const;
+    NodeUniqueId             GetNodeUniqueId() const;
     std::vector<InputPort>&  GetInputPorts();
     std::vector<OutputPort>& GetOutputPorts();
-    InputPort* GetInputPort(PortUniqueId portUid);
-    OutputPort* GetOutputPort(PortUniqueId portUid);
+    InputPort*               GetInputPort(PortUniqueId portUid);
+    OutputPort*              GetOutputPort(PortUniqueId portUid);
 
 private:
     // imnode lib need nodeuid to differentiate between nodes

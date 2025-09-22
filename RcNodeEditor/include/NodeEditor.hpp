@@ -6,10 +6,6 @@ class NodeEditor
 {
 public:
     NodeEditor();
-    // bool AddNode(int a);
-    // bool DeleteNode();
-    // bool AddEdge();
-    // bool DeleteEdge();
     void NodeEditorInitialize();
     void NodeEditorShow();
     void NodeEditorDestroy();
@@ -28,7 +24,7 @@ private:
 private:
     std::unordered_map<NodeUniqueId, Node> m_nodes; // storage nodes that will be rendered on canvas
 
-    std::unordered_map<EdgeUniqueId, Edge>       m_edges;
+    std::unordered_map<EdgeUniqueId, Edge> m_edges;
 
     std::unordered_map<PortUniqueId, InputPort*>  m_inportPorts;
     std::unordered_map<PortUniqueId, OutputPort*> m_outportPorts;
