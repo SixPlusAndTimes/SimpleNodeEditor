@@ -20,6 +20,7 @@ private:
     void HandleAddEdges();
     void HandleDeletingEdges();
     void DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid);
+    bool IsInportAlreadyHasEdge(PortUniqueId portUid);
 
 private:
     std::unordered_map<NodeUniqueId, Node> m_nodes; // storage nodes that will be rendered on canvas

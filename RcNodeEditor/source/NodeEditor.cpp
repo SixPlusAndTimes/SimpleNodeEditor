@@ -156,14 +156,39 @@ void NodeEditor::ShowNodes()
     }
 }
 
+bool NodeEditor::IsInportAlreadyHasEdge(PortUniqueId portUid)
+{
+    auto iter = m_inportPorts.find(portUid);
+    if (iter != m_inportPorts.end())
+    {
+        InputPort* inport = iter->second;
+        if (inport->GetEdgeUid() != -1) 
+        {
+            return true;
+        }
+    }
+    else 
+    {
+        SPDLOG_ERROR("can not find inport, portid = {}, checkit!", portUid);
+    }
+    return false;
+}
+
 void NodeEditor::HandleAddEdges()
 {
     PortUniqueId startPortId, endPortId;
     if (ImNodes::IsLinkCreated(&startPortId, &endPortId))
     {
+        // avoid multiple edges linking to the same inport
+        if (IsInportAlreadyHasEdge(endPortId)) 
+        {
+            SPDLOG_WARN("inport port can not have multiple edges, inportId = {}", endPortId);
+            return ;
+        }
+
         Edge newEdge(startPortId, endPortId, m_edgeUidGenerator.AllocUniqueID());
 
-            // set inportport edgeid
+        // set inportport's edgeid
         if (m_inportPorts.count(endPortId) != 0 && m_inportPorts[endPortId] != nullptr)
         {
             InputPort& inputPort = *m_inportPorts[endPortId];
@@ -177,7 +202,7 @@ void NodeEditor::HandleAddEdges()
                 endPortId);
         }
 
-            // set outportport edgeid
+        // set outportport's edgeid
         if (m_outportPorts.count(startPortId) != 0 && m_outportPorts[startPortId] != nullptr)
         {
             OutputPort& outpurPort = *m_outportPorts[startPortId];
@@ -190,7 +215,6 @@ void NodeEditor::HandleAddEdges()
                 "startPortId is {}",
                 startPortId);
         }
-
         m_edges.emplace(newEdge.GetEdgeUniqueId(), std::move(newEdge));
     }
 }
