@@ -5,7 +5,13 @@
 #include "imgui_internal.h"
 #include "spdlog/spdlog.h"
 NodeEditor::NodeEditor()
-    : m_nodes(), m_edges(), m_nodeUidGenerator(), m_portUidGenerator(), m_edgeUidGenerator()
+    : m_nodes(),
+     m_edges(), 
+     m_inportPorts(),
+     m_outportPorts(),
+     m_nodeUidGenerator(),
+     m_portUidGenerator(),
+     m_edgeUidGenerator()
 {
 }
 void DebugDrawRect(ImRect rect)
@@ -275,6 +281,36 @@ void NodeEditor::HandleDeletingNodes()
     }
 }
 
+void NodeEditor::DeleteEdgeUidFromPort(EdgeUniqueId edgeUid)
+{
+    auto iterEdge = m_edges.find(edgeUid);
+    if (iterEdge != m_edges.end())
+    {
+        Edge& edge = iterEdge->second;
+        if (m_outportPorts.count(edge.GetInputPortUid()))
+        {
+           m_outportPorts[edge.GetInputPortUid()]->DeletEdge(edgeUid);
+        }
+        else
+        {
+            SPDLOG_ERROR("cannot find inports in m_outportPorts inportUid = {}", edge.GetInputPortUid());
+        }
+
+        if (m_inportPorts.count(edge.GetOutputPortUid()))
+        {
+           m_inportPorts[edge.GetOutputPortUid()]->SetEdgeUid(-1);
+        }
+        else
+        {
+            SPDLOG_ERROR("cannot find inports in m_inportPorts outputid = {}", edge.GetOutputPortUid());
+        }
+    }
+    else 
+    {
+        SPDLOG_ERROR("cannot find edge in m_edges, edgeUid = {}, check it!", edgeUid);
+    }
+}
+
 void NodeEditor::HandleDeletingEdges()
 {
         // erase selected links
@@ -286,7 +322,15 @@ void NodeEditor::HandleDeletingEdges()
         ImNodes::GetSelectedLinks(selected_links.data());
         for (const EdgeUniqueId edgeUid : selected_links)
         {
-            m_edges.erase(edgeUid);
+            if (m_edges.count(edgeUid) != 0)
+            {
+                DeleteEdgeUidFromPort(edgeUid);
+                m_edges.erase(edgeUid);
+            }
+            else 
+            {
+                SPDLOG_ERROR("cannot find edge in m_edges, edgeUid = {}, check it!", edgeUid);
+            }
         }
     }
 

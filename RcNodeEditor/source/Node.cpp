@@ -1,5 +1,6 @@
 #include "Node.hpp"
 #include <algorithm>
+#include "spdlog/spdlog.h"
 
 Port::Port(PortUniqueId portUid, PortId portId, const std::string& name)
     : m_portUid(portUid), m_portId(portId), m_portName(name)
@@ -142,13 +143,19 @@ std::vector<OutputPort>& Node::GetOutputPorts()
 
 void OutputPort::PushEdge(EdgeUniqueId edgeUid)
 {
+    SPDLOG_INFO("outport id[{}], push edge id[{}]", GetPortUniqueId(), edgeUid);
     m_linkTos.push_back(edgeUid);
 }
 
 void OutputPort::DeletEdge(EdgeUniqueId edgeUid)
 {
-    std::remove_if(m_linkTos.begin(), m_linkTos.end(),
-                   [edgeUid](EdgeUniqueId traverseEle) { return edgeUid == traverseEle; });
+    auto iter = std::find_if(m_linkTos.begin(), m_linkTos.end(), 
+                            [edgeUid](EdgeUniqueId traverseEle) { return edgeUid == traverseEle; });
+
+    if (iter != m_linkTos.end())
+    {
+        m_linkTos.erase(iter);
+    }
 }
 
 std::vector<EdgeUniqueId>& OutputPort::GetEdgeUids()

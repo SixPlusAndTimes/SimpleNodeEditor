@@ -76,6 +76,7 @@ public:
     using EdgeUPtr = std::unique_ptr<Edge>;
 
 public:
+    // TODO : inputPortUid present the source port, outputPortUid present the dst port 
     Edge(PortUniqueId inputPortUid, PortUniqueId outputPortUid, EdgeUniqueId edgeUid);
     EdgeUniqueId GetEdgeUniqueId() const;
     PortUniqueId GetInputPortUid() const;
