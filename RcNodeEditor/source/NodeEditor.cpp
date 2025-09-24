@@ -4,6 +4,17 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "spdlog/spdlog.h"
+#include <cstdint>
+
+struct NodeDescription
+{
+    std::string m_nodeName;
+    std::vector<std::string> m_inportNames;
+    std::vector<std::string> m_outportNames;
+};
+
+static std::unordered_map<std::string, NodeDescription> s_nodeDescriptions;
+
 NodeEditor::NodeEditor()
     : m_nodes(),
      m_edges(), 
@@ -13,6 +24,8 @@ NodeEditor::NodeEditor()
      m_portUidGenerator(),
      m_edgeUidGenerator()
 {
+    // TODO : this add operation should be placed 
+    s_nodeDescriptions["ADD"] = NodeDescription("ADD", {"inport1", "inport2"}, {"outport2"});
 }
 void DebugDrawRect(ImRect rect)
 {
@@ -81,32 +94,64 @@ void NodeEditor::HandleAddNodes()
     {
         const ImVec2 click_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
 
-        if (ImGui::MenuItem("add"))
+        for (const auto&[nodeName, nodeDescription] : s_nodeDescriptions)
         {
-            Node addNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, "ADD");
-            InputPort  inport1(m_portUidGenerator.AllocUniqueID(), 0, "input1");
-            InputPort  inport2(m_portUidGenerator.AllocUniqueID(), 1, "input2");
-            OutputPort outport1(m_portUidGenerator.AllocUniqueID(), 0, "output1");
-                // Node owns their ports
-            addNode.AddInputPort(inport1);
-            addNode.AddInputPort(inport2);
-            addNode.AddOutputPort(outport1);
-                // Node editor refer to ports using pointers
-            m_inportPorts.emplace(inport1.GetPortUniqueId(),
-                                  addNode.GetInputPort(inport1.GetPortUniqueId()));
-            m_inportPorts.emplace(inport2.GetPortUniqueId(),
-                                  addNode.GetInputPort(inport2.GetPortUniqueId()));
-            m_outportPorts.emplace(outport1.GetPortUniqueId(),
-                                   addNode.GetOutputPort(outport1.GetPortUniqueId()));
-
-            ImNodes::SetNodeScreenSpacePos(addNode.GetNodeUniqueId(), click_pos);
-
-            const auto& iterRet = m_nodes.insert({addNode.GetNodeUniqueId(), std::move(addNode)});
-            if (!iterRet.second)
+            if (ImGui::MenuItem(nodeName.c_str()))
             {
-                SPDLOG_ERROR("insert new node fail! check it out!");
+                Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, nodeName);
+                for (int index = 0; index < nodeDescription.m_inportNames.size(); ++index)
+                {
+                    InputPort newInport(m_portUidGenerator.AllocUniqueID(), index, nodeDescription.m_inportNames[index]);
+                    newNode.AddInputPort(newInport);
+                    m_inportPorts.emplace(newInport.GetPortUniqueId(), newNode.GetInputPort(newInport.GetPortUniqueId()));
+                }
+                // for (auto& inport : newNode.GetInputPorts())
+                // {
+                //     m_inportPorts[inport.GetPortUniqueId()] = &inport;
+                // }
+                for (int index = 0; index < nodeDescription.m_outportNames.size(); ++index)
+                {
+                    OutputPort newOutport(m_portUidGenerator.AllocUniqueID(), index, nodeDescription.m_outportNames[index]);
+                    newNode.AddOutputPort(newOutport);
+                    m_outportPorts.emplace(newOutport.GetPortUniqueId(), newNode.GetOutputPort(newOutport.GetPortUniqueId()));
+                }
+
+                ImNodes::SetNodeScreenSpacePos(newNode.GetNodeUniqueId(), click_pos);
+
+                const auto& iterRet = m_nodes.insert({newNode.GetNodeUniqueId(), std::move(newNode)});
+                if (!iterRet.second)
+                {
+                    SPDLOG_ERROR("insert new node fail! check it out!");
+                }
             }
         }
+
+        // if (ImGui::MenuItem("add"))
+        // {
+        //     Node addNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, "ADD");
+        //     InputPort  inport1(m_portUidGenerator.AllocUniqueID(), 0, "input1");
+        //     InputPort  inport2(m_portUidGenerator.AllocUniqueID(), 1, "input2");
+        //     OutputPort outport1(m_portUidGenerator.AllocUniqueID(), 0, "output1");
+        //         // Node owns their ports
+        //     addNode.AddInputPort(inport1);
+        //     addNode.AddInputPort(inport2);
+        //     addNode.AddOutputPort(outport1);
+        //         // Node editor refer to ports using pointers
+        //     m_inportPorts.emplace(inport1.GetPortUniqueId(),
+        //                           addNode.GetInputPort(inport1.GetPortUniqueId()));
+        //     m_inportPorts.emplace(inport2.GetPortUniqueId(),
+        //                           addNode.GetInputPort(inport2.GetPortUniqueId()));
+        //     m_outportPorts.emplace(outport1.GetPortUniqueId(),
+        //                            addNode.GetOutputPort(outport1.GetPortUniqueId()));
+
+        //     ImNodes::SetNodeScreenSpacePos(addNode.GetNodeUniqueId(), click_pos);
+
+        //     const auto& iterRet = m_nodes.insert({addNode.GetNodeUniqueId(), std::move(addNode)});
+        //     if (!iterRet.second)
+        //     {
+        //         SPDLOG_ERROR("insert new node fail! check it out!");
+        //     }
+        // }
 
         ImGui::EndPopup();
     }
@@ -170,6 +215,7 @@ bool NodeEditor::IsInportAlreadyHasEdge(PortUniqueId portUid)
         InputPort* inport = iter->second;
         if (inport->GetEdgeUid() != -1) 
         {
+            SPDLOG_INFO("inportportid = {}, edgeUid = {}", portUid, inport->GetEdgeUid());
             return true;
         }
     }
@@ -188,7 +234,7 @@ void NodeEditor::HandleAddEdges()
         // avoid multiple edges linking to the same inport
         if (IsInportAlreadyHasEdge(endPortId)) 
         {
-            SPDLOG_WARN("inport port can not have multiple edges, inportId = {}", endPortId);
+            SPDLOG_WARN("inport port can not have multiple edges, inportUid = {}", endPortId);
             return ;
         }
 

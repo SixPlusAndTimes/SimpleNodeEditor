@@ -34,11 +34,13 @@ PortUniqueId Port::GetPortUniqueId() const
 InputPort::InputPort(PortUniqueId portUid, PortId portId, const std::string& name)
     : Port(portUid, portId, name), m_linkFrom(-1)
 {
+    SPDLOG_INFO("InputPort construced with portUid = {}, portId = {}, portName = {}, linkfrom = {}", portUid, portId, name, m_linkFrom);
 }
 
 OutputPort::OutputPort(PortUniqueId portUid, PortId portId, const std::string& name)
     : Port(portUid, portId, name), m_linkTos()
 {
+    SPDLOG_INFO("OutputPort construced with portUid = {}, portId = {}, portName = {}", portUid, portId, name);
 }
 
 Edge::Edge(PortUniqueId inputPortUid, PortUniqueId outputPortUid, EdgeUniqueId edgeUid)
@@ -73,6 +75,7 @@ Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle
       m_inputPorts(),
       m_outputPorts()
 {
+    SPDLOG_INFO("Node constructed with nodeUid = {}, nodeTtile = {}", nodeUid, nodeTitle);
 }
 
 void Node::SetNodePosition(const ImVec2& pos)
@@ -112,23 +115,32 @@ std::vector<InputPort>& Node::GetInputPorts()
 
 InputPort* Node::GetInputPort(PortUniqueId portUid)
 {
-    auto iter =
-        std::find_if(m_inputPorts.begin(), m_inputPorts.end(), [portUid](const InputPort& inPort)
-                     { return portUid == inPort.GetPortUniqueId(); });
+    for (auto& inport : m_inputPorts)
+    {
+        if (inport.GetPortUniqueId() == portUid) 
+        {
+            return &inport;
+        }
+    }
+    // auto iter =
+    //     std::find_if(m_inputPorts.begin(), m_inputPorts.end(), [portUid](const InputPort& inPort)
+    //                  { return portUid == inPort.GetPortUniqueId(); });
 
-    if (iter != m_inputPorts.end())
-    {
-        return &(*iter);
-    }
-    else
-    {
+    // if (iter != m_inputPorts.end())
+    // {
+    //     return &(*iter);
+    // }
+    // else
+    // {
+        SPDLOG_ERROR("Can not find portUid = {}  in Nodeuid = {}", portUid, m_nodeUid);
         return nullptr;
-    }
+    // }
 }
 
 void InputPort::SetEdgeUid(EdgeUniqueId edgeUid)
 {
     m_linkFrom = edgeUid;
+    SPDLOG_INFO("InputPort id = {}, setedgeuid = {}", GetPortUniqueId(), edgeUid);
 }
 
 EdgeUniqueId InputPort::GetEdgeUid()

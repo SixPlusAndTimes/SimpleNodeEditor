@@ -15,7 +15,7 @@ struct UniqueIdGenerator
     T m_Uid{};
     T AllocUniqueID()
     {
-        return ++m_Uid;
+        return m_Uid++;
     }
 };
 
