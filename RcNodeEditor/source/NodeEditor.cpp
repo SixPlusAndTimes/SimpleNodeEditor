@@ -127,33 +127,6 @@ void NodeEditor::HandleAddNodes()
             }
         }
 
-        // if (ImGui::MenuItem("add"))
-        // {
-        //     Node addNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, "ADD");
-        //     InputPort  inport1(m_portUidGenerator.AllocUniqueID(), 0, "input1");
-        //     InputPort  inport2(m_portUidGenerator.AllocUniqueID(), 1, "input2");
-        //     OutputPort outport1(m_portUidGenerator.AllocUniqueID(), 0, "output1");
-        //         // Node owns their ports
-        //     addNode.AddInputPort(inport1);
-        //     addNode.AddInputPort(inport2);
-        //     addNode.AddOutputPort(outport1);
-        //         // Node editor refer to ports using pointers
-        //     m_inportPorts.emplace(inport1.GetPortUniqueId(),
-        //                           addNode.GetInputPort(inport1.GetPortUniqueId()));
-        //     m_inportPorts.emplace(inport2.GetPortUniqueId(),
-        //                           addNode.GetInputPort(inport2.GetPortUniqueId()));
-        //     m_outportPorts.emplace(outport1.GetPortUniqueId(),
-        //                            addNode.GetOutputPort(outport1.GetPortUniqueId()));
-
-        //     ImNodes::SetNodeScreenSpacePos(addNode.GetNodeUniqueId(), click_pos);
-
-        //     const auto& iterRet = m_nodes.insert({addNode.GetNodeUniqueId(), std::move(addNode)});
-        //     if (!iterRet.second)
-        //     {
-        //         SPDLOG_ERROR("insert new node fail! check it out!");
-        //     }
-        // }
-
         ImGui::EndPopup();
     }
     ImGui::PopStyleVar();
