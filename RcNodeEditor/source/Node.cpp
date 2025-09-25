@@ -16,7 +16,7 @@ void Port::SetPortname(const std::string& name)
     m_portName = name;
 }
 
-std::string_view Port::GetPortname(const std::string& name) const
+std::string_view Port::GetPortname() const
 {
     return m_portName;
 }

@@ -36,7 +36,7 @@ public:
     void SetPortname(const std::string& name);
     void SetPortId(PortId portId);
 
-    std::string_view GetPortname(const std::string& name) const;
+    std::string_view GetPortname() const;
     PortId           GetPortId() const;
     PortUniqueId     GetPortUniqueId() const;
 

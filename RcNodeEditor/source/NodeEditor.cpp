@@ -8,7 +8,7 @@
 
 struct NodeDescription
 {
-    std::string m_nodeName;
+    std::string              m_nodeName;
     std::vector<std::string> m_inportNames;
     std::vector<std::string> m_outportNames;
 };
@@ -17,15 +17,43 @@ static std::unordered_map<std::string, NodeDescription> s_nodeDescriptions;
 
 NodeEditor::NodeEditor()
     : m_nodes(),
-     m_edges(), 
-     m_inportPorts(),
-     m_outportPorts(),
-     m_nodeUidGenerator(),
-     m_portUidGenerator(),
-     m_edgeUidGenerator()
+      m_edges(),
+      m_inportPorts(),
+      m_outportPorts(),
+      m_nodeUidGenerator(),
+      m_portUidGenerator(),
+      m_edgeUidGenerator()
 {
-    // TODO : this add operation should be placed 
+    // TODO : this add operation should be placed
     s_nodeDescriptions["ADD"] = NodeDescription("ADD", {"inport1", "inport2"}, {"outport2"});
+
+    s_nodeDescriptions["select"] =
+        NodeDescription("select",
+                        {"inport1", "inport2", "inport3", "inport4", "inport5", "inport6",
+                         "inport7", "inport8", "inport9", "inport10", "inport11", "inport12"},
+                        {"outport1", "outport2", "outport3", "outport4", "outport5"});
+
+    s_nodeDescriptions["ggg"] = NodeDescription{"ggg", {"inport1", "inport2", "inport3"}, {"outport1", "outport2","outport3", "outport4", "outport5"}};
+
+    s_nodeDescriptions["ar"] = NodeDescription{"ar", {"inport1", "inport2", "inport3"}, {"outport1", "outport2", "outport3"}};
+
+    s_nodeDescriptions["bb"] = NodeDescription{"bb", {"inport1", "inport2", "inport3"}, {"outport1", "outport2", "outport3"}};
+    s_nodeDescriptions["aa"] = NodeDescription{"aa", {"inport1", "inport2", "inport3"}, {"outport1", "outport2", "outport3"}};
+    s_nodeDescriptions["cc"] = NodeDescription{"cc", {"inport1", "inport2", "inport3"}, {"outport1", "outport2", "outport3"}};
+    
+    s_nodeDescriptions["sim"] = NodeDescription{"sim", {"inport1", "inport2"}, {"outport1", "outport2"}};
+
+    s_nodeDescriptions["cp"] = NodeDescription{"cp", {"inport1", "inport2", "inport3"}, {"outport1"}};
+
+    s_nodeDescriptions["pp"] = NodeDescription{"pp", {"inport1"}, {"outport1"}};
+
+    s_nodeDescriptions["sourcenode"] =
+        NodeDescription{"sourcenode",
+                        {},
+                        {"outport1", "outport2", "outport3", "outport4", "outport5", "outport6",
+                         "outport7", "outport8", "outport9", "outport10", "outport11", "outport12"}};
+
+    s_nodeDescriptions["dstnode"] = NodeDescription{"dstnode", {"inport"}, {}};
 }
 void DebugDrawRect(ImRect rect)
 {
@@ -94,32 +122,39 @@ void NodeEditor::HandleAddNodes()
     {
         const ImVec2 click_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
 
-        for (const auto&[nodeName, nodeDescription] : s_nodeDescriptions)
+        for (const auto& [nodeName, nodeDescription] : s_nodeDescriptions)
         {
             if (ImGui::MenuItem(nodeName.c_str()))
             {
-                Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, nodeName);
-                // we must reserve the vector first; if not , the reallocation of std::vector will mess memory up
+                Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode,
+                             nodeName);
+                // we must reserve the vector first; if not , the reallocation of std::vector will
+                // mess memory up
                 newNode.GetInputPorts().reserve(nodeDescription.m_inportNames.size());
                 newNode.GetOutputPorts().reserve(nodeDescription.m_outportNames.size());
 
                 for (int index = 0; index < nodeDescription.m_inportNames.size(); ++index)
                 {
-                    InputPort newInport(m_portUidGenerator.AllocUniqueID(), index, nodeDescription.m_inportNames[index]);
+                    InputPort newInport(m_portUidGenerator.AllocUniqueID(), index,
+                                        nodeDescription.m_inportNames[index]);
                     newNode.AddInputPort(newInport);
-                    m_inportPorts.emplace(newInport.GetPortUniqueId(), newNode.GetInputPort(newInport.GetPortUniqueId()));
+                    m_inportPorts.emplace(newInport.GetPortUniqueId(),
+                                          newNode.GetInputPort(newInport.GetPortUniqueId()));
                 }
 
                 for (int index = 0; index < nodeDescription.m_outportNames.size(); ++index)
                 {
-                    OutputPort newOutport(m_portUidGenerator.AllocUniqueID(), index, nodeDescription.m_outportNames[index]);
+                    OutputPort newOutport(m_portUidGenerator.AllocUniqueID(), index,
+                                          nodeDescription.m_outportNames[index]);
                     newNode.AddOutputPort(newOutport);
-                    m_outportPorts.emplace(newOutport.GetPortUniqueId(), newNode.GetOutputPort(newOutport.GetPortUniqueId()));
+                    m_outportPorts.emplace(newOutport.GetPortUniqueId(),
+                                           newNode.GetOutputPort(newOutport.GetPortUniqueId()));
                 }
 
                 ImNodes::SetNodeScreenSpacePos(newNode.GetNodeUniqueId(), click_pos);
 
-                const auto& iterRet = m_nodes.insert({newNode.GetNodeUniqueId(), std::move(newNode)});
+                const auto& iterRet =
+                    m_nodes.insert({newNode.GetNodeUniqueId(), std::move(newNode)});
                 if (!iterRet.second)
                 {
                     SPDLOG_ERROR("insert new node fail! check it out!");
@@ -147,7 +182,7 @@ void NodeEditor::ShowNodes()
         {
             // draw input port
             ImNodes::BeginInputAttribute(node.GetInputPorts()[i].GetPortUniqueId());
-            ImGui::TextUnformatted("left");
+            ImGui::TextUnformatted(node.GetInputPorts()[i].GetPortname().data());
             ImNodes::EndInputAttribute();
 
             // put output port on the same line
@@ -155,7 +190,7 @@ void NodeEditor::ShowNodes()
 
             // draw output port
             ImNodes::BeginOutputAttribute(node.GetOutputPorts()[i].GetPortUniqueId());
-            ImGui::TextUnformatted("right");
+            ImGui::TextUnformatted(node.GetOutputPorts()[i].GetPortname().data());
             ImNodes::EndOutputAttribute();
         }
 
@@ -164,7 +199,7 @@ void NodeEditor::ShowNodes()
             for (size_t i = min_count; i < node.GetInputPorts().size(); i++)
             {
                 ImNodes::BeginInputAttribute(node.GetInputPorts()[i].GetPortUniqueId());
-                ImGui::TextUnformatted("left");
+                ImGui::TextUnformatted(node.GetInputPorts()[i].GetPortname().data());
                 ImNodes::EndInputAttribute();
             }
         }
@@ -173,7 +208,7 @@ void NodeEditor::ShowNodes()
             for (size_t i = min_count; i < node.GetOutputPorts().size(); i++)
             {
                 ImNodes::BeginOutputAttribute(node.GetOutputPorts()[i].GetPortUniqueId());
-                ImGui::TextUnformatted("right");
+                ImGui::TextUnformatted(node.GetOutputPorts()[i].GetPortname().data());
                 ImNodes::EndOutputAttribute();
             }
         }
@@ -187,13 +222,13 @@ bool NodeEditor::IsInportAlreadyHasEdge(PortUniqueId portUid)
     if (iter != m_inportPorts.end())
     {
         InputPort* inport = iter->second;
-        if (inport->GetEdgeUid() != -1) 
+        if (inport->GetEdgeUid() != -1)
         {
             SPDLOG_INFO("inportportid = {}, edgeUid = {}", portUid, inport->GetEdgeUid());
             return true;
         }
     }
-    else 
+    else
     {
         SPDLOG_ERROR("can not find inport, portid = {}, checkit!", portUid);
     }
@@ -206,10 +241,10 @@ void NodeEditor::HandleAddEdges()
     if (ImNodes::IsLinkCreated(&startPortId, &endPortId))
     {
         // avoid multiple edges linking to the same inport
-        if (IsInportAlreadyHasEdge(endPortId)) 
+        if (IsInportAlreadyHasEdge(endPortId))
         {
             SPDLOG_WARN("inport port can not have multiple edges, inportUid = {}", endPortId);
-            return ;
+            return;
         }
 
         Edge newEdge(startPortId, endPortId, m_edgeUidGenerator.AllocUniqueID());
@@ -309,23 +344,25 @@ void NodeEditor::DeleteEdgeUidFromPort(EdgeUniqueId edgeUid)
         Edge& edge = iterEdge->second;
         if (m_outportPorts.count(edge.GetInputPortUid()))
         {
-           m_outportPorts[edge.GetInputPortUid()]->DeletEdge(edgeUid);
+            m_outportPorts[edge.GetInputPortUid()]->DeletEdge(edgeUid);
         }
         else
         {
-            SPDLOG_ERROR("cannot find inports in m_outportPorts inportUid = {}", edge.GetInputPortUid());
+            SPDLOG_ERROR("cannot find inports in m_outportPorts inportUid = {}",
+                         edge.GetInputPortUid());
         }
 
         if (m_inportPorts.count(edge.GetOutputPortUid()))
         {
-           m_inportPorts[edge.GetOutputPortUid()]->SetEdgeUid(-1);
+            m_inportPorts[edge.GetOutputPortUid()]->SetEdgeUid(-1);
         }
         else
         {
-            SPDLOG_ERROR("cannot find inports in m_inportPorts outputid = {}", edge.GetOutputPortUid());
+            SPDLOG_ERROR("cannot find inports in m_inportPorts outputid = {}",
+                         edge.GetOutputPortUid());
         }
     }
-    else 
+    else
     {
         SPDLOG_ERROR("cannot find edge in m_edges, edgeUid = {}, check it!", edgeUid);
     }
@@ -333,7 +370,7 @@ void NodeEditor::DeleteEdgeUidFromPort(EdgeUniqueId edgeUid)
 
 void NodeEditor::HandleDeletingEdges()
 {
-        // erase selected links
+    // erase selected links
     const int num_selected = ImNodes::NumSelectedLinks();
     if (num_selected > 0 && ImGui::IsKeyReleased(ImGuiKey_X))
     {
@@ -347,14 +384,14 @@ void NodeEditor::HandleDeletingEdges()
                 DeleteEdgeUidFromPort(edgeUid);
                 m_edges.erase(edgeUid);
             }
-            else 
+            else
             {
                 SPDLOG_ERROR("cannot find edge in m_edges, edgeUid = {}, check it!", edgeUid);
             }
         }
     }
 
-        // if a link is detached from a pin of node, erase it
+    // if a link is detached from a pin of node, erase it
     EdgeUniqueId detachedEdgeUId;
     if (ImNodes::IsLinkDestroyed(&detachedEdgeUId)) // is this function usefull? in which situation?
     {
