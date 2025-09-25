@@ -99,16 +99,17 @@ void NodeEditor::HandleAddNodes()
             if (ImGui::MenuItem(nodeName.c_str()))
             {
                 Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, nodeName);
+                // we must reserve the vector first; if not , the reallocation of std::vector will mess memory up
+                newNode.GetInputPorts().reserve(nodeDescription.m_inportNames.size());
+                newNode.GetOutputPorts().reserve(nodeDescription.m_outportNames.size());
+
                 for (int index = 0; index < nodeDescription.m_inportNames.size(); ++index)
                 {
                     InputPort newInport(m_portUidGenerator.AllocUniqueID(), index, nodeDescription.m_inportNames[index]);
                     newNode.AddInputPort(newInport);
                     m_inportPorts.emplace(newInport.GetPortUniqueId(), newNode.GetInputPort(newInport.GetPortUniqueId()));
                 }
-                // for (auto& inport : newNode.GetInputPorts())
-                // {
-                //     m_inportPorts[inport.GetPortUniqueId()] = &inport;
-                // }
+
                 for (int index = 0; index < nodeDescription.m_outportNames.size(); ++index)
                 {
                     OutputPort newOutport(m_portUidGenerator.AllocUniqueID(), index, nodeDescription.m_outportNames[index]);
