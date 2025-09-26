@@ -1,6 +1,7 @@
 #ifndef NODEEDITOR_H
 #define NODEEDITOR_H
 #include "Node.hpp"
+#include "imnodes.h"
 
 class NodeEditor
 {
@@ -35,6 +36,8 @@ private:
     UniqueIdGenerator<NodeUniqueId> m_nodeUidGenerator;
     UniqueIdGenerator<PortUniqueId> m_portUidGenerator;
     UniqueIdGenerator<EdgeUniqueId> m_edgeUidGenerator;
+
+    ImNodesMiniMapLocation          m_minimap_location;
 };
 
 #endif // NODEEDITOR_H

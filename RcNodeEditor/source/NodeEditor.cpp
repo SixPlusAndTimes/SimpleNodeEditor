@@ -1,6 +1,4 @@
-
 #include "NodeEditor.hpp"
-#include "imnodes.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "spdlog/spdlog.h"
@@ -22,7 +20,8 @@ NodeEditor::NodeEditor()
       m_outportPorts(),
       m_nodeUidGenerator(),
       m_portUidGenerator(),
-      m_edgeUidGenerator()
+      m_edgeUidGenerator(),
+      m_minimap_location(ImNodesMiniMapLocation_BottomRight)
 {
     // TODO : this add operation should be placed
     s_nodeDescriptions["ADD"] = NodeDescription("ADD", {"inport1", "inport2"}, {"outport2"});
@@ -417,11 +416,15 @@ void NodeEditor::NodeEditorShow()
     ShowMenu();
     ShowInfos();
 
+    // ImNodes::GetIO().EmulateThreeButtonMouse.Modifier = &ImGui::GetIO().KeyAlt;
+
     ImNodes::BeginNodeEditor();
 
     HandleAddNodes();
     ShowNodes();
     ShowEdges();
+
+    ImNodes::MiniMap(0.2f, m_minimap_location);
 
     // ImNodes::MiniMap(0.2f, minimap_location_);
     ImNodes::EndNodeEditor();
