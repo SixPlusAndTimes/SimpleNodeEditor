@@ -122,19 +122,9 @@ InputPort* Node::GetInputPort(PortUniqueId portUid)
             return &inport;
         }
     }
-    // auto iter =
-    //     std::find_if(m_inputPorts.begin(), m_inputPorts.end(), [portUid](const InputPort& inPort)
-    //                  { return portUid == inPort.GetPortUniqueId(); });
 
-    // if (iter != m_inputPorts.end())
-    // {
-    //     return &(*iter);
-    // }
-    // else
-    // {
-        SPDLOG_ERROR("Can not find portUid = {}  in Nodeuid = {}", portUid, m_nodeUid);
-        return nullptr;
-    // }
+    SPDLOG_ERROR("Can not find portUid = {} in Nodeuid = {}, check it!", portUid, m_nodeUid);
+    return nullptr;
 }
 
 void InputPort::SetEdgeUid(EdgeUniqueId edgeUid)
@@ -192,6 +182,7 @@ OutputPort* Node::GetOutputPort(PortUniqueId portUid)
     }
     else
     {
+        SPDLOG_ERROR("cannot find outport, check it! portUid = {}", portUid);
         return nullptr;
     }
 }

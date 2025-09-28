@@ -1,0 +1,12 @@
+loglevel: info
+name: John Doe
+age: 30
+isStudent: false
+skills:
+  c++: 5
+  python: 4
+  java: 3
+courses:
+  - Math
+  - Physics
+  - Chemistry

@@ -1,5 +1,7 @@
 #include "node_editor.h"
 
+#include <iostream>
+#include <yaml-cpp/yaml.h>
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_opengl3.h>
@@ -17,9 +19,41 @@
 #include "spdlog/sinks/stdout_sinks.h"
 
 #include "NodeEditor.hpp"
+
 int main(int, char**)
 {
+    
+    YAML::Node config;
+    try {
+        config = YAML::LoadFile("./resource/config.yaml");
+    } catch (const YAML::BadFile& e) {
+        std::cerr << "Error: Could not open or parse config.yaml: " << e.what() << std::endl;
+        return 1;
+    } catch (const YAML::ParserException& e) {
+        std::cerr << "Error parsing config.yaml: " << e.what() << std::endl;
+        return 1;
+    }
+
+    std::string loglevel = config["loglevel"].as<std::string>();
+    std::cout << "loglevel: " << loglevel << std::endl;
+
+    spdlog::level::level_enum spdLogLevel = spdlog::level::info;
+    if (loglevel == "info")
+    {
+        spdLogLevel = spdlog::level::info;
+    }
+    else if(loglevel == "debug")
+    {
+        spdLogLevel = spdlog::level::debug;
+    }
+    else if (loglevel == "error")
+    {
+        spdLogLevel = spdlog::level::err;
+    }
+
+    spdlog::set_level(spdLogLevel);
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e][%l][%s:%#]: %v");
+
     SPDLOG_INFO("global log with source info"); // Use spdlog::default_logger()
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)

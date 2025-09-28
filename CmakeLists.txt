@@ -46,6 +46,10 @@ message("opengl lib ${OPENGL_gl_LIBRARY}")
 add_subdirectory(./3rdParts/spdlog/ EXCLUDE_FROM_ALL)
 target_link_libraries(${project_name} PRIVATE spdlog::spdlog)
 
+# link yaml cpp
+add_subdirectory(./3rdParts/yaml-cpp/ EXCLUDE_FROM_ALL)
+target_link_libraries(${project_name} PRIVATE yaml-cpp::yaml-cpp)
+
 # copy dll files to executable directory
 #   check this linkage for reference https://github.com/libsdl-org/SDL/issues/6399
 if (WIN32)
@@ -56,8 +60,15 @@ if (WIN32)
     )
 endif()
 
+# copy resource to bindir
+add_custom_command (
+    TARGET ${project_name} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/RcNodeEditor/resource $<TARGET_FILE_DIR:${project_name}>/resource
+    COMMAND_EXPAND_LISTS
+)
+message("cmakebindir = ${CMAKE_CURRENT_BINARY_DIR}")
 # intall bin
 set(INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/install" CACHE PATH "intallation root")
 install(TARGETS ${PROJECT_NAME} DESTINATION "${INSTALL_PREFIX}/bin")
-# this may automatically copy dependetn dll files to installation directory
+# this may automatically copy dependencies dll files to installation directory
 install(FILES $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}> DESTINATION "${INSTALL_PREFIX}/bin")
