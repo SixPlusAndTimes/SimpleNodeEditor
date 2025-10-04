@@ -20,18 +20,17 @@
 
 #include "NodeEditor.hpp"
 
-int main(int, char**)
+bool ConfigLogLevlel()
 {
-    
     YAML::Node config;
     try {
         config = YAML::LoadFile("./resource/config.yaml");
     } catch (const YAML::BadFile& e) {
         std::cerr << "Error: Could not open or parse config.yaml: " << e.what() << std::endl;
-        return 1;
+        return false;
     } catch (const YAML::ParserException& e) {
         std::cerr << "Error parsing config.yaml: " << e.what() << std::endl;
-        return 1;
+        return false;
     }
 
     std::string loglevel = config["loglevel"].as<std::string>();
@@ -54,7 +53,36 @@ int main(int, char**)
     spdlog::set_level(spdLogLevel);
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e][%l][%s:%#]: %v");
 
-    SPDLOG_INFO("global log with source info"); // Use spdlog::default_logger()
+    return true;
+}
+
+bool TestNodeDescriptionYamlParse()
+{
+    YAML::Node nodeDescription;
+    try {
+        nodeDescription = YAML::LoadFile("./resource/NodeDescriptions.yaml");
+    } catch (const YAML::BadFile& e) {
+        std::cerr << "Error: Could not open or parse config.yaml: " << e.what() << std::endl;
+        return false;
+    } catch (const YAML::ParserException& e) {
+        std::cerr << "Error parsing config.yaml: " << e.what() << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+int main(int, char**)
+{
+    if (!TestNodeDescriptionYamlParse())
+    {
+        SPDLOG_ERROR("TestNodeDescriptionYamlParse failed!");
+    }
+
+    if (!ConfigLogLevlel()) 
+    {
+        SPDLOG_ERROR("ConfigLogLevel failed!");
+    }
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {

@@ -2,6 +2,7 @@
 #define NODEEDITOR_H
 #include "Node.hpp"
 #include "imnodes.h"
+#include "NodeDescription.h"
 
 class NodeEditor
 {
@@ -25,7 +26,7 @@ private:
     void DeleteEdgeUidFromPort(EdgeUniqueId edgeUid);
 
 private:
-    std::unordered_map<NodeUniqueId, Node> m_nodes; // storage nodes that will be rendered on canvas
+    std::unordered_map<NodeUniqueId, Node> m_nodes; // store nodes that will be rendered on canvas
 
     std::unordered_map<EdgeUniqueId, Edge> m_edges;
 
@@ -38,6 +39,8 @@ private:
     UniqueIdGenerator<EdgeUniqueId> m_edgeUidGenerator;
 
     ImNodesMiniMapLocation          m_minimap_location;
+
+    std::vector<NodeDescription>    m_nodeDescriptions;
 };
 
 #endif // NODEEDITOR_H

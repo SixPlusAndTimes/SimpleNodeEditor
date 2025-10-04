@@ -1,0 +1,35 @@
+NodeDescriptions:
+  - 
+    NodeName: ADD
+    InputPorts:
+      - inputport1
+      - inputport2
+    OutputPorts:
+      - outputport1
+      - outputport2
+  - 
+    NodeName: Select
+    InputPorts:
+      - inputport1
+      - inputport2
+      - inputport3
+      - inputport4
+      - inputport5
+      - inputport6
+    OutputPorts:
+      - outputport1
+      - outputport2
+      - outputport3
+      - outputport4
+      - outputport5
+      - outputport6
+  - 
+    NodeName: ggg
+    InputPorts:
+      - inputport1
+      - inputport2
+      - inputport3
+    OutputPorts:
+      - outputport1
+      - outputport2
+      - outputport3

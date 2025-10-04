@@ -4,12 +4,6 @@
 #include "spdlog/spdlog.h"
 #include <cstdint>
 
-struct NodeDescription
-{
-    std::string              m_nodeName;
-    std::vector<std::string> m_inportNames;
-    std::vector<std::string> m_outportNames;
-};
 
 static std::unordered_map<std::string, NodeDescription> s_nodeDescriptions;
 
@@ -23,37 +17,15 @@ NodeEditor::NodeEditor()
       m_edgeUidGenerator(),
       m_minimap_location(ImNodesMiniMapLocation_BottomRight)
 {
-    // TODO : this add operation should be placed
-    s_nodeDescriptions["ADD"] = NodeDescription("ADD", {"inport1", "inport2"}, {"outport2"});
-
-    s_nodeDescriptions["select"] =
-        NodeDescription("select",
-                        {"inport1", "inport2", "inport3", "inport4", "inport5", "inport6",
-                         "inport7", "inport8", "inport9", "inport10", "inport11", "inport12"},
-                        {"outport1", "outport2", "outport3", "outport4", "outport5"});
-
-    s_nodeDescriptions["ggg"] = NodeDescription{"ggg", {"inport1", "inport2", "inport3"}, {"outport1", "outport2","outport3", "outport4", "outport5"}};
-
-    s_nodeDescriptions["ar"] = NodeDescription{"ar", {"inport1", "inport2", "inport3"}, {"outport1", "outport2", "outport3"}};
-
-    s_nodeDescriptions["bb"] = NodeDescription{"bb", {"inport1", "inport2", "inport3"}, {"outport1", "outport2", "outport3"}};
-    s_nodeDescriptions["aa"] = NodeDescription{"aa", {"inport1", "inport2", "inport3"}, {"outport1", "outport2", "outport3"}};
-    s_nodeDescriptions["cc"] = NodeDescription{"cc", {"inport1", "inport2", "inport3"}, {"outport1", "outport2", "outport3"}};
-    
-    s_nodeDescriptions["sim"] = NodeDescription{"sim", {"inport1", "inport2"}, {"outport1", "outport2"}};
-
-    s_nodeDescriptions["cp"] = NodeDescription{"cp", {"inport1", "inport2", "inport3"}, {"outport1"}};
-
-    s_nodeDescriptions["pp"] = NodeDescription{"pp", {"inport1"}, {"outport1"}};
-
-    s_nodeDescriptions["sourcenode"] =
-        NodeDescription{"sourcenode",
-                        {},
-                        {"outport1", "outport2", "outport3", "outport4", "outport5", "outport6",
-                         "outport7", "outport8", "outport9", "outport10", "outport11", "outport12"}};
-
-    s_nodeDescriptions["dstnode"] = NodeDescription{"dstnode", {"inport"}, {}};
+    NodeDescriptionParser nodeParser;
+    // TODO: file name may be a constant value
+    std::vector<NodeDescription> nodeDescriptions =  nodeParser.ParseNodeDescriptions("./resource/NodeDescriptions.yaml");
+    for (const auto& nodeD : nodeDescriptions)
+    {
+        s_nodeDescriptions.emplace(nodeD.m_nodeName, nodeD);
+    }
 }
+
 void DebugDrawRect(ImRect rect)
 {
     ImDrawList* draw_list    = ImGui::GetWindowDrawList();
@@ -129,22 +101,22 @@ void NodeEditor::HandleAddNodes()
                              nodeName);
                 // we must reserve the vector first; if not , the reallocation of std::vector will
                 // mess memory up
-                newNode.GetInputPorts().reserve(nodeDescription.m_inportNames.size());
-                newNode.GetOutputPorts().reserve(nodeDescription.m_outportNames.size());
+                newNode.GetInputPorts().reserve(nodeDescription.m_inputPortNames.size());
+                newNode.GetOutputPorts().reserve(nodeDescription.m_outputPortNames.size());
 
-                for (int index = 0; index < nodeDescription.m_inportNames.size(); ++index)
+                for (int index = 0; index < nodeDescription.m_inputPortNames.size(); ++index)
                 {
                     InputPort newInport(m_portUidGenerator.AllocUniqueID(), index,
-                                        nodeDescription.m_inportNames[index]);
+                                        nodeDescription.m_inputPortNames[index]);
                     newNode.AddInputPort(newInport);
                     m_inportPorts.emplace(newInport.GetPortUniqueId(),
                                           newNode.GetInputPort(newInport.GetPortUniqueId()));
                 }
 
-                for (int index = 0; index < nodeDescription.m_outportNames.size(); ++index)
+                for (int index = 0; index < nodeDescription.m_outputPortNames.size(); ++index)
                 {
                     OutputPort newOutport(m_portUidGenerator.AllocUniqueID(), index,
-                                          nodeDescription.m_outportNames[index]);
+                                          nodeDescription.m_outputPortNames[index]);
                     newNode.AddOutputPort(newOutport);
                     m_outportPorts.emplace(newOutport.GetPortUniqueId(),
                                            newNode.GetOutputPort(newOutport.GetPortUniqueId()));

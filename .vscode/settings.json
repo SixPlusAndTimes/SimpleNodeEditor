@@ -66,6 +66,10 @@
         "thread": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "any": "cpp",
+        "list": "cpp",
+        "iostream": "cpp",
+        "valarray": "cpp"
     }
 }
