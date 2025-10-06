@@ -5,19 +5,9 @@
 
 struct NodeDescription
 {
-        std::string m_nodeName;
-        std::vector<std::string> m_inputPortNames;
-        std::vector<std::string> m_outputPortNames;
-
-        NodeDescription() = default;
-        template <typename T1, typename T2, typename T3>
-        NodeDescription(T1&& nodeName, T2&& inportPorts, T3&& outputPorts)
-        : m_nodeName(std::forward<T1>(nodeName))
-        , m_inputPortNames(std::forward<T2>(m_inputPortNames))
-        , m_outputPortNames(std::forward<T3>(m_outputPortNames))
-        {
-
-        }
+    std::string m_nodeName;
+    std::vector<std::string> m_inputPortNames;
+    std::vector<std::string> m_outputPortNames;
 };
 
 class NodeDescriptionParser

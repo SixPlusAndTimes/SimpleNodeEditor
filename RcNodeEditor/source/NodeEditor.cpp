@@ -22,7 +22,7 @@ NodeEditor::NodeEditor()
     std::vector<NodeDescription> nodeDescriptions =  nodeParser.ParseNodeDescriptions("./resource/NodeDescriptions.yaml");
     for (const auto& nodeD : nodeDescriptions)
     {
-        s_nodeDescriptions.emplace(nodeD.m_nodeName, nodeD);
+        s_nodeDescriptions.emplace(nodeD.m_nodeName, std::move(nodeD));
     }
 }
 
@@ -89,34 +89,69 @@ void NodeEditor::HandleAddNodes()
         ImGui::OpenPopup("add node");
     }
 
+    static std::string previewSelected = s_nodeDescriptions.begin()->first;
+
     if (ImGui::BeginPopup("add node"))
     {
         const ImVec2 click_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
 
-        for (const auto& [nodeName, nodeDescription] : s_nodeDescriptions)
+        ImGuiComboFlags flags = 0 ;
+        bool is_selected = false;
+
+        if (ImGui::BeginCombo("add node now", previewSelected.c_str(), flags))
         {
-            if (ImGui::MenuItem(nodeName.c_str()))
+            static ImGuiTextFilter filter;
+            if (ImGui::IsWindowAppearing())
             {
-                Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode,
-                             nodeName);
+                ImGui::SetKeyboardFocusHere();
+                filter.Clear();
+            }
+            filter.Draw("##Filter", -FLT_MIN);
+
+            ImGui::SetKeyboardFocusHere(-1);
+
+            for (auto& [nodeName, nodeDesc] : s_nodeDescriptions)
+            {
+                if (filter.PassFilter(nodeName.c_str()))
+                {
+                    ImGui::Selectable(nodeName.c_str());
+                    if (ImGui::IsItemActive() && ImGui::IsItemClicked())
+                    {
+                        previewSelected = nodeName;
+                        SPDLOG_INFO("SLECTED {}", nodeName);
+                        is_selected = true;
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        if (is_selected)
+        {
+            ImGui::CloseCurrentPopup();
+
+            NodeDescription selectedNodeDescription = s_nodeDescriptions.at(previewSelected);
+            Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode,
+                             selectedNodeDescription.m_nodeName);
                 // we must reserve the vector first; if not , the reallocation of std::vector will
                 // mess memory up
-                newNode.GetInputPorts().reserve(nodeDescription.m_inputPortNames.size());
-                newNode.GetOutputPorts().reserve(nodeDescription.m_outputPortNames.size());
+                newNode.GetInputPorts().reserve(selectedNodeDescription.m_inputPortNames.size());
+                newNode.GetOutputPorts().reserve(selectedNodeDescription.m_outputPortNames.size());
 
-                for (int index = 0; index < nodeDescription.m_inputPortNames.size(); ++index)
+                for (int index = 0; index < selectedNodeDescription.m_inputPortNames.size(); ++index)
                 {
                     InputPort newInport(m_portUidGenerator.AllocUniqueID(), index,
-                                        nodeDescription.m_inputPortNames[index]);
+                                        selectedNodeDescription.m_inputPortNames[index]);
                     newNode.AddInputPort(newInport);
                     m_inportPorts.emplace(newInport.GetPortUniqueId(),
                                           newNode.GetInputPort(newInport.GetPortUniqueId()));
                 }
 
-                for (int index = 0; index < nodeDescription.m_outputPortNames.size(); ++index)
+                for (int index = 0; index < selectedNodeDescription.m_outputPortNames.size(); ++index)
                 {
                     OutputPort newOutport(m_portUidGenerator.AllocUniqueID(), index,
-                                          nodeDescription.m_outputPortNames[index]);
+                                          selectedNodeDescription.m_outputPortNames[index]);
                     newNode.AddOutputPort(newOutport);
                     m_outportPorts.emplace(newOutport.GetPortUniqueId(),
                                            newNode.GetOutputPort(newOutport.GetPortUniqueId()));
@@ -124,13 +159,10 @@ void NodeEditor::HandleAddNodes()
 
                 ImNodes::SetNodeScreenSpacePos(newNode.GetNodeUniqueId(), click_pos);
 
-                const auto& iterRet =
-                    m_nodes.insert({newNode.GetNodeUniqueId(), std::move(newNode)});
-                if (!iterRet.second)
+                if (!m_nodes.insert({newNode.GetNodeUniqueId(), std::move(newNode)}).second)
                 {
                     SPDLOG_ERROR("insert new node fail! check it out!");
                 }
-            }
         }
 
         ImGui::EndPopup();
