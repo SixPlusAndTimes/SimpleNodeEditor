@@ -117,16 +117,17 @@ void NodeEditor::HandleAddNodes()
                     ImGui::Selectable(nodeName.c_str());
                     if (ImGui::IsItemActive() && ImGui::IsItemClicked())
                     {
+                        SPDLOG_INFO("User selected {}, will be added in canvas", nodeName);
                         previewSelected = nodeName;
-                        SPDLOG_INFO("SLECTED {}", nodeName);
                         is_selected = true;
-                        ImGui::CloseCurrentPopup();
+                        ImGui::CloseCurrentPopup(); // close Combo right now
                     }
                 }
             }
             ImGui::EndCombo();
         }
 
+        
         if (is_selected)
         {
             ImGui::CloseCurrentPopup();
@@ -161,7 +162,7 @@ void NodeEditor::HandleAddNodes()
 
                 if (!m_nodes.insert({newNode.GetNodeUniqueId(), std::move(newNode)}).second)
                 {
-                    SPDLOG_ERROR("insert new node fail! check it out!");
+                    SPDLOG_ERROR("insert new node fail! check it!");
                 }
         }
 
@@ -373,7 +374,7 @@ void NodeEditor::DeleteEdgeUidFromPort(EdgeUniqueId edgeUid)
 
 void NodeEditor::HandleDeletingEdges()
 {
-    // erase selected links
+    // if edges are selected and users pressed the X key, erase them 
     const int num_selected = ImNodes::NumSelectedLinks();
     if (num_selected > 0 && ImGui::IsKeyReleased(ImGuiKey_X))
     {
@@ -394,18 +395,36 @@ void NodeEditor::HandleDeletingEdges()
         }
     }
 
-    // if a link is detached from a pin of node, erase it
+    // if a link is detached from a pin of node, erase it (using ctrl + leftclikc and draggingc the pin of a edge)
     EdgeUniqueId detachedEdgeUId;
-    if (ImNodes::IsLinkDestroyed(&detachedEdgeUId)) // is this function usefull? in which situation?
+    if (ImNodes::IsLinkDestroyed(&detachedEdgeUId)) 
     {
-        SPDLOG_ERROR("destroyed link id{}", detachedEdgeUId);
-        m_edges.erase(detachedEdgeUId);
+        if (m_edges.count(detachedEdgeUId) != 0)
+        {
+            DeleteEdgeUidFromPort(detachedEdgeUId);
+            m_edges.erase(detachedEdgeUId);
+        }
+        else
+        {
+            SPDLOG_ERROR("cannot find edge in m_edges, detachedEdgeUId = {}, check it!", detachedEdgeUId);
+        }
+        SPDLOG_INFO("dropped link id{}", detachedEdgeUId);
     }
 
-    // Edge::EdgeUniqueId dropedEdgeUId;
-    // if (ImNodes::IsLinkDropped(&dropedEdgeUId))  // is this api usefull?
+    // what about this situations, is it usefull ?
+    // EdgeUniqueId dropedEdgeUId;
+    // if (ImNodes::IsLinkDropped(&dropedEdgeUId))  
     // {
-    //     SPDLOG_ERROR("dropped link id{}", dropedEdgeUId);
+    //     if (m_edges.count(dropedEdgeUId) != 0)
+    //     {
+    //         DeleteEdgeUidFromPort(dropedEdgeUId);
+    //         m_edges.erase(dropedEdgeUId);
+    //     }
+    //     else
+    //     {
+    //         SPDLOG_ERROR("cannot find edge in m_edges, dropedEdgeUId = {}, check it!", dropedEdgeUId);
+    //     }
+    //     SPDLOG_INFO("dropped link id{}", dropedEdgeUId);
     // }
 }
 
