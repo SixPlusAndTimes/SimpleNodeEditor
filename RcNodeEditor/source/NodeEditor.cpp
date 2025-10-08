@@ -130,7 +130,7 @@ void NodeEditor::HandleAddNodes()
         
         if (is_selected)
         {
-            ImGui::CloseCurrentPopup();
+            ImGui::CloseCurrentPopup(); // close popup right now
 
             NodeDescription selectedNodeDescription = s_nodeDescriptions.at(previewSelected);
             Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode,
@@ -157,9 +157,17 @@ void NodeEditor::HandleAddNodes()
                     m_outportPorts.emplace(newOutport.GetPortUniqueId(),
                                            newNode.GetOutputPort(newOutport.GetPortUniqueId()));
                 }
-
+                
                 ImNodes::SetNodeScreenSpacePos(newNode.GetNodeUniqueId(), click_pos);
+                // add logs to understand the 3 types of coordinates
+                ImVec2 newNodeGridSpace  = ImNodes::GetNodeGridSpacePos(newNode.GetNodeUniqueId()); // imnode internal datastructure : ImNodeData::Origin , store the coordinates in grid space. The value of this coodinate may be negative or posive, and changed with editor panning events.
+                ImVec2 newNodeScreenSpace  = ImNodes::GetNodeScreenSpacePos(newNode.GetNodeUniqueId());  // defined by app window. the value of this coordinate is definately positive.
+                ImVec2 newNodeEditorSpace  = ImNodes::GetNodeEditorSpacePos(newNode.GetNodeUniqueId()); // just like a viewport coordination? the value of this coordinate is definetely positive .
 
+                SPDLOG_INFO("add new node, nodeuid = {}, girdspace = [{},{}], screenspace = [{},{}], editorspace = [{}, {}]", newNode.GetNodeUniqueId(), 
+                    newNodeGridSpace.x, newNodeGridSpace.y,
+                    newNodeScreenSpace.x, newNodeScreenSpace.y, 
+                    newNodeEditorSpace.x, newNodeEditorSpace.y);
                 if (!m_nodes.insert({newNode.GetNodeUniqueId(), std::move(newNode)}).second)
                 {
                     SPDLOG_ERROR("insert new node fail! check it!");
