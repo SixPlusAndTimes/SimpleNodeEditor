@@ -143,7 +143,7 @@ void NodeEditor::HandleAddNodes()
                 for (int index = 0; index < selectedNodeDescription.m_inputPortNames.size(); ++index)
                 {
                     InputPort newInport(m_portUidGenerator.AllocUniqueID(), index,
-                                        selectedNodeDescription.m_inputPortNames[index]);
+                                        selectedNodeDescription.m_inputPortNames[index], newNode.GetNodeUniqueId());
                     newNode.AddInputPort(newInport);
                     m_inportPorts.emplace(newInport.GetPortUniqueId(),
                                           newNode.GetInputPort(newInport.GetPortUniqueId()));
@@ -152,7 +152,7 @@ void NodeEditor::HandleAddNodes()
                 for (int index = 0; index < selectedNodeDescription.m_outputPortNames.size(); ++index)
                 {
                     OutputPort newOutport(m_portUidGenerator.AllocUniqueID(), index,
-                                          selectedNodeDescription.m_outputPortNames[index]);
+                                          selectedNodeDescription.m_outputPortNames[index], newNode.GetNodeUniqueId());
                     newNode.AddOutputPort(newOutport);
                     m_outportPorts.emplace(newOutport.GetPortUniqueId(),
                                            newNode.GetOutputPort(newOutport.GetPortUniqueId()));

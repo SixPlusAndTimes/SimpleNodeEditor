@@ -32,24 +32,26 @@ public: // type def
     using PortUPtr = std::unique_ptr<Port>;
 
 public:
-    Port(PortUniqueId portUid, PortId portId = 0, const std::string& name = "Unknown");
+    Port(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy);
     void SetPortname(const std::string& name);
     void SetPortId(PortId portId);
 
     std::string_view GetPortname() const;
     PortId           GetPortId() const;
     PortUniqueId     GetPortUniqueId() const;
+    NodeUniqueId     OwnedByNodeUid() const; // return the uid of the node that this port belongs to
 
 private:
     PortUniqueId m_portUid;
     PortId       m_portId;
     std::string  m_portName;
+    NodeUniqueId m_ownedByNodeUid;  // indicating which node the port belongs to
 };
 
 class InputPort : public Port
 {
 public:
-    InputPort(PortUniqueId portUid, PortId portId, const std::string& name);
+    InputPort(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy);
     void         SetEdgeUid(EdgeUniqueId);
     EdgeUniqueId GetEdgeUid();
 
@@ -60,7 +62,7 @@ private:
 class OutputPort : public Port
 {
 public:
-    OutputPort(PortUniqueId portUid, PortId portId, const std::string& name);
+    OutputPort(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy);
     void                       PushEdge(EdgeUniqueId);
     void                       DeletEdge(EdgeUniqueId);
     std::vector<EdgeUniqueId>& GetEdgeUids();
@@ -77,13 +79,18 @@ public:
 
 public:
     Edge(PortUniqueId sourcePortUid, PortUniqueId destinationPortUid, EdgeUniqueId edgeUid);
+    Edge(PortUniqueId sourcePortUid, NodeUniqueId sourceNodeUid, PortUniqueId destinationPortUid, NodeUniqueId destinationNodeUid, EdgeUniqueId edgeUid);
     EdgeUniqueId GetEdgeUniqueId() const;
     PortUniqueId GetSourcePortUid() const;
     PortUniqueId GetDestinationPortUid() const;
+    NodeUniqueId GetSourceNodeUid() const;
+    NodeUniqueId GetDestinationNodeUid() const;
 
 private:
     PortUniqueId m_srcPortUid;
+    NodeUniqueId m_srcNodeUid;
     PortUniqueId m_dstPortUid;
+    NodeUniqueId m_dstNodeUid;
     EdgeUniqueId m_edgeUid;
 };
 

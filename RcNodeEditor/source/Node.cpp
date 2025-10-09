@@ -2,8 +2,8 @@
 #include <algorithm>
 #include "spdlog/spdlog.h"
 
-Port::Port(PortUniqueId portUid, PortId portId, const std::string& name)
-    : m_portUid(portUid), m_portId(portId), m_portName(name)
+Port::Port(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy)
+    : m_portUid(portUid), m_portId(portId), m_portName(name), m_ownedByNodeUid(ownedBy)
 {
 }
 
@@ -31,8 +31,13 @@ PortUniqueId Port::GetPortUniqueId() const
     return m_portUid;
 }
 
-InputPort::InputPort(PortUniqueId portUid, PortId portId, const std::string& name)
-    : Port(portUid, portId, name), m_linkFrom(-1)
+NodeUniqueId Port::OwnedByNodeUid() const
+{
+    return m_ownedByNodeUid;
+}
+
+InputPort::InputPort(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy)
+    : Port(portUid, portId, name, ownedBy), m_linkFrom(-1)
 {
     SPDLOG_INFO("InputPort construced with portUid = {}, portId = {}, portName = {}, linkfrom = {}", portUid, portId, name, m_linkFrom);
 }
@@ -49,8 +54,8 @@ EdgeUniqueId InputPort::GetEdgeUid()
     return m_linkFrom;
 }
 
-OutputPort::OutputPort(PortUniqueId portUid, PortId portId, const std::string& name)
-    : Port(portUid, portId, name), m_linkTos()
+OutputPort::OutputPort(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy)
+    : Port(portUid, portId, name, ownedBy), m_linkTos()
 {
     SPDLOG_INFO("OutputPort construced with portUid = {}, portId = {}, portName = {}", portUid, portId, name);
 }
@@ -60,6 +65,10 @@ Edge::Edge(PortUniqueId sourcePortUid, PortUniqueId destinationPortUid, EdgeUniq
 {
 }
 
+Edge::Edge(PortUniqueId sourcePortUid, NodeUniqueId sourceNodeUid, PortUniqueId destinationPortUid, NodeUniqueId destinationNodeUid, EdgeUniqueId edgeUid)
+    : m_srcPortUid(sourcePortUid), m_srcNodeUid(sourceNodeUid), m_dstPortUid(destinationPortUid), m_dstNodeUid(destinationNodeUid), m_edgeUid(edgeUid)
+{
+}
 EdgeUniqueId Edge::GetEdgeUniqueId() const
 {
     return m_edgeUid;
@@ -73,6 +82,16 @@ PortUniqueId Edge::GetSourcePortUid() const
 PortUniqueId Edge::GetDestinationPortUid() const
 {
     return m_dstPortUid;
+}
+
+NodeUniqueId Edge::GetSourceNodeUid() const
+{
+    return m_srcNodeUid;
+}
+
+NodeUniqueId Edge::GetDestinationNodeUid() const
+{
+    return m_dstNodeUid;
 }
 
 Node::Node() : Node(-1, NodeType::Unknown, "Default") {}
