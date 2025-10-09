@@ -37,14 +37,26 @@ InputPort::InputPort(PortUniqueId portUid, PortId portId, const std::string& nam
     SPDLOG_INFO("InputPort construced with portUid = {}, portId = {}, portName = {}, linkfrom = {}", portUid, portId, name, m_linkFrom);
 }
 
+
+void InputPort::SetEdgeUid(EdgeUniqueId edgeUid)
+{
+    m_linkFrom = edgeUid;
+    SPDLOG_INFO("InputPort id = {}, setedgeuid = {}", GetPortUniqueId(), edgeUid);
+}
+
+EdgeUniqueId InputPort::GetEdgeUid()
+{
+    return m_linkFrom;
+}
+
 OutputPort::OutputPort(PortUniqueId portUid, PortId portId, const std::string& name)
     : Port(portUid, portId, name), m_linkTos()
 {
     SPDLOG_INFO("OutputPort construced with portUid = {}, portId = {}, portName = {}", portUid, portId, name);
 }
 
-Edge::Edge(PortUniqueId inputPortUid, PortUniqueId outputPortUid, EdgeUniqueId edgeUid)
-    : m_inputPortUid(inputPortUid), m_outputPortUid(outputPortUid), m_edgeUid(edgeUid)
+Edge::Edge(PortUniqueId sourcePortUid, PortUniqueId destinationPortUid, EdgeUniqueId edgeUid)
+    : m_srcPortUid(sourcePortUid), m_dstPortUid(destinationPortUid), m_edgeUid(edgeUid)
 {
 }
 
@@ -53,14 +65,14 @@ EdgeUniqueId Edge::GetEdgeUniqueId() const
     return m_edgeUid;
 }
 
-PortUniqueId Edge::GetInputPortUid() const
+PortUniqueId Edge::GetSourcePortUid() const
 {
-    return m_inputPortUid;
+    return m_srcPortUid;
 }
 
-PortUniqueId Edge::GetOutputPortUid() const
+PortUniqueId Edge::GetDestinationPortUid() const
 {
-    return m_outputPortUid;
+    return m_dstPortUid;
 }
 
 Node::Node() : Node(-1, NodeType::Unknown, "Default") {}
@@ -125,17 +137,6 @@ InputPort* Node::GetInputPort(PortUniqueId portUid)
 
     SPDLOG_ERROR("Can not find portUid = {} in Nodeuid = {}, check it!", portUid, m_nodeUid);
     return nullptr;
-}
-
-void InputPort::SetEdgeUid(EdgeUniqueId edgeUid)
-{
-    m_linkFrom = edgeUid;
-    SPDLOG_INFO("InputPort id = {}, setedgeuid = {}", GetPortUniqueId(), edgeUid);
-}
-
-EdgeUniqueId InputPort::GetEdgeUid()
-{
-    return m_linkFrom;
 }
 
 std::vector<OutputPort>& Node::GetOutputPorts()

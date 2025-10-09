@@ -296,7 +296,7 @@ void NodeEditor::ShowEdges()
 {
     for (const auto& [edgeUid, edge] : m_edges)
     {
-        ImNodes::Link(edge.GetEdgeUniqueId(), edge.GetInputPortUid(), edge.GetOutputPortUid());
+        ImNodes::Link(edge.GetEdgeUniqueId(), edge.GetSourcePortUid(), edge.GetDestinationPortUid());
     }
 }
 
@@ -354,24 +354,24 @@ void NodeEditor::DeleteEdgeUidFromPort(EdgeUniqueId edgeUid)
     if (iterEdge != m_edges.end())
     {
         Edge& edge = iterEdge->second;
-        if (m_outportPorts.count(edge.GetInputPortUid()))
+        if (m_outportPorts.count(edge.GetSourcePortUid()))
         {
-            m_outportPorts[edge.GetInputPortUid()]->DeletEdge(edgeUid);
+            m_outportPorts[edge.GetSourcePortUid()]->DeletEdge(edgeUid);
         }
         else
         {
             SPDLOG_ERROR("cannot find inports in m_outportPorts inportUid = {}",
-                         edge.GetInputPortUid());
+                         edge.GetSourcePortUid());
         }
 
-        if (m_inportPorts.count(edge.GetOutputPortUid()))
+        if (m_inportPorts.count(edge.GetDestinationPortUid()))
         {
-            m_inportPorts[edge.GetOutputPortUid()]->SetEdgeUid(-1);
+            m_inportPorts[edge.GetDestinationPortUid()]->SetEdgeUid(-1);
         }
         else
         {
             SPDLOG_ERROR("cannot find inports in m_inportPorts outputid = {}",
-                         edge.GetOutputPortUid());
+                         edge.GetDestinationPortUid());
         }
     }
     else
@@ -468,4 +468,13 @@ void NodeEditor::NodeEditorShow()
     ImGui::End();
 }
 
-void NodeEditor::NodeEditorDestroy() {}
+void NodeEditor::SaveState()
+{
+    ImNodes::SaveCurrentEditorStateToIniFile("resource/savedstates.ini");
+
+}
+
+void NodeEditor::NodeEditorDestroy() 
+{
+    SaveState();
+}

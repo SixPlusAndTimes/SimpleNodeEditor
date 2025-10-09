@@ -174,8 +174,6 @@ int main(int, char**)
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        // example::NodeEditorShow();
-
         nodeEditor.NodeEditorShow();
         // Rendering
         ImGui::Render();
