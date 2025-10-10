@@ -139,6 +139,11 @@ const std::string_view Node::GetNodeTitle() const
     return m_nodeTitle;
 }
 
+const std::vector<InputPort>& Node::GetInputPorts() const
+{
+    return m_inputPorts;
+}
+
 std::vector<InputPort>& Node::GetInputPorts()
 {
     return m_inputPorts;
@@ -158,7 +163,12 @@ InputPort* Node::GetInputPort(PortUniqueId portUid)
     return nullptr;
 }
 
-std::vector<OutputPort>& Node::GetOutputPorts()
+const std::vector<OutputPort>& Node::GetOutputPorts() const
+{
+    return m_outputPorts;
+}
+
+std::vector<OutputPort>& Node::GetOutputPorts() 
 {
     return m_outputPorts;
 }
@@ -180,7 +190,7 @@ void OutputPort::DeletEdge(EdgeUniqueId edgeUid)
     }
 }
 
-std::vector<EdgeUniqueId>& OutputPort::GetEdgeUids()
+const std::vector<EdgeUniqueId>& OutputPort::GetEdgeUids() const
 {
     return m_linkTos;
 }

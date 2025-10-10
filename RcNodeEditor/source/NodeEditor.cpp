@@ -3,6 +3,7 @@
 #include "imgui_internal.h"
 #include "spdlog/spdlog.h"
 #include <cstdint>
+#include "Helpers.h"
 
 
 static std::unordered_map<std::string, NodeDescription> s_nodeDescriptions;
@@ -24,6 +25,7 @@ NodeEditor::NodeEditor()
     {
         s_nodeDescriptions.emplace(nodeD.m_nodeName, std::move(nodeD));
     }
+
 }
 
 void DebugDrawRect(ImRect rect)
@@ -477,4 +479,6 @@ void NodeEditor::SaveState()
 void NodeEditor::NodeEditorDestroy() 
 {
     SaveState();
+    // test for toposort
+    TopologicalSort(m_nodes, m_edges);
 }

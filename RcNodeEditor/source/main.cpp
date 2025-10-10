@@ -1,5 +1,3 @@
-#include "node_editor.h"
-
 #include <iostream>
 #include <yaml-cpp/yaml.h>
 #include <imgui.h>

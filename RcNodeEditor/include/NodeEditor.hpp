@@ -2,7 +2,7 @@
 #define NODEEDITOR_H
 #include "Node.hpp"
 #include "imnodes.h"
-#include "NodeDescription.h"
+#include "NodeDescription.hpp"
 
 class NodeEditor
 {
@@ -28,10 +28,10 @@ private:
 private:
     std::unordered_map<NodeUniqueId, Node> m_nodes; // store nodes that will be rendered on canvas
 
-    std::unordered_map<EdgeUniqueId, Edge> m_edges;
+    std::unordered_map<EdgeUniqueId, Edge> m_edges; // store edges that will be rendered on canvas
 
-    std::unordered_map<PortUniqueId, InputPort*>  m_inportPorts;
-    std::unordered_map<PortUniqueId, OutputPort*> m_outportPorts;
+    std::unordered_map<PortUniqueId, InputPort*>  m_inportPorts; // hold pointers to ports which actually owned by Nodes
+    std::unordered_map<PortUniqueId, OutputPort*> m_outportPorts; 
 
     // uniqueid generators
     UniqueIdGenerator<NodeUniqueId> m_nodeUidGenerator;

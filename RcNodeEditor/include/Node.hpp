@@ -65,7 +65,7 @@ public:
     OutputPort(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy);
     void                       PushEdge(EdgeUniqueId);
     void                       DeletEdge(EdgeUniqueId);
-    std::vector<EdgeUniqueId>& GetEdgeUids();
+    const std::vector<EdgeUniqueId>& GetEdgeUids() const;
     void                       ClearEdges();
 
 private:
@@ -117,11 +117,12 @@ public:
     void                     SetNodeTitle(const std::string& nodeTitle);
     const std::string_view   GetNodeTitle() const;
     NodeUniqueId             GetNodeUniqueId() const;
+    const std::vector<InputPort>&  GetInputPorts() const;
+    const std::vector<OutputPort>& GetOutputPorts() const;
     std::vector<InputPort>&  GetInputPorts();
     std::vector<OutputPort>& GetOutputPorts();
     InputPort*               GetInputPort(PortUniqueId portUid);
     OutputPort*              GetOutputPort(PortUniqueId portUid);
-
 private:
     // imnode lib need nodeuid to differentiate between nodes
     NodeUniqueId            m_nodeUid;
