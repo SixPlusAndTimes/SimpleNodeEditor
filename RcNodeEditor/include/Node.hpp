@@ -85,6 +85,8 @@ public:
     PortUniqueId GetDestinationPortUid() const;
     NodeUniqueId GetSourceNodeUid() const;
     NodeUniqueId GetDestinationNodeUid() const;
+    void SetSourceNodeUid(NodeUniqueId nodeUid);
+    void SetDestinationNodeUid(NodeUniqueId nodeUid);
 
 private:
     PortUniqueId m_srcPortUid;

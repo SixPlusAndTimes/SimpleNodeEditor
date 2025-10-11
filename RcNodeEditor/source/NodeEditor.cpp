@@ -268,6 +268,7 @@ void NodeEditor::HandleAddEdges()
         {
             InputPort& inputPort = *m_inportPorts[endPortId];
             inputPort.SetEdgeUid(newEdge.GetEdgeUniqueId());
+            newEdge.SetDestinationNodeUid(inputPort.OwnedByNodeUid());
         }
         else
         {
@@ -282,6 +283,7 @@ void NodeEditor::HandleAddEdges()
         {
             OutputPort& outpurPort = *m_outportPorts[startPortId];
             outpurPort.PushEdge(newEdge.GetEdgeUniqueId());
+            newEdge.SetSourceNodeUid(outpurPort.OwnedByNodeUid());
         }
         else
         {

@@ -74,6 +74,17 @@ EdgeUniqueId Edge::GetEdgeUniqueId() const
     return m_edgeUid;
 }
 
+void Edge::SetSourceNodeUid(NodeUniqueId nodeUid)
+{
+    m_srcNodeUid = nodeUid;
+}
+
+void Edge::SetDestinationNodeUid(NodeUniqueId nodeUid)
+{
+    m_dstNodeUid = nodeUid;
+}
+
+
 PortUniqueId Edge::GetSourcePortUid() const
 {
     return m_srcPortUid;
