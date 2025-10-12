@@ -105,7 +105,7 @@ NodeUniqueId Edge::GetDestinationNodeUid() const
     return m_dstNodeUid;
 }
 
-Node::Node() : Node(-1, NodeType::Unknown, "Default") {}
+// Node::Node() : Node(-1, NodeType::Unknown, "Default") {}
 
 Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle, float nodeWidth)
     : m_nodeUid(nodeUid),

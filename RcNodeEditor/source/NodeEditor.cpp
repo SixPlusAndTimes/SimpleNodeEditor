@@ -300,7 +300,7 @@ void NodeEditor::ShowEdges()
 {
     for (const auto& [edgeUid, edge] : m_edges)
     {
-        ImNodes::Link(edge.GetEdgeUniqueId(), edge.GetSourcePortUid(), edge.GetDestinationPortUid());
+        ImNodes::Link(edgeUid, edge.GetSourcePortUid(), edge.GetDestinationPortUid());
     }
 }
 
@@ -312,7 +312,8 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid)
         return;
     }
 
-    Node& node = m_nodes[nodeUid]; // implies that Node has a default constructor
+    // Node& node = m_nodes[nodeUid]; // require that Node has a default constructor
+    Node& node = m_nodes.at(nodeUid); // require that Node has a default constructor
     for (InputPort& inPort : node.GetInputPorts())
     {
         m_edges.erase(inPort.GetEdgeUid());
@@ -442,7 +443,6 @@ void NodeEditor::HandleDeletingEdges()
 
 void NodeEditor::NodeEditorShow()
 {
-    // Update timer context
     auto flags = ImGuiWindowFlags_MenuBar;
 
     // The node editor window
@@ -481,6 +481,7 @@ void NodeEditor::SaveState()
 void NodeEditor::NodeEditorDestroy() 
 {
     SaveState();
+
     // test for toposort
     TopologicalSort(m_nodes, m_edges);
 }

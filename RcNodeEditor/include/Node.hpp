@@ -110,7 +110,7 @@ public: // type def
     using NodeYamlId = int32_t;
 
 public:
-    Node();
+    // Node();
     Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle,
          float nodeWidth = 100.f);
     void                     SetNodePosition(const ImVec2& pos);

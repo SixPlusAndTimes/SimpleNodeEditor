@@ -43,10 +43,8 @@ std::vector<std::vector<NodeUniqueId>> TopologicalSort(std::unordered_map<NodeUn
 
         for (NodeUniqueId zeroDegreeNodeUid : zeroDegreeNodes)
         {
-            const std::vector<OutputPort>& outputPorts = nodesMap.at(zeroDegreeNodeUid).GetOutputPorts();
-            for (const OutputPort outPort : outputPorts)
+            for (const OutputPort outPort : nodesMap.at(zeroDegreeNodeUid).GetOutputPorts())
             {
-               const std::vector<EdgeUniqueId>& outEdgeUids = outPort.GetEdgeUids();
                 for (const EdgeUniqueId outEdgeUid : outPort.GetEdgeUids())
                 {
                     NodeUniqueId decDegreeNodeUid = edgesMap.at(outEdgeUid).GetDestinationNodeUid();
