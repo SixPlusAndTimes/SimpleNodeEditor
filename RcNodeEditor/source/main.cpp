@@ -1,5 +1,4 @@
 #include <iostream>
-#include <yaml-cpp/yaml.h>
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_opengl3.h>
@@ -17,23 +16,14 @@
 #include "spdlog/sinks/stdout_sinks.h"
 
 #include "NodeEditor.hpp"
+#include "YamlParser.h"
 
 bool ConfigLogLevlel()
 {
-    YAML::Node config;
-    try {
-        config = YAML::LoadFile("./resource/config.yaml");
-    } catch (const YAML::BadFile& e) {
-        std::cerr << "Error: Could not open or parse config.yaml: " << e.what() << std::endl;
-        return false;
-    } catch (const YAML::ParserException& e) {
-        std::cerr << "Error parsing config.yaml: " << e.what() << std::endl;
-        return false;
-    }
+    ConfigParser configParser("./resource/config.yaml");
+    const std::string& loglevel = configParser.GetConfigValue<std::string>("loglevel");
 
-    std::string loglevel = config["loglevel"].as<std::string>();
     std::cout << "loglevel: " << loglevel << std::endl;
-
     spdlog::level::level_enum spdLogLevel = spdlog::level::info;
     if (loglevel == "info")
     {
@@ -54,28 +44,9 @@ bool ConfigLogLevlel()
     return true;
 }
 
-bool TestNodeDescriptionYamlParse()
-{
-    YAML::Node nodeDescription;
-    try {
-        nodeDescription = YAML::LoadFile("./resource/NodeDescriptions.yaml");
-    } catch (const YAML::BadFile& e) {
-        std::cerr << "Error: Could not open or parse config.yaml: " << e.what() << std::endl;
-        return false;
-    } catch (const YAML::ParserException& e) {
-        std::cerr << "Error parsing config.yaml: " << e.what() << std::endl;
-        return false;
-    }
-
-    return true;
-}
 
 int main(int, char**)
 {
-    if (!TestNodeDescriptionYamlParse())
-    {
-        SPDLOG_ERROR("TestNodeDescriptionYamlParse failed!");
-    }
 
     if (!ConfigLogLevlel()) 
     {
