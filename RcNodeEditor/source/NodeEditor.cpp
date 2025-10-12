@@ -4,6 +4,7 @@
 #include "spdlog/spdlog.h"
 #include <cstdint>
 #include "Helpers.h"
+#include "YamlParser.h"
 
 
 static std::unordered_map<std::string, NodeDescription> s_nodeDescriptions;
@@ -18,9 +19,9 @@ NodeEditor::NodeEditor()
       m_edgeUidGenerator(),
       m_minimap_location(ImNodesMiniMapLocation_BottomRight)
 {
-    NodeDescriptionParser nodeParser;
-    // TODO: file name may be a constant value
-    std::vector<NodeDescription> nodeDescriptions =  nodeParser.ParseNodeDescriptions("./resource/NodeDescriptions.yaml");
+    // TODO: file path may be a constant value or configed in Config.yaml?
+    NodeDescriptionParser nodeParser("./resource/NodeDescriptions.yaml");
+    std::vector<NodeDescription> nodeDescriptions =  nodeParser.ParseNodeDescriptions();
     for (const auto& nodeD : nodeDescriptions)
     {
         s_nodeDescriptions.emplace(nodeD.m_nodeName, std::move(nodeD));

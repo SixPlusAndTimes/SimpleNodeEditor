@@ -2,6 +2,8 @@
 #define YAMLPARSER_H
 #include <string>
 #include <yaml-cpp/yaml.h>
+#include "NodeDescription.hpp"
+
 class YamlParser
 {
 public:
@@ -23,7 +25,7 @@ public:
     {
         if (!m_rootNode)
         {
-            SPDLOG_ERROR("rootNode is not invalid", key);
+            SPDLOG_ERROR("rootNode is not invalid");
             return T();
         }
 
@@ -38,7 +40,15 @@ public:
         }
         
     }
-private:
+};
+
+class NodeDescriptionParser : public YamlParser
+{
+
+public:
+    NodeDescriptionParser(const std::string& filePath);
+    std::vector<NodeDescription> ParseNodeDescriptions();
+
 };
 
 #endif // YAMLPARSER_H
