@@ -3,15 +3,37 @@
 #include <string>
 #include <yaml-cpp/yaml.h>
 #include "NodeDescription.hpp"
+#include "Node.hpp"
+
+namespace YAML {
+template<>
+struct convert<::Node> {
+  static YAML::Node encode(const ::Node& rhs) {
+    Node node;
+    node.force_insert("NodeName", rhs.GetNodeTitle());
+    node.force_insert("NodeId", rhs.GetNodeYamlId());
+    return node;
+  }
+
+  static bool decode(const Node& node, ::Node& rhs) {
+    if(!node.IsMap()) {
+      return false;
+    }
+    rhs.SetNodeTitle(node["NodeName"].as<std::string>());
+    rhs.SetNodeYamlId(node["NodeId"].as<::Node::NodeYamlId>());
+    return true;
+  }
+};
+}
 
 class YamlParser
 {
 public:
-    YamlParser();
 protected:
     [[nodiscard]] virtual bool LoadFile(const std::string& filePath);
     YAML::Node m_rootNode;
 private:
+    std::string_view m_filePath;
 };
 
 class ConfigParser : public YamlParser
@@ -51,6 +73,14 @@ public:
 
 class PipelineParser : public YamlParser
 {
+public:
+    PipelineParser(const std::vector<NodeDescription>& nodeDescriptions);
+    std::vector<Node> ParseNodes(const std::string& filePath);
+    std::vector<Edge> parseEdges(const std::string& filePath);
+private:
+    const std::vector<NodeDescription>& m_nodeDescriptions;
 
+    YAML::Node m_nodesNode;
+    YAML::Node m_edgesNode;
 };
 #endif // YAMLPARSER_H

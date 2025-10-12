@@ -4,7 +4,7 @@
 #include "spdlog/spdlog.h"
 #include <cstdint>
 #include "Helpers.h"
-#include "YamlParser.h"
+#include "YamlParser.hpp"
 
 
 static std::unordered_map<std::string, NodeDescription> s_nodeDescriptions;

@@ -1,15 +1,18 @@
 #include "spdlog/spdlog.h"
-#include "YamlParser.h"
-
-YamlParser::YamlParser()
-{
-}
+#include "YamlParser.hpp"
 
 bool YamlParser::LoadFile(const std::string& filePath)
 {
     m_rootNode = YAML::LoadFile(filePath);
-
-    return !m_rootNode ? false : true;
+    if (m_rootNode)
+    {
+        m_filePath = filePath;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 ConfigParser::ConfigParser(const std::string& filePath)
@@ -101,4 +104,53 @@ std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()
     }
 
     return ret;
+}
+
+PipelineParser::PipelineParser(const std::vector<NodeDescription>& nodeDescriptions)
+: m_nodeDescriptions(nodeDescriptions)
+{
+
+}
+
+// TODO : "Nodes" "Links" may be const value or be configed beforec compile
+std::vector<Node> PipelineParser::ParseNodes(const std::string& filePath)
+{
+    std::vector<Node> result;
+    if (!LoadFile(filePath))
+    {
+        SPDLOG_ERROR("PipelineParser LoadFile failed, filePath = {}", filePath);
+        return result;
+    }
+
+    if (m_rootNode["Nodes"] && m_rootNode["Nodes"].IsSequence())
+    {
+        m_nodesNode = m_rootNode["Nodes"];
+    }
+    else 
+    {
+        SPDLOG_ERROR("file {} has no valid Node sequence, check it", filePath);
+    }
+
+    return result;
+}
+
+std::vector<Edge> PipelineParser::parseEdges(const std::string& filePath)
+{
+    std::vector<Edge> result;
+    if (!LoadFile(filePath))
+    {
+        SPDLOG_ERROR("PipelineParser LoadFile failed, filePath = {}", filePath);
+        return result;
+    }
+
+    if (m_rootNode["Links"] && m_rootNode["Links"].IsSequence())
+    {
+        m_edgesNode = m_rootNode["Links"];
+    }
+    else 
+    {
+        SPDLOG_ERROR("file {} has no valid Node sequence, check it", filePath);
+    }
+
+    return result;
 }

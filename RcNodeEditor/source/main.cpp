@@ -16,7 +16,7 @@
 #include "spdlog/sinks/stdout_sinks.h"
 
 #include "NodeEditor.hpp"
-#include "YamlParser.h"
+#include "YamlParser.hpp"
 
 bool ConfigLogLevlel()
 {
