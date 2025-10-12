@@ -4,6 +4,9 @@
 #include "imnodes.h"
 #include "NodeDescription.hpp"
 
+namespace SimpleNodeEditor
+{
+    
 class NodeEditor
 {
 public:
@@ -42,5 +45,7 @@ private:
 
     std::vector<NodeDescription>    m_nodeDescriptions;
 };
+} // namespace SimpleNodeEditor
+
 
 #endif // NODEEDITOR_H

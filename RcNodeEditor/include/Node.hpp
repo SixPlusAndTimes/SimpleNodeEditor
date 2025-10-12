@@ -9,6 +9,9 @@
 #include <vector>
 #include <string>
 
+namespace SimpleNodeEditor
+{
+    
 template <typename T>
 struct UniqueIdGenerator
 {
@@ -140,5 +143,7 @@ private:
     std::vector<InputPort>  m_inputPorts;
     std::vector<OutputPort> m_outputPorts;
 };
+} // namespace SimpleNodeEditor
+
 
 #endif // NODE_H

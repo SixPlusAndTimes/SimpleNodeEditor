@@ -7,6 +7,9 @@
 #include "YamlParser.hpp"
 
 
+namespace SimpleNodeEditor
+{
+    
 static std::unordered_map<std::string, NodeDescription> s_nodeDescriptions;
 
 NodeEditor::NodeEditor()
@@ -486,3 +489,4 @@ void NodeEditor::NodeEditorDestroy()
     // test for toposort
     TopologicalSort(m_nodes, m_edges);
 }
+} // namespace SimpleNodeEditor

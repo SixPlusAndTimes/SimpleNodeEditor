@@ -7,24 +7,29 @@
 
 namespace YAML {
 template<>
-struct convert<::Node> {
-  static YAML::Node encode(const ::Node& rhs) {
+struct convert<SimpleNodeEditor::Node> {
+  static YAML::Node encode(const SimpleNodeEditor::Node& rhs) {
     Node node;
     node.force_insert("NodeName", rhs.GetNodeTitle());
     node.force_insert("NodeId", rhs.GetNodeYamlId());
     return node;
   }
 
-  static bool decode(const Node& node, ::Node& rhs) {
+  static bool decode(const Node& node, SimpleNodeEditor::Node& rhs) {
     if(!node.IsMap()) {
       return false;
     }
     rhs.SetNodeTitle(node["NodeName"].as<std::string>());
-    rhs.SetNodeYamlId(node["NodeId"].as<::Node::NodeYamlId>());
+    rhs.SetNodeYamlId(node["NodeId"].as<SimpleNodeEditor::Node::NodeYamlId>());
     return true;
   }
 };
+
 }
+
+
+namespace SimpleNodeEditor
+{
 
 class YamlParser
 {
@@ -83,4 +88,6 @@ private:
     YAML::Node m_nodesNode;
     YAML::Node m_edgesNode;
 };
+} // namespace SimpleNodeEditor
+
 #endif // YAMLPARSER_H

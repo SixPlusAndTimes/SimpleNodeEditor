@@ -1,7 +1,9 @@
 #include "Node.hpp"
 #include <algorithm>
 #include "spdlog/spdlog.h"
-
+namespace SimpleNodeEditor
+{
+    
 Port::Port(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy)
     : m_portUid(portUid), m_portId(portId), m_portName(name), m_ownedByNodeUid(ownedBy)
 {
@@ -250,3 +252,5 @@ OutputPort* Node::GetOutputPort(PortUniqueId portUid)
         return nullptr;
     }
 }
+} // namespace SimpleNodeEditor
+

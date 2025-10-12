@@ -5,6 +5,8 @@
 #include "Node.hpp"
 #include "spdlog/spdlog.h"
 
+namespace SimpleNodeEditor{
+
 std::vector<std::vector<NodeUniqueId>> TopologicalSort(std::unordered_map<NodeUniqueId, Node>& nodesMap, std::unordered_map<EdgeUniqueId, Edge>& edgesMap)
 {
     std::vector<std::vector<NodeUniqueId>> result;
@@ -72,5 +74,7 @@ std::vector<std::vector<NodeUniqueId>> TopologicalSort(std::unordered_map<NodeUn
 
     return result;
 }
+
+} //end namespace SimpleNodeEditor
 
 #endif // HELPERS_H

@@ -18,9 +18,10 @@
 #include "NodeEditor.hpp"
 #include "YamlParser.hpp"
 
+
 bool ConfigLogLevlel()
 {
-    ConfigParser configParser("./resource/config.yaml");
+    SimpleNodeEditor::ConfigParser configParser("./resource/config.yaml");
     const std::string& loglevel = configParser.GetConfigValue<std::string>("loglevel");
 
     std::cout << "loglevel: " << loglevel << std::endl;
@@ -108,7 +109,7 @@ int main(int, char**)
     (void)io;
 
     ImNodes::CreateContext();
-    NodeEditor nodeEditor;
+    SimpleNodeEditor::NodeEditor nodeEditor;
     nodeEditor.NodeEditorInitialize();
     // example::NodeEditorInitialize();
 

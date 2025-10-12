@@ -1,6 +1,9 @@
 #include "spdlog/spdlog.h"
 #include "YamlParser.hpp"
 
+namespace SimpleNodeEditor
+{
+    
 bool YamlParser::LoadFile(const std::string& filePath)
 {
     m_rootNode = YAML::LoadFile(filePath);
@@ -14,6 +17,7 @@ bool YamlParser::LoadFile(const std::string& filePath)
         return false;
     }
 }
+
 
 ConfigParser::ConfigParser(const std::string& filePath)
 {
@@ -154,3 +158,5 @@ std::vector<Edge> PipelineParser::parseEdges(const std::string& filePath)
 
     return result;
 }
+} // namespace SimpleNodeEditor
+
