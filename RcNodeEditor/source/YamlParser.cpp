@@ -1,40 +1,39 @@
 #include "spdlog/spdlog.h"
 #include "YamlParser.h"
 
-YamlParser::YamlParser(const std::string& filePath)
-:m_filePath(filePath)
+YamlParser::YamlParser()
 {
-    if (LoadFile(m_filePath.data()))
-    {
-        SPDLOG_INFO("LoadYaml file success : {}", filePath);
-    }
-    else 
-    {
-        SPDLOG_ERROR("LoadYaml file failed : {}", filePath);
-    }
 }
 
 bool YamlParser::LoadFile(const std::string& filePath)
 {
-    try {
-        m_rootNode = YAML::LoadFile(filePath);
-    } catch (const std::runtime_error& e) {
-        SPDLOG_ERROR("LoadFile exception : {}", e.what());
-    }
+    m_rootNode = YAML::LoadFile(filePath);
 
-    return true;
+    return !m_rootNode ? false : true;
 }
 
 ConfigParser::ConfigParser(const std::string& filePath)
-: YamlParser(filePath)
 {
-
+    if (LoadFile(filePath))
+    {
+        SPDLOG_INFO("ConfigParser LoadFile success : {}", filePath);
+    }
+    else 
+    {
+        SPDLOG_ERROR("ConfigParser failed : {}", filePath);
+    }
 }
 
 NodeDescriptionParser::NodeDescriptionParser(const std::string& filePath)
-: YamlParser(filePath)
 {
-
+    if (LoadFile(filePath))
+    {
+        SPDLOG_INFO("NodeDescriptionParser LoadFile success : {}", filePath);
+    }
+    else 
+    {
+        SPDLOG_ERROR("ConfigParser LoadFile failed : {}", filePath);
+    }
 }
 
 std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()

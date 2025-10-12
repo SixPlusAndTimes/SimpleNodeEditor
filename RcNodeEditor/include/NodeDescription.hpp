@@ -2,7 +2,7 @@
 #define NODEDESCRIPTION_H
 #include <string>
 #include <vector>
-
+// NodeDescription is store in yaml file, we need parse it, see YamlParser::NodeDescriptionParser
 struct NodeDescription
 {
     std::string m_nodeName;

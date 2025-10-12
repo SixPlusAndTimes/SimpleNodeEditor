@@ -7,12 +7,11 @@
 class YamlParser
 {
 public:
-    YamlParser(const std::string& filePath);
-private:
-    [[nodiscard]] bool LoadFile(const std::string& filePath);
+    YamlParser();
 protected:
-    std::string_view m_filePath;
+    [[nodiscard]] virtual bool LoadFile(const std::string& filePath);
     YAML::Node m_rootNode;
+private:
 };
 
 class ConfigParser : public YamlParser
@@ -48,7 +47,10 @@ class NodeDescriptionParser : public YamlParser
 public:
     NodeDescriptionParser(const std::string& filePath);
     std::vector<NodeDescription> ParseNodeDescriptions();
-
 };
 
+class PipelineParser : public YamlParser
+{
+
+};
 #endif // YAMLPARSER_H
