@@ -112,32 +112,33 @@ NodeUniqueId Edge::GetDestinationNodeUid() const
 Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle, float nodeWidth)
     : m_nodeUid(nodeUid),
       m_nodeType(nodeType),
-      m_nodeYamlId(-1),
       m_nodeWidth(nodeWidth),
       m_nodeTitle(nodeTitle),
       m_nodePos(),
       m_inputPorts(),
-      m_outputPorts()
+      m_outputPorts(),
+      m_yamlNodeDescription()
 {
-    SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid, m_nodeYamlId, m_nodeTitle);
+    SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid, m_yamlNodeDescription.m_nodeYamlId, m_nodeTitle);
 }
 
-Node::Node(NodeYamlId nodeYamlId, NodeType nodeType, float nodeWidth) 
+Node::Node(YamlNode::NodeYamlId nodeYamlId, NodeType nodeType, float nodeWidth) 
     : m_nodeUid(-1),
       m_nodeType(nodeType),
-      m_nodeYamlId(nodeYamlId),
       m_nodeWidth(nodeWidth),
       m_nodeTitle(),
       m_nodePos(),
       m_inputPorts(),
-      m_outputPorts()
+      m_outputPorts(),
+      m_yamlNodeDescription()
 {
-    SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid, m_nodeYamlId, m_nodeTitle);
+    m_yamlNodeDescription.m_nodeYamlId = nodeYamlId;
+    SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}",m_nodeUid, m_yamlNodeDescription.m_nodeYamlId, m_nodeTitle);
 }
 
-void Node::SetNodeYamlId(NodeYamlId nodeYamlId)
+void Node::SetNodeYamlId(YamlNode::NodeYamlId nodeYamlId)
 {
-    m_nodeYamlId = nodeYamlId;
+    m_yamlNodeDescription.m_nodeYamlId = nodeYamlId;
 }
 
 void Node::SetNodePosition(const ImVec2& pos)
@@ -170,9 +171,9 @@ const std::string_view Node::GetNodeTitle() const
     return m_nodeTitle;
 }
 
-Node::NodeYamlId Node::GetNodeYamlId() const
+YamlNode::NodeYamlId Node::GetNodeYamlId() const
 {
-    return m_nodeYamlId;
+    return m_yamlNodeDescription.m_nodeYamlId;
 }
 
 const std::vector<InputPort>& Node::GetInputPorts() const

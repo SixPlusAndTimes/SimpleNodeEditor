@@ -100,6 +100,24 @@ private:
     EdgeUniqueId m_edgeUid;
 };
 
+struct YamlPropertyDescription
+{
+    std::string m_propertyName;
+    std::string m_propertyValue;
+};
+
+struct YamlNode
+{
+    using NodeYamlId = int32_t;
+
+    YamlNode() : m_nodeName("Unknown"), m_nodeYamlId(-1), m_isSrcNode(false), m_Properties()
+    { }
+    std::string                             m_nodeName;
+    NodeYamlId                              m_nodeYamlId;
+    bool                                    m_isSrcNode;
+    std::vector<YamlPropertyDescription>    m_Properties;
+};
+
 class Node
 {
 public: // type def
@@ -111,16 +129,14 @@ public: // type def
         Unknown
     };
     using NodeUPtr   = std::unique_ptr<Node>;
-    using NodeYamlId = int32_t;
 
 public:
     // Node();
     Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle,
          float nodeWidth = 100.f);
-    Node(NodeYamlId nodeYamlId, NodeType nodeType, float nodeWidth = 100.f);
+    Node(YamlNode::NodeYamlId nodeYamlId, NodeType nodeType, float nodeWidth = 100.f);
     void                     SetNodePosition(const ImVec2& pos);
-    void                     SetNodeYamlId(NodeYamlId nodeYamlId);
-    NodeYamlId               GetNodeYamlId() const;
+
     void                     AddInputPort(const InputPort& inPort);
     void                     AddOutputPort(const OutputPort& ourPort);
     void                     SetNodeTitle(const std::string& nodeTitle);
@@ -132,16 +148,22 @@ public:
     std::vector<OutputPort>& GetOutputPorts();
     InputPort*               GetInputPort(PortUniqueId portUid);
     OutputPort*              GetOutputPort(PortUniqueId portUid);
+    
+    // yaml node related
+    void                     SetNodeYamlId(YamlNode::NodeYamlId nodeYamlId);
+    YamlNode::NodeYamlId     GetNodeYamlId() const;
 private:
     // imnode lib need nodeuid to differentiate between nodes
     NodeUniqueId            m_nodeUid;   // used for imnode to draw UI
     NodeType                m_nodeType;
-    NodeYamlId              m_nodeYamlId;
     float                   m_nodeWidth;
     std::string             m_nodeTitle; // nodetitle = nodename_in_nodedescription +  "_" + nodeid_in_yaml
     ImVec2                  m_nodePos;
     std::vector<InputPort>  m_inputPorts;
     std::vector<OutputPort> m_outputPorts;
+
+    // yaml node
+    YamlNode                m_yamlNodeDescription;
 };
 } // namespace SimpleNodeEditor
 

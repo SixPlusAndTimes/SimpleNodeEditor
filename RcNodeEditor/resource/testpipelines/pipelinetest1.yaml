@@ -1,49 +1,75 @@
-pipelinename : pipe1
-Nodes:
-  - 
-    NodeName : ggg
-    NodeId : 0
-  - 
-    NodeName: Select
-    NodeId : 1
-  - 
-    NodeName: ADD
-    NodeId : 2
-  - 
-    NodeName: ggg
-    NodeId: 3
-  - 
-    NodeName: Select
-    NodeId: 4
-  - 
-    NodeName: ggg
-    NodeId: 5
+Pipeline:
+- 
+  pipelinename : pipe1
+  NodesList:
+    - 
+      NodeName : ggg
+      NodeId : 0
+      IsSrcNode: 0
+      Properties:
+        - 
+          PropertyName: test
+          PropertyValue: "testpipe"
+    - 
+      NodeName: Select
+      NodeId : 1
+      IsSrcNode: 0
+    - 
+      NodeName: ADD
+      NodeId : 2
+      IsSrcNode: 0
+    - 
+      NodeName: ggg
+      NodeId: 3
+      IsSrcNode: 0
+    - 
+      NodeName: Select
+      NodeId: 4
+      IsSrcNode: 0
+    - 
+      NodeName: ggg
+      NodeId: 5
+      IsSrcNode: 0
 
-Links:
-  - 
-    SrcNode:  
-      - NodeName : ggg
-      - NodeId : 0
-      - PortId : 0
-    DstNode:
-      - NodeName: Select
-      - NodeId : 1
-      - PortId : 0
-  - 
-    SrcNode:
-      - NodeName: Select
-      - NodeId : 1
-      - PortId : 0
-    DstNode:
-      - NodeName: ADD
-      - NodeId : 2
-      - PortId : 0
-  - 
-    SrcNode:
-      - NodeName: ADD
-      - NodeId : 2
-      - PortId : 0
-    DstNode:
-      - NodeName: ggg
-      - NodeId : 3
-      - PortId : 0
+  LinkList:
+    - 
+      Srcport:
+        NodeName : ggg
+        NodeId : 0
+        PortName: output1
+        PortId : 0
+      DstNode:
+      - 
+        NodeName : Select
+        NodeId : 1
+        PortName: inputport1
+        PortId : 0
+      - 
+        NodeName: ADD
+        NodeId : 2
+        PortId : 0
+        PortName: inputport1
+    - 
+      SrcNode:
+        NodeName: Select
+        NodeId: 1
+        PortId: 0
+        PortName: outputport1
+      DstNode:
+      - 
+        NodeName: ADD
+        NodeId: 2
+        PortId: 0
+        PortName: inputport1
+    - 
+      SrcNode:
+        NodeName: ADD
+        NodeId: 2
+        PortId: 0
+        PortName: outputport1
+      DstNode:
+      - 
+        NodeName: ggg
+        NodeId: 3
+        PortId: 0
+        PortName: inputport1

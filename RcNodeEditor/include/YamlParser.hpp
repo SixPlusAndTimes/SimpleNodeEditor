@@ -7,25 +7,28 @@
 
 namespace YAML {
 template<>
-struct convert<SimpleNodeEditor::Node> {
-  static YAML::Node encode(const SimpleNodeEditor::Node& rhs) {
+struct convert<SimpleNodeEditor::YamlNode> {
+  static YAML::Node encode(const SimpleNodeEditor::YamlNode& rhs) 
+  {
     Node node;
-    node.force_insert("NodeName", rhs.GetNodeTitle());
-    node.force_insert("NodeId", rhs.GetNodeYamlId());
+    node.force_insert("NodeName", rhs.m_nodeName);
+    node.force_insert("NodeId", rhs.m_nodeYamlId);
+    node.force_insert("IsSrcNode", rhs.m_isSrcNode);
     return node;
   }
 
-  static bool decode(const Node& node, SimpleNodeEditor::Node& rhs) {
+  static bool decode(const Node& node, SimpleNodeEditor::Node& rhs) 
+  {
     if(!node.IsMap()) {
       return false;
     }
     rhs.SetNodeTitle(node["NodeName"].as<std::string>());
-    rhs.SetNodeYamlId(node["NodeId"].as<SimpleNodeEditor::Node::NodeYamlId>());
+    rhs.SetNodeYamlId(node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>());
     return true;
   }
 };
 
-}
+} // namespace YAML
 
 
 namespace SimpleNodeEditor
