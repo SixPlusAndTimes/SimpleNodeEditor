@@ -1,15 +1,11 @@
 Pipeline:
-- 
+-
   pipelinename : pipe1
-  NodesList:
+  NodeList:
     - 
       NodeName : ggg
       NodeId : 0
       IsSrcNode: 0
-      Properties:
-        - 
-          PropertyName: test
-          PropertyValue: "testpipe"
     - 
       NodeName: Select
       NodeId : 1

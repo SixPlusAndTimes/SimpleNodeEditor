@@ -30,6 +30,17 @@ NodeEditor::NodeEditor()
         s_nodeDescriptions.emplace(nodeD.m_nodeName, std::move(nodeD));
     }
 
+    std::string pipeLineYamlFileName = "./resource/testpipelines/pipelinetest1.yaml";
+    PipelineParser pipeLineParser;
+    if (pipeLineParser.LoadFile(pipeLineYamlFileName))
+    {
+        auto ret = pipeLineParser.ParseNodes();
+    }
+    else
+    {
+        SPDLOG_ERROR("pipelineparser loadfile failed, filename is [{}], check it!", pipeLineYamlFileName);
+    }
+
 }
 
 void DebugDrawRect(ImRect rect)

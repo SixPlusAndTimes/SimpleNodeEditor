@@ -10,20 +10,24 @@ template<>
 struct convert<SimpleNodeEditor::YamlNode> {
   static YAML::Node encode(const SimpleNodeEditor::YamlNode& rhs) 
   {
-    Node node;
+    YAML::Node node;
     node.force_insert("NodeName", rhs.m_nodeName);
     node.force_insert("NodeId", rhs.m_nodeYamlId);
     node.force_insert("IsSrcNode", rhs.m_isSrcNode);
     return node;
   }
 
-  static bool decode(const Node& node, SimpleNodeEditor::Node& rhs) 
+  static bool decode(const Node& node, SimpleNodeEditor::YamlNode& rhs) 
   {
     if(!node.IsMap()) {
       return false;
     }
-    rhs.SetNodeTitle(node["NodeName"].as<std::string>());
-    rhs.SetNodeYamlId(node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>());
+
+    rhs.m_nodeName = node["NodeName"].as<std::string>();
+    rhs.m_nodeYamlId = node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>();
+    rhs.m_isSrcNode = node["IsSrcNode"].as<int>();
+
+    SPDLOG_INFO("decode yamlnode success, nodename = [{}], nodeYamlId[{}], issourcenode[{}]", rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_isSrcNode);
     return true;
   }
 };
@@ -37,11 +41,12 @@ namespace SimpleNodeEditor
 class YamlParser
 {
 public:
-protected:
     [[nodiscard]] virtual bool LoadFile(const std::string& filePath);
+protected:
+
     YAML::Node m_rootNode;
-private:
     std::string_view m_filePath;
+private:
 };
 
 class ConfigParser : public YamlParser
@@ -82,15 +87,16 @@ public:
 class PipelineParser : public YamlParser
 {
 public:
-    PipelineParser(const std::vector<NodeDescription>& nodeDescriptions);
-    std::vector<Node> ParseNodes(const std::string& filePath);
-    std::vector<Edge> parseEdges(const std::string& filePath);
+    PipelineParser();
+    std::vector<YamlNode> ParseNodes();
+    [[nodiscard]] virtual bool LoadFile(const std::string& filePath);
+    
+    // std::vector<YamlEdge> parseEdges(const std::string& filePath);
 private:
-    const std::vector<NodeDescription>& m_nodeDescriptions;
-
-    YAML::Node m_nodesNode;
-    YAML::Node m_edgesNode;
+    YAML::Node m_nodeListNode;
+    YAML::Node m_edgeListNode;
 };
+
 } // namespace SimpleNodeEditor
 
 #endif // YAMLPARSER_H
