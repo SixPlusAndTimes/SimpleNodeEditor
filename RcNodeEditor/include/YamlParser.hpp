@@ -8,28 +8,71 @@
 namespace YAML {
 template<>
 struct convert<SimpleNodeEditor::YamlNode> {
-  static YAML::Node encode(const SimpleNodeEditor::YamlNode& rhs) 
-  {
-    YAML::Node node;
-    node.force_insert("NodeName", rhs.m_nodeName);
-    node.force_insert("NodeId", rhs.m_nodeYamlId);
-    node.force_insert("IsSrcNode", rhs.m_isSrcNode);
-    return node;
-  }
-
-  static bool decode(const Node& node, SimpleNodeEditor::YamlNode& rhs) 
-  {
-    if(!node.IsMap()) {
-      return false;
+    static YAML::Node encode(const SimpleNodeEditor::YamlNode& rhs) 
+    {
+        YAML::Node node;
+        node.force_insert("NodeName", rhs.m_nodeName);
+        node.force_insert("NodeId", rhs.m_nodeYamlId);
+        node.force_insert("IsSrcNode", rhs.m_isSrcNode);
+        return node;
     }
 
-    rhs.m_nodeName = node["NodeName"].as<std::string>();
-    rhs.m_nodeYamlId = node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>();
-    rhs.m_isSrcNode = node["IsSrcNode"].as<int>();
+    static bool decode(const Node& node, SimpleNodeEditor::YamlNode& rhs) 
+    {
+        if(!node.IsMap()) {
+        return false;
+        }
 
-    SPDLOG_INFO("decode yamlnode success, nodename = [{}], nodeYamlId[{}], issourcenode[{}]", rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_isSrcNode);
-    return true;
-  }
+        rhs.m_nodeName = node["NodeName"].as<std::string>();
+        rhs.m_nodeYamlId = node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>();
+        rhs.m_isSrcNode = node["IsSrcNode"].as<int>();
+
+        SPDLOG_INFO("decode yamlnode success, nodename = [{}], nodeYamlId[{}], issourcenode[{}]", rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_isSrcNode);
+        return true;
+    }
+};
+
+inline bool isInvalidKey(const Node& node, const std::string& key)
+{
+    return node[key] ? true : false;
+}
+
+template<>
+struct convert<SimpleNodeEditor::YamlPort> {
+    static YAML::Node encode(const SimpleNodeEditor::YamlPort& rhs) 
+    {
+        YAML::Node node;
+        node.force_insert("NodeName", rhs.m_nodeName);
+        node.force_insert("NodeId", rhs.m_nodeYamlId);
+        node.force_insert("PortName", rhs.m_portName);
+        node.force_insert("PortId", rhs.m_portYamlId);
+        return node;
+    }
+
+    static bool decode(const Node& node, SimpleNodeEditor::YamlPort& rhs) 
+    {
+        if(!node.IsMap()) {
+            return false;
+        }
+
+        if (isInvalidKey(node, "NodeName") && isInvalidKey(node, "NodeId") && isInvalidKey(node, "PortName") && isInvalidKey(node, "PortId")) 
+        {
+            rhs.m_nodeName = node["NodeName"].as<std::string>();
+            rhs.m_nodeYamlId = node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>();
+            rhs.m_portName = node["PortName"].as<std::string>();
+            rhs.m_portYamlId = node["PortId"].as<SimpleNodeEditor::YamlPort::PortYamlId>();
+
+            SPDLOG_INFO("decode yamlport success, portname[{}], portYamlId[{}], nodename[{}], nodeid[{}]",
+                rhs.m_portName, rhs.m_portYamlId, rhs.m_nodeName, rhs.m_nodeYamlId);
+            return true;
+        }
+        else 
+        {
+            SPDLOG_ERROR("Invalid key when yaml-cpp decode from yaml");
+            return false;
+        }
+
+    }
 };
 
 } // namespace YAML
@@ -89,9 +132,10 @@ class PipelineParser : public YamlParser
 public:
     PipelineParser();
     std::vector<YamlNode> ParseNodes();
+    std::vector<YamlEdge> ParseEdges();
+
     [[nodiscard]] virtual bool LoadFile(const std::string& filePath);
     
-    // std::vector<YamlEdge> parseEdges(const std::string& filePath);
 private:
     YAML::Node m_nodeListNode;
     YAML::Node m_edgeListNode;

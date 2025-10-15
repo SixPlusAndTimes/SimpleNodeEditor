@@ -29,12 +29,12 @@ Pipeline:
 
   LinkList:
     - 
-      Srcport:
+      SrcPort:
         NodeName : ggg
         NodeId : 0
         PortName: output1
         PortId : 0
-      DstNode:
+      DstPort:
       - 
         NodeName : Select
         NodeId : 1
@@ -46,24 +46,24 @@ Pipeline:
         PortId : 0
         PortName: inputport1
     - 
-      SrcNode:
+      SrcPort:
         NodeName: Select
         NodeId: 1
         PortId: 0
         PortName: outputport1
-      DstNode:
+      DstPort:
       - 
         NodeName: ADD
         NodeId: 2
         PortId: 0
         PortName: inputport1
     - 
-      SrcNode:
+      SrcPort:
         NodeName: ADD
         NodeId: 2
         PortId: 0
         PortName: outputport1
-      DstNode:
+      DstPort:
       - 
         NodeName: ggg
         NodeId: 3

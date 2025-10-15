@@ -28,6 +28,43 @@ using PortUniqueId = int32_t;
 using EdgeUniqueId = int32_t;
 using NodeUniqueId = int32_t;
 
+struct YamlPropertyDescription
+{
+    std::string m_propertyName;
+    std::string m_propertyValue;
+};
+
+struct YamlNode
+{
+    using NodeYamlId = int32_t;
+
+    YamlNode() : m_nodeName("Unknown"), m_nodeYamlId(-1), m_isSrcNode(false), m_Properties()
+    { }
+    std::string                             m_nodeName;
+    NodeYamlId                              m_nodeYamlId;
+    bool                                    m_isSrcNode;
+    std::vector<YamlPropertyDescription>    m_Properties;
+};
+
+
+struct YamlPort
+{
+    using PortYamlId = int32_t;
+    std::string             m_nodeName;
+    YamlNode::NodeYamlId    m_nodeYamlId;
+    std::string             m_portName;
+    PortYamlId              m_portYamlId;
+    
+};
+
+// srcport info maybe redundant in different edges, check it later
+struct YamlEdge
+{
+    YamlPort m_yamlSrcPort;
+    YamlPort m_yamlDstPort;
+    // TODO : add properties
+};
+
 class Port
 {
 public: // type def
@@ -100,23 +137,6 @@ private:
     EdgeUniqueId m_edgeUid;
 };
 
-struct YamlPropertyDescription
-{
-    std::string m_propertyName;
-    std::string m_propertyValue;
-};
-
-struct YamlNode
-{
-    using NodeYamlId = int32_t;
-
-    YamlNode() : m_nodeName("Unknown"), m_nodeYamlId(-1), m_isSrcNode(false), m_Properties()
-    { }
-    std::string                             m_nodeName;
-    NodeYamlId                              m_nodeYamlId;
-    bool                                    m_isSrcNode;
-    std::vector<YamlPropertyDescription>    m_Properties;
-};
 
 class Node
 {

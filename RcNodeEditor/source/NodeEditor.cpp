@@ -35,6 +35,7 @@ NodeEditor::NodeEditor()
     if (pipeLineParser.LoadFile(pipeLineYamlFileName))
     {
         auto ret = pipeLineParser.ParseNodes();
+        auto ret2 = pipeLineParser.ParseEdges();
     }
     else
     {

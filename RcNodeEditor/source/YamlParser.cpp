@@ -166,21 +166,51 @@ std::vector<YamlNode> PipelineParser::ParseNodes()
     {
         result.push_back(iter->as<YamlNode>());
     }
-    SPDLOG_INFO("ParseNode Dode, result.size() = {}", result.size());
+    SPDLOG_INFO("ParseNodes Dode, collected {} nodes", result.size());
     return result;
 }
 
-// std::vector<YamlEdge> PipelineParser::parseEdges(const std::string& filePath)
-// {
-//     std::vector<Edge> result;
-//     if (!LoadFile(filePath))
-//     {
-//         SPDLOG_ERROR("PipelineParser LoadFile failed, filePath = {}", filePath);
-//         return result;
-//     }
 
+// do we need more syntax check ?
+std::vector<YamlEdge> PipelineParser::ParseEdges()
+{
+    std::vector<YamlEdge> result;
+    if (!m_edgeListNode)
+    {
+        SPDLOG_ERROR("m_edgeListNode is invalid!");
+        return result;
+    }
+    SPDLOG_INFO("start to parse edges from file[{}], m_edgeListNode.size() = {}",  m_filePath, m_edgeListNode.size());
 
-//     return result;
-// }
+    for (size_t edgeIterIdx = 0; edgeIterIdx < m_edgeListNode.size(); ++edgeIterIdx)
+    {
+        if (m_edgeListNode[edgeIterIdx] && m_edgeListNode[edgeIterIdx].IsMap() && m_edgeListNode[edgeIterIdx]["SrcPort"])
+        {
+            YamlPort srcPort = m_edgeListNode[edgeIterIdx]["SrcPort"].as<YamlPort>();
+
+            YAML::Node dstPortsNode = m_edgeListNode[edgeIterIdx]["DstPort"];
+            if (dstPortsNode && dstPortsNode.IsSequence())
+            {
+                for (size_t portIterIdx = 0; portIterIdx < dstPortsNode.size(); ++portIterIdx)
+                {
+                    result.emplace_back(srcPort, dstPortsNode[portIterIdx].as<YamlPort>());
+                }
+            }
+            else 
+            {
+                SPDLOG_ERROR("dstPortNode is invalid or dstPortNode is not sequence");
+                SPDLOG_ERROR("DstPort node YAML:\n{}", YAML::Dump(dstPortsNode));
+            }
+        }
+        else
+        {
+            SPDLOG_ERROR("invalid node, checkinfo : isEdgeNodeValid[{}] | isEdgeNodeMap[{}]", m_edgeListNode[edgeIterIdx]? true : false, m_edgeListNode[edgeIterIdx].IsMap());
+            SPDLOG_ERROR("Edge node YAML:\n{}", YAML::Dump(m_edgeListNode[edgeIterIdx]));
+        }
+    }
+    SPDLOG_INFO("parseEdges Dode, collected {} edges", result.size());
+
+    return result;
+}
 } // namespace SimpleNodeEditor
 
