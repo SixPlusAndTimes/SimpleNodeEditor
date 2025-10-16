@@ -5,8 +5,12 @@ namespace SimpleNodeEditor
 {
     
 Port::Port(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy)
-    : m_portUid(portUid), m_portId(portId), m_portName(name), m_ownedByNodeUid(ownedBy)
+    : m_portUid(portUid), m_portId(portId), m_portName(name), m_ownedByNodeUid(ownedBy),m_portYamlId(-1)
+{ }
+
+YamlPort::PortYamlId Port::GetPortYamlId() const
 {
+    return m_portYamlId;
 }
 
 void Port::SetPortId(PortId portId)
@@ -117,9 +121,9 @@ Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle
       m_nodePos(),
       m_inputPorts(),
       m_outputPorts(),
-      m_yamlNodeDescription()
+      m_yamlNodeId(-1)
 {
-    SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid, m_yamlNodeDescription.m_nodeYamlId, m_nodeTitle);
+    SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid, m_yamlNodeId, m_nodeTitle);
 }
 
 Node::Node(YamlNode::NodeYamlId nodeYamlId, NodeType nodeType, float nodeWidth) 
@@ -130,16 +134,16 @@ Node::Node(YamlNode::NodeYamlId nodeYamlId, NodeType nodeType, float nodeWidth)
       m_nodePos(),
       m_inputPorts(),
       m_outputPorts(),
-      m_yamlNodeDescription()
+      m_yamlNodeId(nodeYamlId)
 {
-    m_yamlNodeDescription.m_nodeYamlId = nodeYamlId;
-    SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}",m_nodeUid, m_yamlNodeDescription.m_nodeYamlId, m_nodeTitle);
+    SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}",m_nodeUid, m_yamlNodeId, m_nodeTitle);
 }
 
 void Node::SetNodeYamlId(YamlNode::NodeYamlId nodeYamlId)
 {
-    m_yamlNodeDescription.m_nodeYamlId = nodeYamlId;
+    m_yamlNodeId = nodeYamlId;
 }
+
 
 void Node::SetNodePosition(const ImVec2& pos)
 {
@@ -173,7 +177,7 @@ const std::string_view Node::GetNodeTitle() const
 
 YamlNode::NodeYamlId Node::GetNodeYamlId() const
 {
-    return m_yamlNodeDescription.m_nodeYamlId;
+    return m_yamlNodeId;
 }
 
 const std::vector<InputPort>& Node::GetInputPorts() const

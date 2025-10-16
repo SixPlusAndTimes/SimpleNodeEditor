@@ -43,6 +43,7 @@ struct YamlNode
     std::string                             m_nodeName;
     NodeYamlId                              m_nodeYamlId;
     bool                                    m_isSrcNode;
+    // TODO : ADD nodetype here
     std::vector<YamlPropertyDescription>    m_Properties;
 };
 
@@ -73,20 +74,23 @@ public: // type def
     using PortUPtr = std::unique_ptr<Port>;
 
 public:
-    Port(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy);
-    void SetPortname(const std::string& name);
-    void SetPortId(PortId portId);
+                            Port(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy);
+    void                    SetPortname(const std::string& name);
+    void                    SetPortId(PortId portId);
 
-    std::string_view GetPortname() const;
-    PortId           GetPortId() const;
-    PortUniqueId     GetPortUniqueId() const;
-    NodeUniqueId     OwnedByNodeUid() const; // return the uid of the node that this port belongs to
+    std::string_view        GetPortname() const;
+    PortId                  GetPortId() const;
+    PortUniqueId            GetPortUniqueId() const;
+    NodeUniqueId            OwnedByNodeUid() const; // return the uid of the node that this port belongs to
+    YamlPort::PortYamlId    GetPortYamlId() const;
 
 private:
-    PortUniqueId m_portUid;
-    PortId       m_portId;
-    std::string  m_portName;
-    NodeUniqueId m_ownedByNodeUid;  // indicating which node the port belongs to
+    PortUniqueId            m_portUid;
+    PortId                  m_portId;
+    std::string             m_portName;
+    NodeUniqueId            m_ownedByNodeUid;  // indicating which node the port belongs to
+    // yaml portid is not unique among all nodes' ports, and also not unique among one node's ports, but is unique among inputports or outputports of one node
+    YamlPort::PortYamlId    m_portYamlId;
 };
 
 class InputPort : public Port
@@ -183,7 +187,7 @@ private:
     std::vector<OutputPort> m_outputPorts;
 
     // yaml node
-    YamlNode                m_yamlNodeDescription;
+    YamlNode::NodeYamlId    m_yamlNodeId;
 };
 } // namespace SimpleNodeEditor
 

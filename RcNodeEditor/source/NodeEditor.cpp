@@ -10,6 +10,7 @@
 namespace SimpleNodeEditor
 {
     
+// map with (nodetype,nodedescription) maybe more reasonable
 static std::unordered_map<std::string, NodeDescription> s_nodeDescriptions;
 
 NodeEditor::NodeEditor()
