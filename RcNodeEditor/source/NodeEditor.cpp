@@ -96,11 +96,12 @@ void NodeEditor::ShowInfos()
     ImGui::TextUnformatted("X -- delete selected node or link");
 }
 
-NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc)
+NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, YamlNode::NodeYamlId yamlNodeId)
 {
 
     Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode,
-                    nodeDesc.m_nodeName);
+                    yamlNodeId == -1 ? nodeDesc.m_nodeName : nodeDesc.m_nodeName + std::to_string(yamlNodeId));
+
     NodeUniqueId ret = newNode.GetNodeUniqueId();
 
     // we must reserve the vector first; if not , the reallocation of std::vector will
@@ -280,50 +281,59 @@ bool NodeEditor::IsInportAlreadyHasEdge(PortUniqueId portUid)
     return false;
 }
 
+
+void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid)
+{
+
+    // avoid multiple edges linking to the same inport
+    if (IsInportAlreadyHasEdge(dstPortUid))
+    {
+        SPDLOG_WARN("inport port can not have multiple edges, inportUid = {}", dstPortUid);
+        return;
+    }
+
+    Edge newEdge(srcPortUid, dstPortUid, m_edgeUidGenerator.AllocUniqueID());
+
+    // set inportport's edgeid
+    if (m_inportPorts.count(dstPortUid) != 0 && m_inportPorts[dstPortUid] != nullptr)
+    {
+        InputPort& inputPort = *m_inportPorts[dstPortUid];
+        inputPort.SetEdgeUid(newEdge.GetEdgeUniqueId());
+        newEdge.SetDestinationNodeUid(inputPort.OwnedByNodeUid());
+    }
+    else
+    {
+        SPDLOG_ERROR(
+            "not find input port or the pointer is nullptr when handling new edges, check it! "
+            "dstPortUid is{}",
+            dstPortUid);
+    }
+
+    // set outportport's edgeid
+    if (m_outportPorts.count(srcPortUid) != 0 && m_outportPorts[srcPortUid] != nullptr)
+    {
+        OutputPort& outpurPort = *m_outportPorts[srcPortUid];
+        outpurPort.PushEdge(newEdge.GetEdgeUniqueId());
+        newEdge.SetSourceNodeUid(outpurPort.OwnedByNodeUid());
+    }
+    else
+    {
+        SPDLOG_ERROR(
+            "not find output port or the pointer is nullptr when handling new edges, check it! "
+            "srcPortUid is {}",
+            srcPortUid);
+    }
+    m_edges.emplace(newEdge.GetEdgeUniqueId(), std::move(newEdge));
+}
+
 void NodeEditor::HandleAddEdges()
 {
     PortUniqueId startPortId, endPortId;
+
+    // note : edge is linked from startPortId to endPortId
     if (ImNodes::IsLinkCreated(&startPortId, &endPortId))
     {
-        // avoid multiple edges linking to the same inport
-        if (IsInportAlreadyHasEdge(endPortId))
-        {
-            SPDLOG_WARN("inport port can not have multiple edges, inportUid = {}", endPortId);
-            return;
-        }
-
-        Edge newEdge(startPortId, endPortId, m_edgeUidGenerator.AllocUniqueID());
-
-        // set inportport's edgeid
-        if (m_inportPorts.count(endPortId) != 0 && m_inportPorts[endPortId] != nullptr)
-        {
-            InputPort& inputPort = *m_inportPorts[endPortId];
-            inputPort.SetEdgeUid(newEdge.GetEdgeUniqueId());
-            newEdge.SetDestinationNodeUid(inputPort.OwnedByNodeUid());
-        }
-        else
-        {
-            SPDLOG_ERROR(
-                "not find input port or the pointer is nullptr when handling new edges, check it! "
-                "endPortId is{}",
-                endPortId);
-        }
-
-        // set outportport's edgeid
-        if (m_outportPorts.count(startPortId) != 0 && m_outportPorts[startPortId] != nullptr)
-        {
-            OutputPort& outpurPort = *m_outportPorts[startPortId];
-            outpurPort.PushEdge(newEdge.GetEdgeUniqueId());
-            newEdge.SetSourceNodeUid(outpurPort.OwnedByNodeUid());
-        }
-        else
-        {
-            SPDLOG_ERROR(
-                "not find output port or the pointer is nullptr when handling new edges, check it! "
-                "startPortId is {}",
-                startPortId);
-        }
-        m_edges.emplace(newEdge.GetEdgeUniqueId(), std::move(newEdge));
+        AddNewEdge(startPortId, endPortId);
     }
 }
 

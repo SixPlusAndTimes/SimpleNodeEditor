@@ -20,10 +20,11 @@ private:
     void            ShowMenu();
     void            ShowInfos();
     void            HandleAddNodes();
-    NodeUniqueId    AddNewNodes(const NodeDescription& nodeDesc);
+    NodeUniqueId    AddNewNodes(const NodeDescription& nodeDesc, YamlNode::NodeYamlId yamlNodeId = -1);
     void            ShowNodes();
     void            ShowEdges();
     void            HandleAddEdges();
+    void            AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid);
     void            HandleDeletingEdges();
     void            DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid);
     bool            IsInportAlreadyHasEdge(PortUniqueId portUid);
