@@ -17,17 +17,18 @@ public:
     void HandleDeletingNodes();
 
 private:
-    void ShowMenu();
-    void ShowInfos();
-    void HandleAddNodes();
-    void ShowNodes();
-    void ShowEdges();
-    void HandleAddEdges();
-    void HandleDeletingEdges();
-    void DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid);
-    bool IsInportAlreadyHasEdge(PortUniqueId portUid);
-    void DeleteEdgeUidFromPort(EdgeUniqueId edgeUid);
-    void SaveState();
+    void            ShowMenu();
+    void            ShowInfos();
+    void            HandleAddNodes();
+    NodeUniqueId    AddNewNodes(const NodeDescription& nodeDesc);
+    void            ShowNodes();
+    void            ShowEdges();
+    void            HandleAddEdges();
+    void            HandleDeletingEdges();
+    void            DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid);
+    bool            IsInportAlreadyHasEdge(PortUniqueId portUid);
+    void            DeleteEdgeUidFromPort(EdgeUniqueId edgeUid);
+    void            SaveState();
 private:
     std::unordered_map<NodeUniqueId, Node> m_nodes; // store nodes that will be rendered on canvas
 

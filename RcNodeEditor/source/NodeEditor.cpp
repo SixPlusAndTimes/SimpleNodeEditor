@@ -34,8 +34,8 @@ NodeEditor::NodeEditor()
     PipelineParser pipeLineParser;
     if (pipeLineParser.LoadFile(pipeLineYamlFileName))
     {
-        auto ret = pipeLineParser.ParseNodes();
-        auto ret2 = pipeLineParser.ParseEdges();
+        std::vector<YamlNode> yamlNodes = pipeLineParser.ParseNodes();
+        std::vector<YamlEdge> yamlEdges = pipeLineParser.ParseEdges();
     }
     else
     {
@@ -96,6 +96,46 @@ void NodeEditor::ShowInfos()
     ImGui::TextUnformatted("X -- delete selected node or link");
 }
 
+NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc)
+{
+
+    Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode,
+                    nodeDesc.m_nodeName);
+    NodeUniqueId ret = newNode.GetNodeUniqueId();
+
+    // we must reserve the vector first; if not , the reallocation of std::vector will
+    // mess memory up
+    newNode.GetInputPorts().reserve(nodeDesc.m_inputPortNames.size());
+    newNode.GetOutputPorts().reserve(nodeDesc.m_outputPortNames.size());
+
+    // add inputports in the new node and add pointers in m_inportPorts
+    for (int index = 0; index < nodeDesc.m_inputPortNames.size(); ++index)
+    {
+        InputPort newInport(m_portUidGenerator.AllocUniqueID(), index,
+                            nodeDesc.m_inputPortNames[index], newNode.GetNodeUniqueId());
+        newNode.AddInputPort(newInport);
+        m_inportPorts.emplace(newInport.GetPortUniqueId(),
+                                newNode.GetInputPort(newInport.GetPortUniqueId()));
+    }
+
+    // add outputports in the new node and add pointers in m_outportPorts
+    for (int index = 0; index < nodeDesc.m_outputPortNames.size(); ++index)
+    {
+        OutputPort newOutport(m_portUidGenerator.AllocUniqueID(), index,
+                                nodeDesc.m_outputPortNames[index], newNode.GetNodeUniqueId());
+        newNode.AddOutputPort(newOutport);
+        m_outportPorts.emplace(newOutport.GetPortUniqueId(),
+                                newNode.GetOutputPort(newOutport.GetPortUniqueId()));
+    }
+                
+    if (!m_nodes.insert({newNode.GetNodeUniqueId(), std::move(newNode)}).second)
+    {
+        SPDLOG_ERROR("m_nodes insert new node fail! check it!");
+        return -1;
+    }
+    return ret;
+}
+
 void NodeEditor::HandleAddNodes()
 {
     const bool open_popup = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
@@ -151,45 +191,20 @@ void NodeEditor::HandleAddNodes()
             ImGui::CloseCurrentPopup(); // close popup right now
 
             NodeDescription selectedNodeDescription = s_nodeDescriptions.at(previewSelected);
-            Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode,
-                             selectedNodeDescription.m_nodeName);
-                // we must reserve the vector first; if not , the reallocation of std::vector will
-                // mess memory up
-                newNode.GetInputPorts().reserve(selectedNodeDescription.m_inputPortNames.size());
-                newNode.GetOutputPorts().reserve(selectedNodeDescription.m_outputPortNames.size());
 
-                for (int index = 0; index < selectedNodeDescription.m_inputPortNames.size(); ++index)
-                {
-                    InputPort newInport(m_portUidGenerator.AllocUniqueID(), index,
-                                        selectedNodeDescription.m_inputPortNames[index], newNode.GetNodeUniqueId());
-                    newNode.AddInputPort(newInport);
-                    m_inportPorts.emplace(newInport.GetPortUniqueId(),
-                                          newNode.GetInputPort(newInport.GetPortUniqueId()));
-                }
-
-                for (int index = 0; index < selectedNodeDescription.m_outputPortNames.size(); ++index)
-                {
-                    OutputPort newOutport(m_portUidGenerator.AllocUniqueID(), index,
-                                          selectedNodeDescription.m_outputPortNames[index], newNode.GetNodeUniqueId());
-                    newNode.AddOutputPort(newOutport);
-                    m_outportPorts.emplace(newOutport.GetPortUniqueId(),
-                                           newNode.GetOutputPort(newOutport.GetPortUniqueId()));
-                }
+            NodeUniqueId newNodeUId = AddNewNodes(selectedNodeDescription);
                 
-                ImNodes::SetNodeScreenSpacePos(newNode.GetNodeUniqueId(), click_pos);
-                // add logs to understand the 3 types of coordinates
-                ImVec2 newNodeGridSpace  = ImNodes::GetNodeGridSpacePos(newNode.GetNodeUniqueId()); // imnode internal datastructure : ImNodeData::Origin , store the coordinates in grid space. The value of this coodinate may be negative or posive, and changed with editor panning events.
-                ImVec2 newNodeScreenSpace  = ImNodes::GetNodeScreenSpacePos(newNode.GetNodeUniqueId());  // defined by app window. the value of this coordinate is definately positive.
-                ImVec2 newNodeEditorSpace  = ImNodes::GetNodeEditorSpacePos(newNode.GetNodeUniqueId()); // just like a viewport coordination? the value of this coordinate is definetely positive .
+            ImNodes::SetNodeScreenSpacePos(newNodeUId, click_pos);
 
-                SPDLOG_INFO("add new node, nodeuid = {}, girdspace = [{},{}], screenspace = [{},{}], editorspace = [{}, {}]", newNode.GetNodeUniqueId(), 
-                    newNodeGridSpace.x, newNodeGridSpace.y,
-                    newNodeScreenSpace.x, newNodeScreenSpace.y, 
-                    newNodeEditorSpace.x, newNodeEditorSpace.y);
-                if (!m_nodes.insert({newNode.GetNodeUniqueId(), std::move(newNode)}).second)
-                {
-                    SPDLOG_ERROR("insert new node fail! check it!");
-                }
+            // add logs to understand the 3 types of coordinates
+            ImVec2 newNodeGridSpace  = ImNodes::GetNodeGridSpacePos(newNodeUId); // imnode internal datastructure : ImNodeData::Origin , store the coordinates in grid space. The value of this coodinate may be negative or posive, and changed with editor panning events.
+            ImVec2 newNodeScreenSpace  = ImNodes::GetNodeScreenSpacePos(newNodeUId);  // defined by app window. the value of this coordinate is definately positive.
+            ImVec2 newNodeEditorSpace  = ImNodes::GetNodeEditorSpacePos(newNodeUId); // just like a viewport coordination? the value of this coordinate is definetely positive .
+
+            SPDLOG_INFO("add new node, nodeuid = {}, girdspace = [{},{}], screenspace = [{},{}], editorspace = [{}, {}]", newNodeUId, 
+                newNodeGridSpace.x, newNodeGridSpace.y,
+                newNodeScreenSpace.x, newNodeScreenSpace.y, 
+                newNodeEditorSpace.x, newNodeEditorSpace.y);
         }
 
         ImGui::EndPopup();
