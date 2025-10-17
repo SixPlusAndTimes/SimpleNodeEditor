@@ -6,26 +6,32 @@ Pipeline:
       NodeName : ggg
       NodeId : 0
       IsSrcNode: 0
+      NodeType: 3
     - 
       NodeName: Select
       NodeId : 1
       IsSrcNode: 0
+      NodeType: 2
     - 
       NodeName: ADD
       NodeId : 2
       IsSrcNode: 0
+      NodeType: 1
     - 
       NodeName: ggg
       NodeId: 3
       IsSrcNode: 0
+      NodeType: 3
     - 
       NodeName: Select
       NodeId: 4
       IsSrcNode: 0
+      NodeType: 2
     - 
       NodeName: ggg
       NodeId: 5
       IsSrcNode: 0
+      NodeType: 3
 
   LinkList:
     - 

@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include "NodeDescription.hpp"
 
 namespace SimpleNodeEditor
 {
@@ -38,11 +39,12 @@ struct YamlNode
 {
     using NodeYamlId = int32_t;
 
-    YamlNode() : m_nodeName("Unknown"), m_nodeYamlId(-1), m_isSrcNode(false), m_Properties()
+    YamlNode() : m_nodeName("Unknown"), m_nodeYamlId(-1), m_isSrcNode(false), m_nodeYamlType(-1), m_Properties()
     { }
     std::string                             m_nodeName;
     NodeYamlId                              m_nodeYamlId;
     bool                                    m_isSrcNode;
+    YamlNodeType                            m_nodeYamlType;
     // TODO : ADD nodetype here
     std::vector<YamlPropertyDescription>    m_Properties;
 };
@@ -74,7 +76,7 @@ public: // type def
     using PortUPtr = std::unique_ptr<Port>;
 
 public:
-                            Port(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy);
+                            Port(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy, YamlPort::PortYamlId portYamlId = -1);
     void                    SetPortname(const std::string& name);
     void                    SetPortId(PortId portId);
 
@@ -82,6 +84,7 @@ public:
     PortId                  GetPortId() const;
     PortUniqueId            GetPortUniqueId() const;
     NodeUniqueId            OwnedByNodeUid() const; // return the uid of the node that this port belongs to
+
     YamlPort::PortYamlId    GetPortYamlId() const;
 
 private:
@@ -96,7 +99,7 @@ private:
 class InputPort : public Port
 {
 public:
-    InputPort(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy);
+    InputPort(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy, YamlPort::PortYamlId portYamlId = -1);
     void         SetEdgeUid(EdgeUniqueId);
     EdgeUniqueId GetEdgeUid();
 
@@ -107,7 +110,7 @@ private:
 class OutputPort : public Port
 {
 public:
-    OutputPort(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy);
+    OutputPort(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy, YamlPort::PortYamlId portYamlId = -1);
     void                       PushEdge(EdgeUniqueId);
     void                       DeletEdge(EdgeUniqueId);
     const std::vector<EdgeUniqueId>& GetEdgeUids() const;
@@ -172,6 +175,9 @@ public:
     std::vector<OutputPort>& GetOutputPorts();
     InputPort*               GetInputPort(PortUniqueId portUid);
     OutputPort*              GetOutputPort(PortUniqueId portUid);
+
+    PortUniqueId             FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const;
+    PortUniqueId             FindPortUidAmongInports(YamlPort::PortYamlId portYamlId) const;
     
     // yaml node related
     void                     SetNodeYamlId(YamlNode::NodeYamlId nodeYamlId);
@@ -186,7 +192,7 @@ private:
     std::vector<InputPort>  m_inputPorts;
     std::vector<OutputPort> m_outputPorts;
 
-    // yaml node
+    // yaml node related
     YamlNode::NodeYamlId    m_yamlNodeId;
 };
 } // namespace SimpleNodeEditor

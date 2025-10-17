@@ -75,9 +75,18 @@ std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()
         NodeDescription desc;
         // parse NodeName
         if (node["NodeName"] && node["NodeName"].IsScalar()) {
+            SPDLOG_ERROR(YAML::Dump(node["NodeName"]));
             desc.m_nodeName = node["NodeName"].as<std::string>();
         } else {
             SPDLOG_ERROR("Skipping node: missing or invalid NodeName");
+            continue;
+        }
+
+         // parse NodeType
+        if (node["NodeType"] && node["NodeType"].IsScalar()) {
+            desc.m_yamlNodeType = node["NodeType"].as<YamlNodeType>();
+        } else {
+            SPDLOG_ERROR("Skipping node: missing or invalid NodeType");
             continue;
         }
 

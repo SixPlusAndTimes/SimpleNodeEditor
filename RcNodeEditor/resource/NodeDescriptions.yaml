@@ -1,6 +1,7 @@
 NodeDescriptions:
   - 
     NodeName: ADD
+    NodeType: 1
     InputPorts:
       - inputport1
       - inputport2
@@ -9,6 +10,7 @@ NodeDescriptions:
       - outputport2
   - 
     NodeName: Select
+    NodeType: 2
     InputPorts:
       - inputport1
       - inputport2
@@ -25,6 +27,7 @@ NodeDescriptions:
       - outputport6
   - 
     NodeName: ggg
+    NodeType: 3
     InputPorts:
       - inputport1
       - inputport2

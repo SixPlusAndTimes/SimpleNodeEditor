@@ -14,6 +14,7 @@ struct convert<SimpleNodeEditor::YamlNode> {
         node.force_insert("NodeName", rhs.m_nodeName);
         node.force_insert("NodeId", rhs.m_nodeYamlId);
         node.force_insert("IsSrcNode", rhs.m_isSrcNode);
+        node.force_insert("NodeType", rhs.m_nodeYamlType);
         return node;
     }
 
@@ -26,8 +27,9 @@ struct convert<SimpleNodeEditor::YamlNode> {
         rhs.m_nodeName = node["NodeName"].as<std::string>();
         rhs.m_nodeYamlId = node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>();
         rhs.m_isSrcNode = node["IsSrcNode"].as<int>();
+        rhs.m_nodeYamlType = node["NodeType"].as<SimpleNodeEditor::YamlNodeType>();
 
-        SPDLOG_INFO("decode yamlnode success, nodename = [{}], nodeYamlId[{}], issourcenode[{}]", rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_isSrcNode);
+        SPDLOG_INFO("decode yamlnode success, nodename = [{}], nodeYamlId[{}], issourcenode[{}], yamlNodeType[{}]", rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_isSrcNode, rhs.m_nodeYamlType);
         return true;
     }
 };

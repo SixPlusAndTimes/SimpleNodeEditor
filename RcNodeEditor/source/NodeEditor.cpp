@@ -10,8 +10,9 @@
 namespace SimpleNodeEditor
 {
     
-// map with (nodetype,nodedescription) maybe more reasonable
-static std::unordered_map<std::string, NodeDescription> s_nodeDescriptions;
+// TODO : map with (nodetype,nodedescription) maybe more reasonable
+static std::unordered_map<std::string, NodeDescription> s_nodeDescriptionsNameDesMap;
+static std::unordered_map<YamlNodeType, NodeDescription> s_nodeDescriptionsTypeDesMap;
 
 NodeEditor::NodeEditor()
     : m_nodes(),
@@ -26,9 +27,11 @@ NodeEditor::NodeEditor()
     // TODO: file path may be a constant value or configed in Config.yaml?
     NodeDescriptionParser nodeParser("./resource/NodeDescriptions.yaml");
     std::vector<NodeDescription> nodeDescriptions =  nodeParser.ParseNodeDescriptions();
-    for (const auto& nodeD : nodeDescriptions)
+    for (auto& nodeD : nodeDescriptions)
     {
-        s_nodeDescriptions.emplace(nodeD.m_nodeName, std::move(nodeD));
+        // TODO : remove redundant info
+        s_nodeDescriptionsTypeDesMap.emplace(nodeD.m_yamlNodeType, nodeD);
+        s_nodeDescriptionsNameDesMap.emplace(nodeD.m_nodeName, nodeD);
     }
 
     std::string pipeLineYamlFileName = "./resource/testpipelines/pipelinetest1.yaml";
@@ -37,6 +40,30 @@ NodeEditor::NodeEditor()
     {
         std::vector<YamlNode> yamlNodes = pipeLineParser.ParseNodes();
         std::vector<YamlEdge> yamlEdges = pipeLineParser.ParseEdges();
+
+        // add node in Editor
+        float x_axis = 0.f, y_axis = 0.f;
+        std::unordered_map<YamlNode::NodeYamlId, NodeUniqueId> t_yamlNodeId2NodeUidMap;
+        for (const YamlNode& yamlNode : yamlNodes)
+        {
+            NodeUniqueId newNodeUid =  AddNewNodes(s_nodeDescriptionsTypeDesMap.at(yamlNode.m_nodeYamlType), yamlNode.m_nodeYamlId);
+            t_yamlNodeId2NodeUidMap.emplace(yamlNode.m_nodeYamlId, newNodeUid);
+            // just for testing here, we need toposort to arrange these nodes
+            ImNodes::SetNodeGridSpacePos(newNodeUid, ImVec2(x_axis += 100.f, y_axis += 100.f));
+        }
+
+        // add edges in editor
+        for (const YamlEdge& yamlEdge : yamlEdges)
+        {
+            NodeUniqueId ownedBySrcNodeUid = t_yamlNodeId2NodeUidMap.at(yamlEdge.m_yamlSrcPort.m_nodeYamlId);
+            NodeUniqueId ownedByDstNodeUid = t_yamlNodeId2NodeUidMap.at(yamlEdge.m_yamlDstPort.m_nodeYamlId);
+            const Node& srcNode = m_nodes.at(ownedBySrcNodeUid);
+            const Node& dstNode = m_nodes.at(ownedByDstNodeUid);
+            AddNewEdge(srcNode.FindPortUidAmongOutports(yamlEdge.m_yamlSrcPort.m_portYamlId), dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId));
+        }
+
+        // TODO: after adding nodes and edges, we have enough data in m_nodes and m_edges to do toposort
+
     }
     else
     {
@@ -114,7 +141,7 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, YamlNode::
     for (int index = 0; index < nodeDesc.m_inputPortNames.size(); ++index)
     {
         InputPort newInport(m_portUidGenerator.AllocUniqueID(), index,
-                            nodeDesc.m_inputPortNames[index], newNode.GetNodeUniqueId());
+                            nodeDesc.m_inputPortNames[index], newNode.GetNodeUniqueId(), index);
         newNode.AddInputPort(newInport);
         m_inportPorts.emplace(newInport.GetPortUniqueId(),
                                 newNode.GetInputPort(newInport.GetPortUniqueId()));
@@ -124,7 +151,7 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, YamlNode::
     for (int index = 0; index < nodeDesc.m_outputPortNames.size(); ++index)
     {
         OutputPort newOutport(m_portUidGenerator.AllocUniqueID(), index,
-                                nodeDesc.m_outputPortNames[index], newNode.GetNodeUniqueId());
+                                nodeDesc.m_outputPortNames[index], newNode.GetNodeUniqueId(), index);
         newNode.AddOutputPort(newOutport);
         m_outportPorts.emplace(newOutport.GetPortUniqueId(),
                                 newNode.GetOutputPort(newOutport.GetPortUniqueId()));
@@ -149,7 +176,7 @@ void NodeEditor::HandleAddNodes()
         ImGui::OpenPopup("add node");
     }
 
-    static std::string previewSelected = s_nodeDescriptions.begin()->first;
+    static std::string previewSelected = s_nodeDescriptionsNameDesMap.begin()->first;
 
     if (ImGui::BeginPopup("add node"))
     {
@@ -170,7 +197,7 @@ void NodeEditor::HandleAddNodes()
 
             ImGui::SetKeyboardFocusHere(-1);
 
-            for (auto& [nodeName, nodeDesc] : s_nodeDescriptions)
+            for (auto& [nodeName, nodeDesc] : s_nodeDescriptionsNameDesMap)
             {
                 if (filter.PassFilter(nodeName.c_str()))
                 {
@@ -192,7 +219,7 @@ void NodeEditor::HandleAddNodes()
         {
             ImGui::CloseCurrentPopup(); // close popup right now
 
-            NodeDescription selectedNodeDescription = s_nodeDescriptions.at(previewSelected);
+            NodeDescription selectedNodeDescription = s_nodeDescriptionsNameDesMap.at(previewSelected);
 
             NodeUniqueId newNodeUId = AddNewNodes(selectedNodeDescription);
                 

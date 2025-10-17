@@ -4,8 +4,8 @@
 namespace SimpleNodeEditor
 {
     
-Port::Port(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy)
-    : m_portUid(portUid), m_portId(portId), m_portName(name), m_ownedByNodeUid(ownedBy),m_portYamlId(-1)
+Port::Port(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy, YamlPort::PortYamlId portYamlId)
+    : m_portUid(portUid), m_portId(portId), m_portName(name), m_ownedByNodeUid(ownedBy),m_portYamlId(portYamlId)
 { }
 
 YamlPort::PortYamlId Port::GetPortYamlId() const
@@ -42,8 +42,8 @@ NodeUniqueId Port::OwnedByNodeUid() const
     return m_ownedByNodeUid;
 }
 
-InputPort::InputPort(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy)
-    : Port(portUid, portId, name, ownedBy), m_linkFrom(-1)
+InputPort::InputPort(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy, YamlPort::PortYamlId portYamlId)
+    : Port(portUid, portId, name, ownedBy, portYamlId), m_linkFrom(-1)
 {
     SPDLOG_INFO("InputPort construced with portUid = {}, portId = {}, portName = {}, linkfrom = {}", portUid, portId, name, m_linkFrom);
 }
@@ -60,8 +60,8 @@ EdgeUniqueId InputPort::GetEdgeUid()
     return m_linkFrom;
 }
 
-OutputPort::OutputPort(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy)
-    : Port(portUid, portId, name, ownedBy), m_linkTos()
+OutputPort::OutputPort(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy, YamlPort::PortYamlId portYamlId)
+    : Port(portUid, portId, name, ownedBy, portYamlId), m_linkTos()
 {
     SPDLOG_INFO("OutputPort construced with portUid = {}, portId = {}, portName = {}", portUid, portId, name);
 }
@@ -142,6 +142,39 @@ Node::Node(YamlNode::NodeYamlId nodeYamlId, NodeType nodeType, float nodeWidth)
 void Node::SetNodeYamlId(YamlNode::NodeYamlId nodeYamlId)
 {
     m_yamlNodeId = nodeYamlId;
+}
+
+PortUniqueId Node::FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const
+{
+    auto iter = std::find_if(m_outputPorts.begin(), m_outputPorts.end(), [portYamlId](const OutputPort& outPutPort){
+        return outPutPort.GetPortYamlId() == portYamlId;
+    });
+    if (iter != m_outputPorts.end())
+    {
+        return iter->GetPortUniqueId();
+    }
+    else 
+    {
+        SPDLOG_ERROR("cannot find outportuid, by the portYamlId[{}] in the nodeUid[{}]", portYamlId, m_nodeUid);
+        return -1;
+    }
+}
+
+PortUniqueId Node::FindPortUidAmongInports(YamlPort::PortYamlId portYamlId) const
+{
+
+    auto iter = std::find_if(m_inputPorts.begin(), m_inputPorts.end(), [portYamlId](const InputPort& inPutPort){
+        return inPutPort.GetPortYamlId() == portYamlId;
+    });
+    if (iter != m_inputPorts.end())
+    {
+        return iter->GetPortUniqueId();
+    }
+    else 
+    {
+        SPDLOG_ERROR("cannot find inportuid, by the portYamlId[{}] in the nodeUid[{}]", portYamlId, m_nodeUid);
+        return -1;
+    }
 }
 
 
