@@ -51,6 +51,11 @@ Pipeline:
         NodeId : 2
         PortId : 0
         PortName: inputport1
+      -
+        NodeName : Select
+        NodeId : 4
+        PortName: inputport1
+        PortId : 0
     - 
       SrcPort:
         NodeName: Select
@@ -63,6 +68,11 @@ Pipeline:
         NodeId: 2
         PortId: 0
         PortName: inputport1
+      -
+        NodeName : ggg
+        NodeId : 5
+        PortName: inputport2
+        PortId : 2
     - 
       SrcPort:
         NodeName: ADD

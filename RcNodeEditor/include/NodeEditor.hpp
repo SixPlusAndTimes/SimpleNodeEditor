@@ -30,6 +30,8 @@ private:
     bool            IsInportAlreadyHasEdge(PortUniqueId portUid);
     void            DeleteEdgeUidFromPort(EdgeUniqueId edgeUid);
     void            SaveState();
+    void            RearrangeNodesLayout(const std::vector<std::vector<NodeUniqueId>>& topologicalOrder, const std::unordered_map<NodeUniqueId, Node>& nodesMap);
+
 private:
     std::unordered_map<NodeUniqueId, Node> m_nodes; // store nodes that will be rendered on canvas
 
@@ -46,6 +48,8 @@ private:
     ImNodesMiniMapLocation          m_minimap_location;
 
     std::vector<NodeDescription>    m_nodeDescriptions;
+
+    bool                            m_needTopoSort;
 };
 } // namespace SimpleNodeEditor
 

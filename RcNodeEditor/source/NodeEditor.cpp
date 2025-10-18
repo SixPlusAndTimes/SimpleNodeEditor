@@ -22,7 +22,8 @@ NodeEditor::NodeEditor()
       m_nodeUidGenerator(),
       m_portUidGenerator(),
       m_edgeUidGenerator(),
-      m_minimap_location(ImNodesMiniMapLocation_BottomRight)
+      m_minimap_location(ImNodesMiniMapLocation_BottomRight),
+      m_needTopoSort(false)
 {
     // TODO: file path may be a constant value or configed in Config.yaml?
     NodeDescriptionParser nodeParser("./resource/NodeDescriptions.yaml");
@@ -61,8 +62,7 @@ NodeEditor::NodeEditor()
             const Node& dstNode = m_nodes.at(ownedByDstNodeUid);
             AddNewEdge(srcNode.FindPortUidAmongOutports(yamlEdge.m_yamlSrcPort.m_portYamlId), dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId));
         }
-
-        // TODO: after adding nodes and edges, we have enough data in m_nodes and m_edges to do toposort
+        m_needTopoSort = true;
 
     }
     else
@@ -510,6 +510,44 @@ void NodeEditor::HandleDeletingEdges()
     // }
 }
 
+void NodeEditor::RearrangeNodesLayout(const std::vector<std::vector<NodeUniqueId>>& topologicalOrder, const std::unordered_map<NodeUniqueId, Node>& nodesMap)
+{
+    float verticalPadding = 20.f;    
+    float horizontalPadding = 100.f;
+
+    // put collections of nodes belonging to the same topological priority in a single colum
+    std::vector<float> columWidths;
+    std::vector<float> columHeights;
+
+    // calc each colum's width and height using rect of NodeUi
+    for (const auto& nodeUIdVec: topologicalOrder)
+    {
+        float columWidth = 0.f; // equal to the max of nodes' width in the same priority
+        float columHeight = 0.f;
+        for (NodeUniqueId nodeUid : nodeUIdVec)
+        {
+            columWidth = std::max(ImNodes::GetNodeRect(nodeUid).GetWidth(), columWidth);
+            columHeight += (ImNodes::GetNodeRect(nodeUid).GetHeight() + verticalPadding);
+        }
+        columWidths.push_back(columWidth);
+        columHeights.push_back(columHeight);
+    }
+
+    assert(topologicalOrder.size() == columWidths.size() && topologicalOrder.size() == columHeights.size());
+
+    float gridSpaceX = 0.f;
+    for (size_t columIndex = 0; columIndex < topologicalOrder.size(); ++columIndex)
+    {
+        float gridSpaceY = -columHeights[columIndex] / 2.0f;
+        for (const NodeUniqueId nodeUid : topologicalOrder[columIndex])
+        {
+            ImNodes::SetNodeGridSpacePos(nodeUid, ImVec2{gridSpaceX, gridSpaceY});
+            gridSpaceY += (ImNodes::GetNodeRect(nodeUid).GetHeight() + verticalPadding);
+        }
+        gridSpaceX += (columWidths[columIndex] + horizontalPadding);
+    }
+}
+
 void NodeEditor::NodeEditorShow()
 {
     auto flags = ImGuiWindowFlags_MenuBar;
@@ -518,6 +556,7 @@ void NodeEditor::NodeEditorShow()
     ImGui::Begin("color node editor", NULL, flags);
 
     ShowMenu();
+
     ShowInfos();
 
     // ImNodes::GetIO().EmulateThreeButtonMouse.Modifier = &ImGui::GetIO().KeyAlt;
@@ -525,17 +564,26 @@ void NodeEditor::NodeEditorShow()
     ImNodes::BeginNodeEditor();
 
     HandleAddNodes();
-    ShowNodes();
+
+    ShowNodes(); // only afer calling ImNodes::EndNode can we cat the rect of nodeUi
+
+    if (m_needTopoSort)
+    {
+        const auto& topoSortRes = TopologicalSort(m_nodes, m_edges);
+        RearrangeNodesLayout(topoSortRes, m_nodes);
+        m_needTopoSort = false;
+    }
+
     ShowEdges();
 
     ImNodes::MiniMap(0.2f, m_minimap_location);
 
-    // ImNodes::MiniMap(0.2f, minimap_location_);
     ImNodes::EndNodeEditor();
 
     HandleAddEdges();
 
     HandleDeletingEdges();
+
     HandleDeletingNodes();
 
     ImGui::End();
@@ -550,8 +598,5 @@ void NodeEditor::SaveState()
 void NodeEditor::NodeEditorDestroy() 
 {
     SaveState();
-
-    // test for toposort
-    TopologicalSort(m_nodes, m_edges);
 }
 } // namespace SimpleNodeEditor
