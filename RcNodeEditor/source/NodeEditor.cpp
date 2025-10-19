@@ -567,10 +567,19 @@ void NodeEditor::RearrangeNodesLayout(
 
 void NodeEditor::NodeEditorShow()
 {
-    auto flags = ImGuiWindowFlags_MenuBar;
+    ImGuiIO& io = ImGui::GetIO();
+    ImVec2 displaySize = io.DisplaySize;
 
+    auto flags = ImGuiWindowFlags_NoDecoration
+                | ImGuiWindowFlags_NoMove
+                | ImGuiWindowFlags_NoSavedSettings
+                | ImGuiWindowFlags_NoBringToFrontOnFocus
+                | ImGuiWindowFlags_MenuBar;
+
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(displaySize);
     // The node editor window
-    ImGui::Begin("color node editor", NULL, flags);
+    ImGui::Begin("SimpleNodeEditor", nullptr, flags);
 
     ShowMenu();
 
@@ -582,7 +591,7 @@ void NodeEditor::NodeEditorShow()
 
     HandleAddNodes();
 
-    ShowNodes(); // only afer calling ImNodes::EndNode can we cat the rect of nodeUi
+    ShowNodes(); // only afer calling ImNodes::EndNode can we get the rect of nodeUi
 
     if (m_needTopoSort)
     {
