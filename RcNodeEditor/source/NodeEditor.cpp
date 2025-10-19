@@ -6,12 +6,11 @@
 #include "Helpers.h"
 #include "YamlParser.hpp"
 
-
 namespace SimpleNodeEditor
 {
-    
+
 // TODO : map with (nodetype,nodedescription) maybe more reasonable
-static std::unordered_map<std::string, NodeDescription> s_nodeDescriptionsNameDesMap;
+static std::unordered_map<std::string, NodeDescription>  s_nodeDescriptionsNameDesMap;
 static std::unordered_map<YamlNodeType, NodeDescription> s_nodeDescriptionsTypeDesMap;
 
 NodeEditor::NodeEditor()
@@ -26,8 +25,8 @@ NodeEditor::NodeEditor()
       m_needTopoSort(false)
 {
     // TODO: file path may be a constant value or configed in Config.yaml?
-    NodeDescriptionParser nodeParser("./resource/NodeDescriptions.yaml");
-    std::vector<NodeDescription> nodeDescriptions =  nodeParser.ParseNodeDescriptions();
+    NodeDescriptionParser        nodeParser("./resource/NodeDescriptions.yaml");
+    std::vector<NodeDescription> nodeDescriptions = nodeParser.ParseNodeDescriptions();
     for (auto& nodeD : nodeDescriptions)
     {
         // TODO : remove redundant info
@@ -35,7 +34,7 @@ NodeEditor::NodeEditor()
         s_nodeDescriptionsNameDesMap.emplace(nodeD.m_nodeName, nodeD);
     }
 
-    std::string pipeLineYamlFileName = "./resource/testpipelines/pipelinetest1.yaml";
+    std::string    pipeLineYamlFileName = "./resource/testpipelines/pipelinetest1.yaml";
     PipelineParser pipeLineParser;
     if (pipeLineParser.LoadFile(pipeLineYamlFileName))
     {
@@ -43,11 +42,12 @@ NodeEditor::NodeEditor()
         std::vector<YamlEdge> yamlEdges = pipeLineParser.ParseEdges();
 
         // add node in Editor
-        float x_axis = 0.f, y_axis = 0.f;
+        float                                                  x_axis = 0.f, y_axis = 0.f;
         std::unordered_map<YamlNode::NodeYamlId, NodeUniqueId> t_yamlNodeId2NodeUidMap;
         for (const YamlNode& yamlNode : yamlNodes)
         {
-            NodeUniqueId newNodeUid =  AddNewNodes(s_nodeDescriptionsTypeDesMap.at(yamlNode.m_nodeYamlType), yamlNode.m_nodeYamlId);
+            NodeUniqueId newNodeUid = AddNewNodes(
+                s_nodeDescriptionsTypeDesMap.at(yamlNode.m_nodeYamlType), yamlNode.m_nodeYamlId);
             t_yamlNodeId2NodeUidMap.emplace(yamlNode.m_nodeYamlId, newNodeUid);
             // just for testing here, we need toposort to arrange these nodes
             ImNodes::SetNodeGridSpacePos(newNodeUid, ImVec2(x_axis += 100.f, y_axis += 100.f));
@@ -56,20 +56,22 @@ NodeEditor::NodeEditor()
         // add edges in editor
         for (const YamlEdge& yamlEdge : yamlEdges)
         {
-            NodeUniqueId ownedBySrcNodeUid = t_yamlNodeId2NodeUidMap.at(yamlEdge.m_yamlSrcPort.m_nodeYamlId);
-            NodeUniqueId ownedByDstNodeUid = t_yamlNodeId2NodeUidMap.at(yamlEdge.m_yamlDstPort.m_nodeYamlId);
+            NodeUniqueId ownedBySrcNodeUid =
+                t_yamlNodeId2NodeUidMap.at(yamlEdge.m_yamlSrcPort.m_nodeYamlId);
+            NodeUniqueId ownedByDstNodeUid =
+                t_yamlNodeId2NodeUidMap.at(yamlEdge.m_yamlDstPort.m_nodeYamlId);
             const Node& srcNode = m_nodes.at(ownedBySrcNodeUid);
             const Node& dstNode = m_nodes.at(ownedByDstNodeUid);
-            AddNewEdge(srcNode.FindPortUidAmongOutports(yamlEdge.m_yamlSrcPort.m_portYamlId), dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId));
+            AddNewEdge(srcNode.FindPortUidAmongOutports(yamlEdge.m_yamlSrcPort.m_portYamlId),
+                       dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId));
         }
         m_needTopoSort = true;
-
     }
     else
     {
-        SPDLOG_ERROR("pipelineparser loadfile failed, filename is [{}], check it!", pipeLineYamlFileName);
+        SPDLOG_ERROR("pipelineparser loadfile failed, filename is [{}], check it!",
+                     pipeLineYamlFileName);
     }
-
 }
 
 void DebugDrawRect(ImRect rect)
@@ -124,11 +126,12 @@ void NodeEditor::ShowInfos()
     ImGui::TextUnformatted("X -- delete selected node or link");
 }
 
-NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, YamlNode::NodeYamlId yamlNodeId)
+NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc,
+                                     YamlNode::NodeYamlId   yamlNodeId)
 {
-
-    Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode,
-                    yamlNodeId == -1 ? nodeDesc.m_nodeName : nodeDesc.m_nodeName + std::to_string(yamlNodeId));
+    Node newNode(
+        m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode,
+        yamlNodeId == -1 ? nodeDesc.m_nodeName : nodeDesc.m_nodeName + std::to_string(yamlNodeId));
 
     NodeUniqueId ret = newNode.GetNodeUniqueId();
 
@@ -144,19 +147,19 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, YamlNode::
                             nodeDesc.m_inputPortNames[index], newNode.GetNodeUniqueId(), index);
         newNode.AddInputPort(newInport);
         m_inportPorts.emplace(newInport.GetPortUniqueId(),
-                                newNode.GetInputPort(newInport.GetPortUniqueId()));
+                              newNode.GetInputPort(newInport.GetPortUniqueId()));
     }
 
     // add outputports in the new node and add pointers in m_outportPorts
     for (int index = 0; index < nodeDesc.m_outputPortNames.size(); ++index)
     {
         OutputPort newOutport(m_portUidGenerator.AllocUniqueID(), index,
-                                nodeDesc.m_outputPortNames[index], newNode.GetNodeUniqueId(), index);
+                              nodeDesc.m_outputPortNames[index], newNode.GetNodeUniqueId(), index);
         newNode.AddOutputPort(newOutport);
         m_outportPorts.emplace(newOutport.GetPortUniqueId(),
-                                newNode.GetOutputPort(newOutport.GetPortUniqueId()));
+                               newNode.GetOutputPort(newOutport.GetPortUniqueId()));
     }
-                
+
     if (!m_nodes.insert({newNode.GetNodeUniqueId(), std::move(newNode)}).second)
     {
         SPDLOG_ERROR("m_nodes insert new node fail! check it!");
@@ -182,8 +185,8 @@ void NodeEditor::HandleAddNodes()
     {
         const ImVec2 click_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
 
-        ImGuiComboFlags flags = 0 ;
-        bool is_selected = false;
+        ImGuiComboFlags flags       = 0;
+        bool            is_selected = false;
 
         if (ImGui::BeginCombo("add node now", previewSelected.c_str(), flags))
         {
@@ -206,7 +209,7 @@ void NodeEditor::HandleAddNodes()
                     {
                         SPDLOG_INFO("User selected {}, will be added in canvas", nodeName);
                         previewSelected = nodeName;
-                        is_selected = true;
+                        is_selected     = true;
                         ImGui::CloseCurrentPopup(); // close Combo right now
                     }
                 }
@@ -214,26 +217,36 @@ void NodeEditor::HandleAddNodes()
             ImGui::EndCombo();
         }
 
-        
         if (is_selected)
         {
             ImGui::CloseCurrentPopup(); // close popup right now
 
-            NodeDescription selectedNodeDescription = s_nodeDescriptionsNameDesMap.at(previewSelected);
+            NodeDescription selectedNodeDescription =
+                s_nodeDescriptionsNameDesMap.at(previewSelected);
 
             NodeUniqueId newNodeUId = AddNewNodes(selectedNodeDescription);
-                
+
             ImNodes::SetNodeScreenSpacePos(newNodeUId, click_pos);
 
-            // add logs to understand the 3 types of coordinates
-            ImVec2 newNodeGridSpace  = ImNodes::GetNodeGridSpacePos(newNodeUId); // imnode internal datastructure : ImNodeData::Origin , store the coordinates in grid space. The value of this coodinate may be negative or posive, and changed with editor panning events.
-            ImVec2 newNodeScreenSpace  = ImNodes::GetNodeScreenSpacePos(newNodeUId);  // defined by app window. the value of this coordinate is definately positive.
-            ImVec2 newNodeEditorSpace  = ImNodes::GetNodeEditorSpacePos(newNodeUId); // just like a viewport coordination? the value of this coordinate is definetely positive .
+            // Add logs to understand the 3 types of coordinates
 
-            SPDLOG_INFO("add new node, nodeuid = {}, girdspace = [{},{}], screenspace = [{},{}], editorspace = [{}, {}]", newNodeUId, 
-                newNodeGridSpace.x, newNodeGridSpace.y,
-                newNodeScreenSpace.x, newNodeScreenSpace.y, 
-                newNodeEditorSpace.x, newNodeEditorSpace.y);
+            // imnode internal datastructure : ImNodeData::Origin , store the coordinates in grid
+            // space. The value of this coodinate may be negative or posive, and changed with editor
+            // panning events.
+            ImVec2 newNodeGridSpace = ImNodes::GetNodeGridSpacePos(newNodeUId);
+
+            // defined by app window. the value of this coordinate is definately positive.
+            ImVec2 newNodeScreenSpace = ImNodes::GetNodeScreenSpacePos(newNodeUId);
+
+            // just like a viewport coordination? the value of this coordinate is definetely
+            // positive .
+            ImVec2 newNodeEditorSpace = ImNodes::GetNodeEditorSpacePos(newNodeUId);
+
+            SPDLOG_INFO(
+                "add new node, nodeuid = {}, girdspace = [{},{}], screenspace = [{},{}], "
+                "editorspace = [{}, {}]",
+                newNodeUId, newNodeGridSpace.x, newNodeGridSpace.y, newNodeScreenSpace.x,
+                newNodeScreenSpace.y, newNodeEditorSpace.x, newNodeEditorSpace.y);
         }
 
         ImGui::EndPopup();
@@ -309,10 +322,8 @@ bool NodeEditor::IsInportAlreadyHasEdge(PortUniqueId portUid)
     return false;
 }
 
-
 void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid)
 {
-
     // avoid multiple edges linking to the same inport
     if (IsInportAlreadyHasEdge(dstPortUid))
     {
@@ -381,8 +392,8 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid)
         return;
     }
 
-    // Node& node = m_nodes[nodeUid]; // require that Node has a default constructor
-    Node& node = m_nodes.at(nodeUid); // require that Node has a default constructor
+    // Node& node = m_nodes[nodeUid]; // this line require that Node has a default constructor
+    Node& node = m_nodes.at(nodeUid);
     for (InputPort& inPort : node.GetInputPorts())
     {
         m_edges.erase(inPort.GetEdgeUid());
@@ -456,7 +467,7 @@ void NodeEditor::DeleteEdgeUidFromPort(EdgeUniqueId edgeUid)
 
 void NodeEditor::HandleDeletingEdges()
 {
-    // if edges are selected and users pressed the X key, erase them 
+    // if edges are selected and users pressed the X key, erase them
     const int num_selected = ImNodes::NumSelectedLinks();
     if (num_selected > 0 && ImGui::IsKeyReleased(ImGuiKey_X))
     {
@@ -477,9 +488,10 @@ void NodeEditor::HandleDeletingEdges()
         }
     }
 
-    // if a link is detached from a pin of node, erase it (using ctrl + leftclikc and draggingc the pin of a edge)
+    // if a link is detached from a pin of node, erase it (using ctrl + leftclikc and draggingc the
+    // pin of a edge)
     EdgeUniqueId detachedEdgeUId;
-    if (ImNodes::IsLinkDestroyed(&detachedEdgeUId)) 
+    if (ImNodes::IsLinkDestroyed(&detachedEdgeUId))
     {
         if (m_edges.count(detachedEdgeUId) != 0)
         {
@@ -488,14 +500,15 @@ void NodeEditor::HandleDeletingEdges()
         }
         else
         {
-            SPDLOG_ERROR("cannot find edge in m_edges, detachedEdgeUId = {}, check it!", detachedEdgeUId);
+            SPDLOG_ERROR("cannot find edge in m_edges, detachedEdgeUId = {}, check it!",
+                         detachedEdgeUId);
         }
         SPDLOG_INFO("dropped link id{}", detachedEdgeUId);
     }
 
     // what about this situations, is it usefull ?
     // EdgeUniqueId dropedEdgeUId;
-    // if (ImNodes::IsLinkDropped(&dropedEdgeUId))  
+    // if (ImNodes::IsLinkDropped(&dropedEdgeUId))
     // {
     //     if (m_edges.count(dropedEdgeUId) != 0)
     //     {
@@ -504,15 +517,18 @@ void NodeEditor::HandleDeletingEdges()
     //     }
     //     else
     //     {
-    //         SPDLOG_ERROR("cannot find edge in m_edges, dropedEdgeUId = {}, check it!", dropedEdgeUId);
+    //         SPDLOG_ERROR("cannot find edge in m_edges, dropedEdgeUId = {}, check it!",
+    //         dropedEdgeUId);
     //     }
     //     SPDLOG_INFO("dropped link id{}", dropedEdgeUId);
     // }
 }
 
-void NodeEditor::RearrangeNodesLayout(const std::vector<std::vector<NodeUniqueId>>& topologicalOrder, const std::unordered_map<NodeUniqueId, Node>& nodesMap)
+void NodeEditor::RearrangeNodesLayout(
+    const std::vector<std::vector<NodeUniqueId>>& topologicalOrder,
+    const std::unordered_map<NodeUniqueId, Node>& nodesMap)
 {
-    float verticalPadding = 20.f;    
+    float verticalPadding   = 20.f;
     float horizontalPadding = 100.f;
 
     // put collections of nodes belonging to the same topological priority in a single colum
@@ -520,9 +536,9 @@ void NodeEditor::RearrangeNodesLayout(const std::vector<std::vector<NodeUniqueId
     std::vector<float> columHeights;
 
     // calc each colum's width and height using rect of NodeUi
-    for (const auto& nodeUIdVec: topologicalOrder)
+    for (const auto& nodeUIdVec : topologicalOrder)
     {
-        float columWidth = 0.f; // equal to the max of nodes' width in the same priority
+        float columWidth  = 0.f; // equal to the max of nodes' width in the same priority
         float columHeight = 0.f;
         for (NodeUniqueId nodeUid : nodeUIdVec)
         {
@@ -533,7 +549,8 @@ void NodeEditor::RearrangeNodesLayout(const std::vector<std::vector<NodeUniqueId
         columHeights.push_back(columHeight);
     }
 
-    assert(topologicalOrder.size() == columWidths.size() && topologicalOrder.size() == columHeights.size());
+    assert(topologicalOrder.size() == columWidths.size() &&
+           topologicalOrder.size() == columHeights.size());
 
     float gridSpaceX = 0.f;
     for (size_t columIndex = 0; columIndex < topologicalOrder.size(); ++columIndex)
@@ -592,10 +609,9 @@ void NodeEditor::NodeEditorShow()
 void NodeEditor::SaveState()
 {
     ImNodes::SaveCurrentEditorStateToIniFile("resource/savedstates.ini");
-
 }
 
-void NodeEditor::NodeEditorDestroy() 
+void NodeEditor::NodeEditorDestroy()
 {
     SaveState();
 }

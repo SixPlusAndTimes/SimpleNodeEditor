@@ -2,6 +2,5 @@
 #include "spdlog/spdlog.h"
 namespace SimpleNodeEditor
 {
-    
-} // namespace SimpleNodeEditor
 
+} // namespace SimpleNodeEditor

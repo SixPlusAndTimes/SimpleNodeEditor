@@ -18,11 +18,10 @@
 #include "NodeEditor.hpp"
 #include "YamlParser.hpp"
 
-
 bool ConfigLogLevlel()
 {
     SimpleNodeEditor::ConfigParser configParser("./resource/config.yaml");
-    const std::string& loglevel = configParser.GetConfigValue<std::string>("loglevel");
+    const std::string&             loglevel = configParser.GetConfigValue<std::string>("loglevel");
 
     std::cout << "loglevel: " << loglevel << std::endl;
     spdlog::level::level_enum spdLogLevel = spdlog::level::info;
@@ -30,7 +29,7 @@ bool ConfigLogLevlel()
     {
         spdLogLevel = spdlog::level::info;
     }
-    else if(loglevel == "debug")
+    else if (loglevel == "debug")
     {
         spdLogLevel = spdlog::level::debug;
     }
@@ -45,11 +44,9 @@ bool ConfigLogLevlel()
     return true;
 }
 
-
 int main(int, char**)
 {
-
-    if (!ConfigLogLevlel()) 
+    if (!ConfigLogLevlel())
     {
         SPDLOG_ERROR("ConfigLogLevel failed!");
     }
@@ -71,8 +68,8 @@ int main(int, char**)
 #elif defined(__APPLE__)
     // GL 3.2 Core + GLSL 150
     const char* glsl_version = "#version 150";
-    SDL_GL_SetAttribute(
-        SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS,
+                        SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
@@ -91,13 +88,8 @@ int main(int, char**)
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_WindowFlags window_flags =
         (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-    SDL_Window* window = SDL_CreateWindow(
-        "Dear ImGui SDL2+OpenGL3 example",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        1280,
-        720,
-        window_flags);
+    SDL_Window* window = SDL_CreateWindow("Dear ImGui SDL2+OpenGL3 example", SDL_WINDOWPOS_CENTERED,
+                                          SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
     SDL_GL_SetSwapInterval(1); // Enable vsync
@@ -132,8 +124,7 @@ int main(int, char**)
         while (SDL_PollEvent(&event))
         {
             ImGui_ImplSDL2_ProcessEvent(&event);
-            if (event.type == SDL_QUIT)
-                done = true;
+            if (event.type == SDL_QUIT) done = true;
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE &&
                 event.window.windowID == SDL_GetWindowID(window))
                 done = true;
@@ -148,11 +139,8 @@ int main(int, char**)
         // Rendering
         ImGui::Render();
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-        glClearColor(
-            clear_color.x * clear_color.w,
-            clear_color.y * clear_color.w,
-            clear_color.z * clear_color.w,
-            clear_color.w);
+        glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w,
+                     clear_color.z * clear_color.w, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(window);

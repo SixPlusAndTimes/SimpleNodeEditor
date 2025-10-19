@@ -6,7 +6,7 @@
 
 namespace SimpleNodeEditor
 {
-    
+
 class NodeEditor
 {
 public:
@@ -17,41 +17,42 @@ public:
     void HandleDeletingNodes();
 
 private:
-    void            ShowMenu();
-    void            ShowInfos();
-    void            HandleAddNodes();
-    NodeUniqueId    AddNewNodes(const NodeDescription& nodeDesc, YamlNode::NodeYamlId yamlNodeId = -1);
-    void            ShowNodes();
-    void            ShowEdges();
-    void            HandleAddEdges();
-    void            AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid);
-    void            HandleDeletingEdges();
-    void            DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid);
-    bool            IsInportAlreadyHasEdge(PortUniqueId portUid);
-    void            DeleteEdgeUidFromPort(EdgeUniqueId edgeUid);
-    void            SaveState();
-    void            RearrangeNodesLayout(const std::vector<std::vector<NodeUniqueId>>& topologicalOrder, const std::unordered_map<NodeUniqueId, Node>& nodesMap);
+    void         ShowMenu();
+    void         ShowInfos();
+    void         HandleAddNodes();
+    NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc, YamlNode::NodeYamlId yamlNodeId = -1);
+    void         ShowNodes();
+    void         ShowEdges();
+    void         HandleAddEdges();
+    void         AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid);
+    void         HandleDeletingEdges();
+    void         DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid);
+    bool         IsInportAlreadyHasEdge(PortUniqueId portUid);
+    void         DeleteEdgeUidFromPort(EdgeUniqueId edgeUid);
+    void         SaveState();
+    void RearrangeNodesLayout(const std::vector<std::vector<NodeUniqueId>>& topologicalOrder,
+                              const std::unordered_map<NodeUniqueId, Node>& nodesMap);
 
 private:
     std::unordered_map<NodeUniqueId, Node> m_nodes; // store nodes that will be rendered on canvas
 
     std::unordered_map<EdgeUniqueId, Edge> m_edges; // store edges that will be rendered on canvas
 
-    std::unordered_map<PortUniqueId, InputPort*>  m_inportPorts; // hold pointers to ports which actually owned by Nodes
-    std::unordered_map<PortUniqueId, OutputPort*> m_outportPorts; 
+    std::unordered_map<PortUniqueId, InputPort*>
+        m_inportPorts; // hold pointers to ports which actually owned by Nodes
+    std::unordered_map<PortUniqueId, OutputPort*> m_outportPorts;
 
     // uniqueid generators
     UniqueIdGenerator<NodeUniqueId> m_nodeUidGenerator;
     UniqueIdGenerator<PortUniqueId> m_portUidGenerator;
     UniqueIdGenerator<EdgeUniqueId> m_edgeUidGenerator;
 
-    ImNodesMiniMapLocation          m_minimap_location;
+    ImNodesMiniMapLocation m_minimap_location;
 
-    std::vector<NodeDescription>    m_nodeDescriptions;
+    std::vector<NodeDescription> m_nodeDescriptions;
 
-    bool                            m_needTopoSort;
+    bool m_needTopoSort;
 };
 } // namespace SimpleNodeEditor
-
 
 #endif // NODEEDITOR_H

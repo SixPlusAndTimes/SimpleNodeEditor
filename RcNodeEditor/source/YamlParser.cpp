@@ -3,7 +3,7 @@
 
 namespace SimpleNodeEditor
 {
-    
+
 bool YamlParser::LoadFile(const std::string& filePath)
 {
     m_rootNode = YAML::LoadFile(filePath);
@@ -18,7 +18,6 @@ bool YamlParser::LoadFile(const std::string& filePath)
     }
 }
 
-
 ConfigParser::ConfigParser(const std::string& filePath)
 {
     // is it useful to check LoadFile here?
@@ -26,7 +25,7 @@ ConfigParser::ConfigParser(const std::string& filePath)
     {
         SPDLOG_INFO("ConfigParser LoadFile success : {}", filePath);
     }
-    else 
+    else
     {
         SPDLOG_ERROR("ConfigParser failed : {}", filePath);
     }
@@ -38,7 +37,7 @@ NodeDescriptionParser::NodeDescriptionParser(const std::string& filePath)
     {
         SPDLOG_INFO("NodeDescriptionParser LoadFile success : {}", filePath);
     }
-    else 
+    else
     {
         SPDLOG_ERROR("ConfigParser LoadFile failed : {}", filePath);
     }
@@ -48,13 +47,12 @@ std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()
 {
     std::vector<NodeDescription> ret;
 
-    // 1. whether m_rootNode is valid 
+    // 1. whether m_rootNode is valid
     if (!m_rootNode)
     {
         SPDLOG_ERROR("rootNode is not invalid");
         return ret;
     }
-
 
     // 2. whether NodeDescriptions Node exists in the yaml file
     if (!m_rootNode["NodeDescriptions"])
@@ -62,7 +60,7 @@ std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()
         SPDLOG_ERROR("Cannot find NodeDescriptions in yaml file, check it!");
         return ret;
     }
-    // 3. whether NodeDescriptions Node is a sequence ndoe 
+    // 3. whether NodeDescriptions Node is a sequence ndoe
     YAML::Node nodeDescriptions = m_rootNode["NodeDescriptions"];
     if (!nodeDescriptions.IsSequence())
     {
@@ -71,47 +69,68 @@ std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()
     }
 
     // 4 iterate through all node descriptions
-    for (const auto& node : nodeDescriptions) {
+    for (const auto& node : nodeDescriptions)
+    {
         NodeDescription desc;
         // parse NodeName
-        if (node["NodeName"] && node["NodeName"].IsScalar()) {
+        if (node["NodeName"] && node["NodeName"].IsScalar())
+        {
             SPDLOG_ERROR(YAML::Dump(node["NodeName"]));
             desc.m_nodeName = node["NodeName"].as<std::string>();
-        } else {
+        }
+        else
+        {
             SPDLOG_ERROR("Skipping node: missing or invalid NodeName");
             continue;
         }
 
          // parse NodeType
-        if (node["NodeType"] && node["NodeType"].IsScalar()) {
+        if (node["NodeType"] && node["NodeType"].IsScalar())
+        {
             desc.m_yamlNodeType = node["NodeType"].as<YamlNodeType>();
-        } else {
+        }
+        else
+        {
             SPDLOG_ERROR("Skipping node: missing or invalid NodeType");
             continue;
         }
 
         // parse InputPorts
-        if (node["InputPorts"] && node["InputPorts"].IsSequence()) {
-            for (const auto& port : node["InputPorts"]) {
-                if (port.IsScalar()) {
+        if (node["InputPorts"] && node["InputPorts"].IsSequence())
+        {
+            for (const auto& port : node["InputPorts"])
+            {
+                if (port.IsScalar())
+                {
                     desc.m_inputPortNames.push_back(port.as<std::string>());
-                } else {
+                }
+                else
+                {
                     SPDLOG_ERROR("Skipping invalid InputPort in node: {}", desc.m_nodeName);
                 }
             }
-        } else {
+        }
+        else
+        {
             SPDLOG_ERROR("Node {} has no valid InputPorts sequence", desc.m_nodeName);
         }
         // parse OutputPorts
-        if (node["OutputPorts"] && node["OutputPorts"].IsSequence()) {
-            for (const auto& port : node["OutputPorts"]) {
-                if (port.IsScalar()) {
+        if (node["OutputPorts"] && node["OutputPorts"].IsSequence())
+        {
+            for (const auto& port : node["OutputPorts"])
+            {
+                if (port.IsScalar())
+                {
                     desc.m_outputPortNames.push_back(port.as<std::string>());
-                } else {
+                }
+                else
+                {
                     SPDLOG_ERROR("Skipping invalid OutputPort in node: {}", desc.m_nodeName);
                 }
             }
-        } else {
+        }
+        else
+        {
             SPDLOG_ERROR("Node {} has no valid OutputPorts sequence", desc.m_nodeName);
         }
         ret.push_back(std::move(desc));
@@ -120,16 +139,11 @@ std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()
     return ret;
 }
 
-PipelineParser::PipelineParser()
-{
-
-
-}
+PipelineParser::PipelineParser() {}
 
 bool PipelineParser::LoadFile(const std::string& filePath)
 {
-
-    bool ret = true;
+    bool ret   = true;
     m_rootNode = YAML::LoadFile(filePath);
     if (m_rootNode && m_rootNode["Pipeline"] && m_rootNode["Pipeline"].IsSequence())
     {
@@ -147,7 +161,7 @@ bool PipelineParser::LoadFile(const std::string& filePath)
     {
         m_nodeListNode = m_rootNode["NodeList"];
     }
-    else 
+    else
     {
         SPDLOG_ERROR("file {} has no valid Node sequence, check it", filePath);
         ret = false;
@@ -157,7 +171,7 @@ bool PipelineParser::LoadFile(const std::string& filePath)
     {
         m_edgeListNode = m_rootNode["LinkList"];
     }
-    else 
+    else
     {
         SPDLOG_ERROR("file {} has no valid List sequence, check it", filePath);
         ret = false;
@@ -168,7 +182,8 @@ bool PipelineParser::LoadFile(const std::string& filePath)
 
 std::vector<YamlNode> PipelineParser::ParseNodes()
 {
-    SPDLOG_INFO("start to parse node from file[{}], m_nodeListNode.size() = {}",  m_filePath, m_nodeListNode.size());
+    SPDLOG_INFO("start to parse node from file[{}], m_nodeListNode.size() = {}", m_filePath,
+                m_nodeListNode.size());
     std::vector<YamlNode> result;
 
     for (YAML::const_iterator iter = m_nodeListNode.begin(); iter != m_nodeListNode.end(); ++iter)
@@ -179,7 +194,6 @@ std::vector<YamlNode> PipelineParser::ParseNodes()
     return result;
 }
 
-
 // do we need more syntax check ?
 std::vector<YamlEdge> PipelineParser::ParseEdges()
 {
@@ -189,11 +203,13 @@ std::vector<YamlEdge> PipelineParser::ParseEdges()
         SPDLOG_ERROR("m_edgeListNode is invalid!");
         return result;
     }
-    SPDLOG_INFO("start to parse edges from file[{}], m_edgeListNode.size() = {}",  m_filePath, m_edgeListNode.size());
+    SPDLOG_INFO("start to parse edges from file[{}], m_edgeListNode.size() = {}", m_filePath,
+                m_edgeListNode.size());
 
     for (size_t edgeIterIdx = 0; edgeIterIdx < m_edgeListNode.size(); ++edgeIterIdx)
     {
-        if (m_edgeListNode[edgeIterIdx] && m_edgeListNode[edgeIterIdx].IsMap() && m_edgeListNode[edgeIterIdx]["SrcPort"])
+        if (m_edgeListNode[edgeIterIdx] && m_edgeListNode[edgeIterIdx].IsMap() &&
+            m_edgeListNode[edgeIterIdx]["SrcPort"])
         {
             YamlPort srcPort = m_edgeListNode[edgeIterIdx]["SrcPort"].as<YamlPort>();
 
@@ -205,7 +221,7 @@ std::vector<YamlEdge> PipelineParser::ParseEdges()
                     result.emplace_back(srcPort, dstPortsNode[portIterIdx].as<YamlPort>());
                 }
             }
-            else 
+            else
             {
                 SPDLOG_ERROR("dstPortNode is invalid or dstPortNode is not sequence");
                 SPDLOG_ERROR("DstPort node YAML:\n{}", YAML::Dump(dstPortsNode));
@@ -213,7 +229,9 @@ std::vector<YamlEdge> PipelineParser::ParseEdges()
         }
         else
         {
-            SPDLOG_ERROR("invalid node, checkinfo : isEdgeNodeValid[{}] | isEdgeNodeMap[{}]", m_edgeListNode[edgeIterIdx]? true : false, m_edgeListNode[edgeIterIdx].IsMap());
+            SPDLOG_ERROR("invalid node, checkinfo : isEdgeNodeValid[{}] | isEdgeNodeMap[{}]",
+                         m_edgeListNode[edgeIterIdx] ? true : false,
+                         m_edgeListNode[edgeIterIdx].IsMap());
             SPDLOG_ERROR("Edge node YAML:\n{}", YAML::Dump(m_edgeListNode[edgeIterIdx]));
         }
     }
@@ -222,4 +240,3 @@ std::vector<YamlEdge> PipelineParser::ParseEdges()
     return result;
 }
 } // namespace SimpleNodeEditor
-
