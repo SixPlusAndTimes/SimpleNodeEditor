@@ -32,3 +32,7 @@ If you want intall it at another dir, just modify the default intallation path i
 [imgui](https://github.com/ocornut/imgui)
 
 [imnode](https://github.com/Nelarius/imnodes)
+- port口名字显示时排版美化
+- Node Edge 属性的显示和编辑功能 
+- node Edge 的裁剪功能
+- zoom in out 功能

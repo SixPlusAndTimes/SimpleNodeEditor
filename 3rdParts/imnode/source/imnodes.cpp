@@ -717,23 +717,28 @@ static inline bool IsMiniMapHovered();
 
 void BeginCanvasInteraction(ImNodesEditorContext& editor)
 {
-    const bool any_ui_element_hovered =
-        GImNodes->HoveredNodeIdx.HasValue() || GImNodes->HoveredLinkIdx.HasValue() ||
-        GImNodes->HoveredPinIdx.HasValue() || ImGui::IsAnyItemHovered();
 
     const bool mouse_not_in_canvas = !MouseInCanvas();
 
-    if (editor.ClickInteraction.Type != ImNodesClickInteractionType_None ||
-        any_ui_element_hovered || mouse_not_in_canvas)
+    if (editor.ClickInteraction.Type != ImNodesClickInteractionType_None || mouse_not_in_canvas)
     {
         return;
     }
 
+    // not the prority of panning is bigger than hover event
     const bool started_panning = GImNodes->AltMouseClicked || GImNodes->RightMouseDragging;
-
     if (started_panning)
     {
         editor.ClickInteraction.Type = ImNodesClickInteractionType_Panning;
+        return;
+    }
+
+    const bool any_ui_element_hovered =
+    GImNodes->HoveredNodeIdx.HasValue() || GImNodes->HoveredLinkIdx.HasValue() ||
+    GImNodes->HoveredPinIdx.HasValue() || ImGui::IsAnyItemHovered();
+    if (any_ui_element_hovered)
+    {
+        return ;
     }
     else if (GImNodes->LeftMouseClicked)
     {
