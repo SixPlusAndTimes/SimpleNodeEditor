@@ -66,6 +66,9 @@ NodeEditor::NodeEditor()
                        dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId));
         }
         m_needTopoSort = true;
+
+
+        // update pruning rules
     }
     else
     {

@@ -28,10 +28,14 @@ Pipeline:
       IsSrcNode: 0
       NodeType: 2
     - 
-      NodeName: ggg
+      NodeName: ppp
       NodeId: 5
       IsSrcNode: 0
-      NodeType: 3
+      NodeType: 4
+      PruneRule:
+      - 
+          group: pruneppp
+          type: Enable
 
   LinkList:
     - 
@@ -66,13 +70,17 @@ Pipeline:
       - 
         NodeName: ADD
         NodeId: 2
-        PortId: 0
+        PortId: 1
         PortName: inputport1
       -
-        NodeName : ggg
+        NodeName : ppp
         NodeId : 5
         PortName: inputport2
         PortId : 2
+        PruneRule:
+        - 
+          group: pruneppp
+          type: Enable
     - 
       SrcPort:
         NodeName: ADD

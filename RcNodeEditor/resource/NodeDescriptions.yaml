@@ -36,3 +36,27 @@ NodeDescriptions:
       - outputport1
       - outputport2
       - outputport3
+  - 
+    NodeName: ppp
+    NodeType: 4
+    InputPorts:
+      - inputport1
+      - inputport2
+      - inputport3
+    OutputPorts:
+      - outputport1
+      - outputport2
+      - outputport3
+  - 
+    NodeName: nnn
+    NodeType: 5
+    InputPorts:
+      - inputport1
+      - inputport2
+      - inputport3
+      - inputport4
+    OutputPorts:
+      - outputport1
+      - outputport2
+      - outputport3
+      - outputport4

@@ -29,10 +29,17 @@ using PortUniqueId = int32_t;
 using EdgeUniqueId = int32_t;
 using NodeUniqueId = int32_t;
 
+// TODO: factor out the yaml definition
 struct YamlPropertyDescription
 {
     std::string m_propertyName;
     std::string m_propertyValue;
+};
+
+struct YamlPruningRule
+{
+    std::string m_Group;
+    std::string m_Type;
 };
 
 struct YamlNode
@@ -44,15 +51,16 @@ struct YamlNode
           m_nodeYamlId(-1),
           m_isSrcNode(false),
           m_nodeYamlType(-1),
-          m_Properties()
+          m_Properties(),
+          m_PruningRules()
     {
     }
     std::string  m_nodeName;
     NodeYamlId   m_nodeYamlId;
     bool         m_isSrcNode;
     YamlNodeType m_nodeYamlType;
-    // TODO : ADD nodetype here
     std::vector<YamlPropertyDescription> m_Properties;
+    std::vector<YamlPruningRule> m_PruningRules;
 };
 
 struct YamlPort
@@ -62,6 +70,8 @@ struct YamlPort
     YamlNode::NodeYamlId m_nodeYamlId;
     std::string          m_portName;
     PortYamlId           m_portYamlId;
+
+    std::vector<YamlPruningRule> m_PruningRules; // only dst port has pruning rules
 };
 
 // srcport info maybe redundant in different edges, check it later
@@ -69,6 +79,7 @@ struct YamlEdge
 {
     YamlPort m_yamlSrcPort;
     YamlPort m_yamlDstPort;
+
     // TODO : add properties
 };
 
