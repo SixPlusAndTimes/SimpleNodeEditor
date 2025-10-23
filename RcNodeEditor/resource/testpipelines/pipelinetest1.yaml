@@ -28,6 +28,15 @@ Pipeline:
       IsSrcNode: 0
       NodeType: 2
     - 
+      NodeName: ADD
+      NodeId: 6
+      IsSrcNode: 0
+      NodeType: 1
+      PruneRule:
+      - 
+          group: pruneppp
+          type: Enable
+    - 
       NodeName: ppp
       NodeId: 5
       IsSrcNode: 0
@@ -35,7 +44,16 @@ Pipeline:
       PruneRule:
       - 
           group: pruneppp
-          type: Enable
+          type: Disble
+    - 
+      NodeName: ppp
+      NodeId: 7
+      IsSrcNode: 0
+      NodeType: 4
+      PruneRule:
+      - 
+          group: pruneppp
+          type: Disble
 
   LinkList:
     - 
@@ -80,7 +98,7 @@ Pipeline:
         PruneRule:
         - 
           group: pruneppp
-          type: Enable
+          type: Disble
     - 
       SrcPort:
         NodeName: ADD

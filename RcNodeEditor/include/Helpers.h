@@ -29,6 +29,10 @@ std::vector<std::vector<NodeUniqueId>> TopologicalSort(
     // sum up all node's degree
     for (const auto& [_, edge] : edgesMap)
     {
+        if (!degrees.count(edge.GetDestinationNodeUid()))
+        {
+            SPDLOG_ERROR("error dstnodeuid [{}]", edge.GetDestinationNodeUid());
+        }
         ++degrees.at(edge.GetDestinationNodeUid());
     }
 

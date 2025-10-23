@@ -145,9 +145,9 @@ public:
     using EdgeUPtr = std::unique_ptr<Edge>;
 
 public:
-    Edge(PortUniqueId sourcePortUid, PortUniqueId destinationPortUid, EdgeUniqueId edgeUid);
+    Edge(PortUniqueId sourcePortUid, PortUniqueId destinationPortUid, EdgeUniqueId edgeUid, YamlEdge yamlEdge = {});
     Edge(PortUniqueId sourcePortUid, NodeUniqueId sourceNodeUid, PortUniqueId destinationPortUid,
-         NodeUniqueId destinationNodeUid, EdgeUniqueId edgeUid);
+         NodeUniqueId destinationNodeUid, EdgeUniqueId edgeUid, YamlEdge yamlEdge);
     EdgeUniqueId GetEdgeUniqueId() const;
     PortUniqueId GetSourcePortUid() const;
     PortUniqueId GetDestinationPortUid() const;
@@ -155,6 +155,8 @@ public:
     NodeUniqueId GetDestinationNodeUid() const;
     void         SetSourceNodeUid(NodeUniqueId nodeUid);
     void         SetDestinationNodeUid(NodeUniqueId nodeUid);
+    const YamlEdge& GetYamlEdge();
+    const YamlEdge& GetYamlEdge() const;
 
 private:
     PortUniqueId m_srcPortUid;
@@ -162,6 +164,8 @@ private:
     PortUniqueId m_dstPortUid;
     NodeUniqueId m_dstNodeUid;
     EdgeUniqueId m_edgeUid;
+
+    YamlEdge     m_yamlEdge;
 };
 
 class Node
@@ -178,9 +182,8 @@ public: // type def
 
 public:
     // Node();
-    Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle,
+    Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode, const std::string& nodeTitle,
          float nodeWidth = 100.f);
-    Node(YamlNode::NodeYamlId nodeYamlId, NodeType nodeType, float nodeWidth = 100.f);
     void SetNodePosition(const ImVec2& pos);
 
     void                           AddInputPort(const InputPort& inPort);
@@ -197,6 +200,8 @@ public:
 
     PortUniqueId FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const;
     PortUniqueId FindPortUidAmongInports(YamlPort::PortYamlId portYamlId) const;
+    const YamlNode&                 GetYamlNode();
+    const YamlNode&                 GetYamlNode() const;
 
     // yaml node related
     void                 SetNodeYamlId(YamlNode::NodeYamlId nodeYamlId);
@@ -214,6 +219,7 @@ private:
 
     // yaml node related
     YamlNode::NodeYamlId m_yamlNodeId;
+    YamlNode m_yamlNode;
 };
 } // namespace SimpleNodeEditor
 

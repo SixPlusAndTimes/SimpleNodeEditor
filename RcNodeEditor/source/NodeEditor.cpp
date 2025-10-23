@@ -5,6 +5,7 @@
 #include <cstdint>
 #include "Helpers.h"
 #include "YamlParser.hpp"
+#include <set>
 
 namespace SimpleNodeEditor
 {
@@ -22,7 +23,8 @@ NodeEditor::NodeEditor()
       m_portUidGenerator(),
       m_edgeUidGenerator(),
       m_minimap_location(ImNodesMiniMapLocation_BottomRight),
-      m_needTopoSort(false)
+      m_needTopoSort(false),
+      m_allPruningRules()
 {
     // TODO: file path may be a constant value or configed in Config.yaml?
     NodeDescriptionParser        nodeParser("./resource/NodeDescriptions.yaml");
@@ -41,16 +43,16 @@ NodeEditor::NodeEditor()
         std::vector<YamlNode> yamlNodes = pipeLineParser.ParseNodes();
         std::vector<YamlEdge> yamlEdges = pipeLineParser.ParseEdges();
 
+        CollectPruningRules(yamlNodes, yamlEdges);
+
         // add node in Editor
         float                                                  x_axis = 0.f, y_axis = 0.f;
         std::unordered_map<YamlNode::NodeYamlId, NodeUniqueId> t_yamlNodeId2NodeUidMap;
         for (const YamlNode& yamlNode : yamlNodes)
         {
             NodeUniqueId newNodeUid = AddNewNodes(
-                s_nodeDescriptionsTypeDesMap.at(yamlNode.m_nodeYamlType), yamlNode.m_nodeYamlId);
+                s_nodeDescriptionsTypeDesMap.at(yamlNode.m_nodeYamlType),  yamlNode);
             t_yamlNodeId2NodeUidMap.emplace(yamlNode.m_nodeYamlId, newNodeUid);
-            // just for testing here, we need toposort to arrange these nodes
-            ImNodes::SetNodeGridSpacePos(newNodeUid, ImVec2(x_axis += 100.f, y_axis += 100.f));
         }
 
         // add edges in editor
@@ -63,12 +65,11 @@ NodeEditor::NodeEditor()
             const Node& srcNode = m_nodes.at(ownedBySrcNodeUid);
             const Node& dstNode = m_nodes.at(ownedByDstNodeUid);
             AddNewEdge(srcNode.FindPortUidAmongOutports(yamlEdge.m_yamlSrcPort.m_portYamlId),
-                       dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId));
+                       dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId), yamlEdge);
         }
         m_needTopoSort = true;
 
-
-        // update pruning rules
+        ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges);
     }
     else
     {
@@ -77,10 +78,84 @@ NodeEditor::NodeEditor()
     }
 }
 
+void NodeEditor::ApplyPruningRule(std::unordered_map<std::string, std::string> currentPruningRule, 
+                      std::unordered_map<NodeUniqueId, Node> nodesMap,
+                      std::unordered_map<EdgeUniqueId, Edge> edgesMap)
+{
+    for (const auto&[group, type] : currentPruningRule)
+    {
+        // prune edges first
+        for (const auto&[edgeUid, edge] : edgesMap)
+        {
+
+            for (auto& edgePruningRule : edge.GetYamlEdge().m_yamlDstPort.m_PruningRules)
+            {
+                if (edgePruningRule.m_Group == group && edgePruningRule.m_Type != type)
+                {
+                    // prune the node
+                    SPDLOG_ERROR("Prune Edge with EdgeUid[{}] SrcNodeUid[{}] SrcNodeYamlId[{}] DstNodeUid[{}] DstNodeYamlId[{}]", edgeUid, 
+                                edge.GetSourceNodeUid(), 
+                                edge.GetYamlEdge().m_yamlSrcPort.m_nodeYamlId, 
+                                edge.GetDestinationNodeUid(),
+                                edge.GetYamlEdge().m_yamlDstPort.m_nodeYamlId);
+                    auto iter = m_edges.find(edgeUid);
+                    DeleteEdgeUidFromPort(edgeUid);
+                    m_edgesPruned.insert(*iter);
+                    m_edges.erase(edgeUid);
+                }
+            }
+        }
+
+        for (const auto&[nodeUid, node] : nodesMap)
+        {
+            for (auto& nodePruningRule : node.GetYamlNode().m_PruningRules)
+            {
+                if (nodePruningRule.m_Group == group && nodePruningRule.m_Type != type)
+                {
+                    // prune the node
+                    SPDLOG_ERROR("Prune Node with NodeUid[{}] NodeYamlId[{}]", nodeUid, node.GetYamlNode().m_nodeYamlId);
+                    auto iter = m_nodes.find(nodeUid);
+                    m_nodesPruned.insert(*iter);
+                    m_nodes.erase(nodeUid);
+                }
+            }
+        }
+
+    }
+}
+    
+void NodeEditor::CollectPruningRules(std::vector<YamlNode> yamlNodes, std::vector<YamlEdge> yamlEdges)
+{
+    // collect pruning rules from nodes and edges
+    for (const YamlNode& yamlNode : yamlNodes)
+    {
+        for (const YamlPruningRule& pruningRule : yamlNode.m_PruningRules)
+        {
+            m_allPruningRules[pruningRule.m_Group].insert(pruningRule.m_Type);
+        }
+    }
+
+    for (const YamlEdge& yamlEdge : yamlEdges)
+    {
+        for (const YamlPruningRule& pruningRule : yamlEdge.m_yamlDstPort.m_PruningRules)
+        {
+            m_allPruningRules[pruningRule.m_Group].insert(pruningRule.m_Type);
+        }
+    }
+
+    // set defatul pruning rule
+    for (const auto&[group, type] : m_allPruningRules)
+    {
+        assert(type.size() != 0);
+        m_currentPruninngRule[group] = *(++type.begin());
+    }
+    
+}
+
 void DebugDrawRect(ImRect rect)
 {
     ImDrawList* draw_list    = ImGui::GetWindowDrawList();
-    ImU32       border_color = IM_COL32(255, 0, 0, 255); // Example: red border
+    ImU32       border_color = IM_COL32(255, 0, 0, 255); 
 
     float rounding  = 0.0f; // No corner rounding
     float thickness = 1.0f; // Border thickness
@@ -129,12 +204,13 @@ void NodeEditor::ShowInfos()
     ImGui::TextUnformatted("X -- delete selected node or link");
 }
 
-NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc,
-                                     YamlNode::NodeYamlId   yamlNodeId)
+
+// TODO : redundant infomation here
+NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNode)
 {
     Node newNode(
-        m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode,
-        yamlNodeId == -1 ? nodeDesc.m_nodeName : nodeDesc.m_nodeName + std::to_string(yamlNodeId));
+        m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, yamlNode,
+        yamlNode.m_nodeYamlId == -1 ? nodeDesc.m_nodeName : nodeDesc.m_nodeName + std::to_string(yamlNode.m_nodeYamlId));
 
     NodeUniqueId ret = newNode.GetNodeUniqueId();
 
@@ -325,16 +401,16 @@ bool NodeEditor::IsInportAlreadyHasEdge(PortUniqueId portUid)
     return false;
 }
 
-void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid)
+void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid, const YamlEdge& yamlEdge, bool avoidMultipleInputLinks)
 {
     // avoid multiple edges linking to the same inport
-    if (IsInportAlreadyHasEdge(dstPortUid))
+    if (avoidMultipleInputLinks && IsInportAlreadyHasEdge(dstPortUid))
     {
         SPDLOG_WARN("inport port can not have multiple edges, inportUid = {}", dstPortUid);
         return;
     }
 
-    Edge newEdge(srcPortUid, dstPortUid, m_edgeUidGenerator.AllocUniqueID());
+    Edge newEdge(srcPortUid, dstPortUid, m_edgeUidGenerator.AllocUniqueID(), yamlEdge);
 
     // set inportport's edgeid
     if (m_inportPorts.count(dstPortUid) != 0 && m_inportPorts[dstPortUid] != nullptr)
@@ -413,6 +489,19 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid)
     }
 }
 
+void NodeEditor::DeleteNode(NodeUniqueId nodeUid)
+{
+    if (m_nodes.count(nodeUid) == 0)
+    {
+        SPDLOG_ERROR("deleting a nonexisting node, check it! nodeUid = {}", nodeUid);
+        return;
+    }
+    // before we erase the node, we need delete the linked edge first
+    DeleteEdgesBeforDeleteNode(nodeUid);
+
+    m_nodes.erase(nodeUid);
+}
+
 void NodeEditor::HandleDeletingNodes()
 {
     // erase selected nodes
@@ -424,14 +513,7 @@ void NodeEditor::HandleDeletingNodes()
         ImNodes::GetSelectedNodes(selected_nodes.data());
         for (const NodeUniqueId nodeUid : selected_nodes)
         {
-            if (m_nodes.count(nodeUid) == 0)
-            {
-                SPDLOG_ERROR("deleting a nonexisting node, please check it! nodeUid = {}", nodeUid);
-                continue;
-            }
-            // before we erase the node, we need delete the linked edge first
-            DeleteEdgesBeforDeleteNode(nodeUid);
-            m_nodes.erase(nodeUid);
+            DeleteNode(nodeUid);
         }
     }
 }
@@ -594,7 +676,7 @@ void NodeEditor::NodeEditorShow()
 
     HandleAddNodes();
 
-    ShowNodes(); // only afer calling ImNodes::EndNode can we get the rect of nodeUi
+    ShowNodes(); // only afer calling ImNodes::EndNode can we get the rect of nodeUi, and then we do toposort
 
     if (m_needTopoSort)
     {

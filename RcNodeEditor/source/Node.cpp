@@ -75,20 +75,32 @@ OutputPort::OutputPort(PortUniqueId portUid, PortId portId, const std::string& n
                 portId, name);
 }
 
-Edge::Edge(PortUniqueId sourcePortUid, PortUniqueId destinationPortUid, EdgeUniqueId edgeUid)
-    : m_srcPortUid(sourcePortUid), m_dstPortUid(destinationPortUid), m_edgeUid(edgeUid)
+Edge::Edge(PortUniqueId sourcePortUid, PortUniqueId destinationPortUid, EdgeUniqueId edgeUid, YamlEdge yamlEdge)
+    : m_srcPortUid(sourcePortUid), m_dstPortUid(destinationPortUid), m_edgeUid(edgeUid), m_yamlEdge(yamlEdge)
 {
 }
 
 Edge::Edge(PortUniqueId sourcePortUid, NodeUniqueId sourceNodeUid, PortUniqueId destinationPortUid,
-           NodeUniqueId destinationNodeUid, EdgeUniqueId edgeUid)
+         NodeUniqueId destinationNodeUid, EdgeUniqueId edgeUid, YamlEdge yamlEdge)
     : m_srcPortUid(sourcePortUid),
       m_srcNodeUid(sourceNodeUid),
       m_dstPortUid(destinationPortUid),
       m_dstNodeUid(destinationNodeUid),
-      m_edgeUid(edgeUid)
+      m_edgeUid(edgeUid),
+      m_yamlEdge(yamlEdge)
 {
 }
+
+const YamlEdge& Edge::GetYamlEdge()
+{
+    return m_yamlEdge;
+}
+
+const YamlEdge& Edge::GetYamlEdge() const
+{
+    return m_yamlEdge;
+}
+
 EdgeUniqueId Edge::GetEdgeUniqueId() const
 {
     return m_edgeUid;
@@ -126,7 +138,8 @@ NodeUniqueId Edge::GetDestinationNodeUid() const
 
 // Node::Node() : Node(-1, NodeType::Unknown, "Default") {}
 
-Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle, float nodeWidth)
+Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode, const std::string& nodeTitle,
+         float nodeWidth)
     : m_nodeUid(nodeUid),
       m_nodeType(nodeType),
       m_nodeWidth(nodeWidth),
@@ -134,24 +147,22 @@ Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const std::string& nodeTitle
       m_nodePos(),
       m_inputPorts(),
       m_outputPorts(),
-      m_yamlNodeId(-1)
+      m_yamlNodeId(yamlNode.m_nodeYamlId),
+      m_yamlNode(yamlNode)
 {
     SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid,
                 m_yamlNodeId, m_nodeTitle);
 }
 
-Node::Node(YamlNode::NodeYamlId nodeYamlId, NodeType nodeType, float nodeWidth)
-    : m_nodeUid(-1),
-      m_nodeType(nodeType),
-      m_nodeWidth(nodeWidth),
-      m_nodeTitle(),
-      m_nodePos(),
-      m_inputPorts(),
-      m_outputPorts(),
-      m_yamlNodeId(nodeYamlId)
+
+const YamlNode& Node::GetYamlNode()
 {
-    SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid,
-                m_yamlNodeId, m_nodeTitle);
+    return m_yamlNode;
+}
+
+const YamlNode& Node::GetYamlNode() const
+{
+    return m_yamlNode;
 }
 
 void Node::SetNodeYamlId(YamlNode::NodeYamlId nodeYamlId)
