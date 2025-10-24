@@ -92,7 +92,6 @@ void NodeEditor::ApplyPruningRule(std::unordered_map<std::string, std::string> c
             {
                 if (edgePruningRule.m_Group == group && edgePruningRule.m_Type != type)
                 {
-                    // prune the node
                     SPDLOG_ERROR("Prune Edge with EdgeUid[{}] SrcNodeUid[{}] SrcNodeYamlId[{}] DstNodeUid[{}] DstNodeYamlId[{}]", edgeUid, 
                                 edge.GetSourceNodeUid(), 
                                 edge.GetYamlEdge().m_yamlSrcPort.m_nodeYamlId, 
@@ -656,21 +655,16 @@ void NodeEditor::NodeEditorShow()
     ImVec2 displaySize = io.DisplaySize;
 
     auto flags = ImGuiWindowFlags_NoDecoration
-                | ImGuiWindowFlags_NoMove
                 | ImGuiWindowFlags_NoSavedSettings
-                | ImGuiWindowFlags_NoBringToFrontOnFocus
-                | ImGuiWindowFlags_MenuBar;
+                | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(displaySize);
     // The node editor window
     ImGui::Begin("SimpleNodeEditor", nullptr, flags);
 
-    ShowMenu();
 
-    ShowInfos();
-
-    // ImNodes::GetIO().EmulateThreeButtonMouse.Modifier = &ImGui::GetIO().KeyAlt;
+    ImNodes::GetIO().EmulateThreeButtonMouse.Modifier = &ImGui::GetIO().KeyAlt;
 
     ImNodes::BeginNodeEditor();
 
@@ -697,7 +691,19 @@ void NodeEditor::NodeEditorShow()
 
     HandleDeletingNodes();
 
-    ImGui::End();
+    ImGui::End(); // end of "SimpleNodeEditor"
+
+
+    // start of pruning rule editor window
+    ImVec2 pruningRuleEditorWindowSize{displaySize.x / 5, displaySize.y / 5};
+    // Create toolbar as its own top-level window so it can be moved/resized by the user.
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
+    ImGui::SetNextWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(pruningRuleEditorWindowSize, ImGuiCond_Appearing);
+    ImGui::Begin("W_TOOLBAR", nullptr, ImGuiWindowFlags_None);
+    ImGui::End(); // end of pruningRuleEditorWindow
+
+    ImGui::PopStyleVar();
 }
 
 void NodeEditor::SaveState()
