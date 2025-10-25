@@ -28,6 +28,7 @@ private:
     void         HandleAddEdges();
     void         AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid, const YamlEdge& yamlEdge = {}, bool avoidMultipleInputLinks = true);
     void         HandleDeletingEdges();
+    void         DeleteEdge(EdgeUniqueId edgeUid);
     void         DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid);
     bool         IsInportAlreadyHasEdge(PortUniqueId portUid);
     void         DeleteEdgeUidFromPort(EdgeUniqueId edgeUid);
@@ -37,6 +38,10 @@ private:
     void CollectPruningRules(std::vector<YamlNode> yamlNodes, std::vector<YamlEdge> yamlEdges);
 
     void ApplyPruningRule(std::unordered_map<std::string, std::string> currentPruningRule, std::unordered_map<NodeUniqueId, Node> nodesMap, std::unordered_map<EdgeUniqueId, Edge> edgesMap);
+    void RestorePruning(const std::string& group, const std::string& orignType, const std::string& newType);
+
+    void ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize);
+
 private:
     std::unordered_map<NodeUniqueId, Node> m_nodes; // store nodes that will be rendered on canvas
 

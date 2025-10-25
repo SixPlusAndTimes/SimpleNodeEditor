@@ -1,0 +1,55 @@
+
+Pipeline:
+-
+  pipelinename : pipe2
+  NodeList:
+    - 
+      NodeName : ggg
+      NodeId : 0
+      IsSrcNode: 0
+      NodeType: 3
+    - 
+      NodeName: Select
+      NodeId : 1
+      IsSrcNode: 0
+      NodeType: 2
+      PruneRule:
+      - 
+          group: pruneppp
+          type: Disble
+    - 
+      NodeName: ADD
+      NodeId : 2
+      IsSrcNode: 0
+      NodeType: 1
+      PruneRule:
+      - 
+          group: pruneppp
+          type: Enable
+
+  LinkList:
+    - 
+      SrcPort:
+        NodeName : ggg
+        NodeId : 0
+        PortName: output1
+        PortId : 0
+      DstPort:
+      - 
+        NodeName : Select
+        NodeId : 1
+        PortName: inputport1
+        PortId : 0
+        PruneRule:
+        - 
+          group: pruneppp
+          type: Disble
+      - 
+        NodeName: ADD
+        NodeId : 2
+        PortId : 0
+        PortName: inputport1
+        PruneRule:
+        - 
+          group: pruneppp
+          type: Enable

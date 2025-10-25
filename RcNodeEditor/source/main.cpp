@@ -35,8 +35,7 @@ bool ConfigLogLevlel()
     }
 
     spdlog::set_level(spdLogLevel);
-    spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e][%l][%s:%#]: %v");
-
+    // spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e][%l][%s:%#]: %v");
     return true;
 }
 

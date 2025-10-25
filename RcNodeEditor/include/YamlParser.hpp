@@ -132,7 +132,8 @@ struct convert<SimpleNodeEditor::YamlPort>
             }
             else
             {
-                SPDLOG_ERROR("invalide key {}, when parsing edges", pruneRuleKey);
+                SPDLOG_ERROR("invalide key[{}], when parsing ports, nodeName[{}], nodeyamlId[{}], portName[{}], portYamlId[{}]",
+                              pruneRuleKey, rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_portName, rhs.m_portYamlId );
             }
 
             SPDLOG_INFO(

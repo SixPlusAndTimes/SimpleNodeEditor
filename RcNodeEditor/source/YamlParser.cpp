@@ -75,7 +75,6 @@ std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()
         // parse NodeName
         if (node["NodeName"] && node["NodeName"].IsScalar())
         {
-            SPDLOG_ERROR(YAML::Dump(node["NodeName"]));
             desc.m_nodeName = node["NodeName"].as<std::string>();
         }
         else
