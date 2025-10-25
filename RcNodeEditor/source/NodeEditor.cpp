@@ -668,7 +668,6 @@ void NodeEditor::RearrangeNodesLayout(
     // put collections of nodes belonging to the same topological priority in a single colum
     std::vector<float> columWidths;
     std::vector<float> columHeights;
-
     // calc each colum's width and height using rect of NodeUi
     for (const auto& nodeUIdVec : topologicalOrder)
     {
@@ -697,6 +696,10 @@ void NodeEditor::RearrangeNodesLayout(
         }
         gridSpaceX += (columWidths[columIndex] + horizontalPadding);
     }
+
+    // set editor panning 
+    ImVec2 curretPanning = ImNodes::EditorContextGetPanning();
+    ImNodes::EditorContextResetPanning({curretPanning.x, curretPanning.y + ImGui::GetWindowHeight() / 2.0f});
 }
 
 // resotre nodes and edges that match the currentPruningRule
@@ -851,29 +854,25 @@ void NodeEditor::HandleOtherUserInputs()
         m_needTopoSort = true;
     }
 }
-
-void NodeEditor::NodeEditorShow()
+void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
 {
-    ImGuiIO& io = ImGui::GetIO();
-    ImVec2 displaySize = io.DisplaySize;
 
     auto flags = ImGuiWindowFlags_NoDecoration
                 | ImGuiWindowFlags_NoSavedSettings
                 | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
     ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::SetNextWindowSize(displaySize);
+    ImGui::SetNextWindowSize(mainWindowDisplaySize);
+
     // The node editor window
     ImGui::Begin("SimpleNodeEditor", nullptr, flags);
-
-
     ImNodes::GetIO().EmulateThreeButtonMouse.Modifier = &ImGui::GetIO().KeyAlt;
-
     ImNodes::BeginNodeEditor();
 
     HandleAddNodes();
 
-    ShowNodes(); // only afer calling ImNodes::EndNode can we get the rect of nodeUi, and then we do toposort
+    ShowNodes(); 
+    // only afer calling ImNodes::EndNode in the ShowNodes() function can we get the rect of nodeUi, and then we do toposort
 
     if (m_needTopoSort)
     {
@@ -896,11 +895,16 @@ void NodeEditor::NodeEditorShow()
 
     // S : toposort
     HandleOtherUserInputs();
-
     ImGui::End(); // end of "SimpleNodeEditor"
+}
 
-    ShowPruningRuleEditWinddow(displaySize);
+void NodeEditor::NodeEditorShow()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    ImVec2 mainWindowDisplaySize = io.DisplaySize;
 
+    ShowGrapghEditWindow(mainWindowDisplaySize);
+    ShowPruningRuleEditWinddow(mainWindowDisplaySize);
 }
 
 void NodeEditor::SaveState()

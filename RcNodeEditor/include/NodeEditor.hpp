@@ -40,8 +40,11 @@ private:
     void ApplyPruningRule(std::unordered_map<std::string, std::string> currentPruningRule, std::unordered_map<NodeUniqueId, Node> nodesMap, std::unordered_map<EdgeUniqueId, Edge> edgesMap);
     void RestorePruning(const std::string& group, const std::string& orignType, const std::string& newType);
 
+    void ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize);
     void ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize);
+
     void HandleOtherUserInputs();
+
 
 private:
     std::unordered_map<NodeUniqueId, Node> m_nodes; // store nodes that will be rendered on canvas
