@@ -41,6 +41,7 @@ private:
     void RestorePruning(const std::string& group, const std::string& orignType, const std::string& newType);
 
     void ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize);
+    void HandleOtherUserInputs();
 
 private:
     std::unordered_map<NodeUniqueId, Node> m_nodes; // store nodes that will be rendered on canvas

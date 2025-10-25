@@ -32,7 +32,14 @@ If you want intall it at another dir, just modify the default intallation path i
 [imgui](https://github.com/ocornut/imgui)
 
 [imnode](https://github.com/Nelarius/imnodes)
+
+# TODOS
+
 - port口名字显示时排版美化
 - Node Edge 属性的显示和编辑功能 
 - node Edge 的裁剪功能
+    - 目前只能处理完全从yaml文件解析出来的pipeline，如果手动添加edge可能会crash，以后再修复
+    - bug原因：restore edge时要借助yamlnode属性，但是手动添加的edge没有yaml属性, 需要自动生成yamlnode、links 属性
 - zoom in out 功能
+- 手动toposort的功能，添加用户输入处理的逻辑？ 按下 S 键， 重新toposort?
+- file drop 功能

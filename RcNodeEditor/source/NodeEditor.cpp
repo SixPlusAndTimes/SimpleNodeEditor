@@ -657,6 +657,11 @@ void NodeEditor::RearrangeNodesLayout(
     const std::vector<std::vector<NodeUniqueId>>& topologicalOrder,
     const std::unordered_map<NodeUniqueId, Node>& nodesMap)
 {
+    if (topologicalOrder.size() == 0 || nodesMap.size() == 0)
+    {
+        return;
+    }
+
     float verticalPadding   = 20.f;
     float horizontalPadding = 100.f;
 
@@ -805,21 +810,8 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
         ImGui::SameLine();
         // copy set into vector to allow indexed access in the combo
         std::vector<std::string> types(typesSet.begin(), typesSet.end());
-        // ensure we have a current value for this group
-        if (m_currentPruninngRule.find(group) == m_currentPruninngRule.end())
-        {
-            if (!types.empty())
-            {
-                m_currentPruninngRule[group] = types.front();
-            }
-            else
-            {
-                m_currentPruninngRule[group] = std::string();
-                SPDLOG_ERROR("cannot find group [{}] in currentPruningRule", group);
-            }
-        }
 
-        std::string& current = m_currentPruninngRule[group];
+        std::string& current = m_currentPruninngRule.at(group);
         const char* preview = current.empty() ? "(none)" : current.c_str();
 
         ImGui::PushID(group.c_str());
@@ -850,6 +842,14 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
     ImGui::End(); // end of pruningRuleEditorWindow
     ImGui::PopStyleVar();
 
+}
+
+void NodeEditor::HandleOtherUserInputs()
+{
+    if (ImGui::IsKeyReleased(ImGuiKey_S))
+    {
+        m_needTopoSort = true;
+    }
 }
 
 void NodeEditor::NodeEditorShow()
@@ -893,6 +893,9 @@ void NodeEditor::NodeEditorShow()
     HandleDeletingEdges();
 
     HandleDeletingNodes();
+
+    // S : toposort
+    HandleOtherUserInputs();
 
     ImGui::End(); // end of "SimpleNodeEditor"
 
