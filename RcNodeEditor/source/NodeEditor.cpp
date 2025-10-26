@@ -35,7 +35,6 @@ NodeEditor::NodeEditor()
         s_nodeDescriptionsTypeDesMap.emplace(nodeD.m_yamlNodeType, nodeD);
         s_nodeDescriptionsNameDesMap.emplace(nodeD.m_nodeName, nodeD);
     }
-
 }
 
 void NodeEditor::ClearCurrentPipeLine()
@@ -53,7 +52,14 @@ void NodeEditor::ClearCurrentPipeLine()
 void NodeEditor::HandleFileDrop(const std::string& filePath)
 {
     ClearCurrentPipeLine();
-    LoadPipelineFromFile(filePath);
+    if (LoadPipelineFromFile(filePath))
+    {
+        SPDLOG_INFO("LoadPipeLineFromFile Success, filePath[{}]", filePath);
+    }
+    else
+    {
+        SPDLOG_ERROR("LoadPipeLineFromFile failed, filePath[{}]", filePath);
+    }
 }
 
 bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
@@ -73,8 +79,8 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
         std::unordered_map<YamlNode::NodeYamlId, NodeUniqueId> t_yamlNodeId2NodeUidMap;
         for (const YamlNode& yamlNode : yamlNodes)
         {
-            NodeUniqueId newNodeUid = AddNewNodes(
-                s_nodeDescriptionsTypeDesMap.at(yamlNode.m_nodeYamlType),  yamlNode);
+            NodeUniqueId newNodeUid =
+                AddNewNodes(s_nodeDescriptionsTypeDesMap.at(yamlNode.m_nodeYamlType), yamlNode);
             t_yamlNodeId2NodeUidMap.emplace(yamlNode.m_nodeYamlId, newNodeUid);
         }
 
@@ -88,36 +94,38 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
             const Node& srcNode = m_nodes.at(ownedBySrcNodeUid);
             const Node& dstNode = m_nodes.at(ownedByDstNodeUid);
             AddNewEdge(srcNode.FindPortUidAmongOutports(yamlEdge.m_yamlSrcPort.m_portYamlId),
-                       dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId), yamlEdge);
+                       dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId),
+                       yamlEdge);
         }
 
         ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges);
-        for (const auto&[group, type]: m_currentPruninngRule)
+        for (const auto& [group, type] : m_currentPruninngRule)
         {
-            SPDLOG_INFO("currentpruning rule is : group[{}] type[{}], any node or edge that matches the group but not matches the type will be removed", group, type);
+            SPDLOG_INFO(
+                "currentpruning rule is : group[{}] type[{}], any node or edge that matches the "
+                "group but not matches the type will be removed",
+                group, type);
         }
 
         m_needTopoSort = true;
     }
     else
     {
-        SPDLOG_ERROR("pipelineparser loadfile failed, filename is [{}], check it!",
-                     filePath);
+        SPDLOG_ERROR("pipelineparser loadfile failed, filename is [{}], check it!", filePath);
         ret = false;
     }
     return ret;
 }
 
-void NodeEditor::ApplyPruningRule(std::unordered_map<std::string, std::string> currentPruningRule, 
-                      std::unordered_map<NodeUniqueId, Node> nodesMap,
-                      std::unordered_map<EdgeUniqueId, Edge> edgesMap)
+void NodeEditor::ApplyPruningRule(std::unordered_map<std::string, std::string> currentPruningRule,
+                                  std::unordered_map<NodeUniqueId, Node>       nodesMap,
+                                  std::unordered_map<EdgeUniqueId, Edge>       edgesMap)
 {
-    for (const auto&[group, type] : currentPruningRule)
+    for (const auto& [group, type] : currentPruningRule)
     {
         // prune edges first
-        for (const auto&[edgeUid, edge] : edgesMap)
+        for (const auto& [edgeUid, edge] : edgesMap)
         {
-
             for (auto& edgePruningRule : edge.GetYamlEdge().m_yamlDstPort.m_PruningRules)
             {
                 if (edgePruningRule.m_Group == group && edgePruningRule.m_Type != type)
@@ -125,15 +133,17 @@ void NodeEditor::ApplyPruningRule(std::unordered_map<std::string, std::string> c
                     auto iter = m_edges.find(edgeUid);
                     if (iter != m_edges.end())
                     {
-                        SPDLOG_INFO("Prune Edge with EdgeUid[{}] SrcNodeUid[{}] SrcNodeYamlId[{}] DstNodeUid[{}] DstNodeYamlId[{}]", edgeUid, 
-                        edge.GetSourceNodeUid(), 
-                        edge.GetYamlEdge().m_yamlSrcPort.m_nodeYamlId, 
-                        edge.GetDestinationNodeUid(),
-                        edge.GetYamlEdge().m_yamlDstPort.m_nodeYamlId);
+                        SPDLOG_INFO(
+                            "Prune Edge with EdgeUid[{}] SrcNodeUid[{}] SrcNodeYamlId[{}] "
+                            "DstNodeUid[{}] DstNodeYamlId[{}]",
+                            edgeUid, edge.GetSourceNodeUid(),
+                            edge.GetYamlEdge().m_yamlSrcPort.m_nodeYamlId,
+                            edge.GetDestinationNodeUid(),
+                            edge.GetYamlEdge().m_yamlDstPort.m_nodeYamlId);
                         m_edgesPruned.insert(*iter);
-                        DeleteEdge(edgeUid);        
+                        DeleteEdge(edgeUid);
                     }
-                    else 
+                    else
                     {
                         SPDLOG_ERROR("Cannot find edge in m_edges with edgeuid[{}]", edgeUid);
                     }
@@ -141,7 +151,7 @@ void NodeEditor::ApplyPruningRule(std::unordered_map<std::string, std::string> c
             }
         }
 
-        for (const auto&[nodeUid, node] : nodesMap)
+        for (const auto& [nodeUid, node] : nodesMap)
         {
             for (auto& nodePruningRule : node.GetYamlNode().m_PruningRules)
             {
@@ -151,22 +161,23 @@ void NodeEditor::ApplyPruningRule(std::unordered_map<std::string, std::string> c
                     auto iter = m_nodes.find(nodeUid);
                     if (iter != m_nodes.end())
                     {
-                        SPDLOG_INFO("Prune Node with NodeUid[{}] NodeYamlId[{}]", nodeUid, node.GetYamlNode().m_nodeYamlId);
+                        SPDLOG_INFO("Prune Node with NodeUid[{}] NodeYamlId[{}]", nodeUid,
+                                    node.GetYamlNode().m_nodeYamlId);
                         m_nodesPruned.insert(*iter);
                         DeleteNode(nodeUid);
                     }
-                    else 
+                    else
                     {
                         SPDLOG_ERROR("Cannot find node in m_nodes with nodeuid[{}]", nodeUid);
                     }
                 }
             }
         }
-
     }
 }
-    
-void NodeEditor::CollectPruningRules(std::vector<YamlNode> yamlNodes, std::vector<YamlEdge> yamlEdges)
+
+void NodeEditor::CollectPruningRules(std::vector<YamlNode> yamlNodes,
+                                     std::vector<YamlEdge> yamlEdges)
 {
     // collect pruning rules from nodes and edges
     for (const YamlNode& yamlNode : yamlNodes)
@@ -190,7 +201,7 @@ void NodeEditor::CollectPruningRules(std::vector<YamlNode> yamlNodes, std::vecto
         SPDLOG_INFO("no pruning rule in the current yamlfile"); // todo : add yamlfilename
     }
     // set defatul pruning rule
-    for (const auto&[group, type] : m_allPruningRules)
+    for (const auto& [group, type] : m_allPruningRules)
     {
         if (type.size() != 0)
         {
@@ -202,14 +213,12 @@ void NodeEditor::CollectPruningRules(std::vector<YamlNode> yamlNodes, std::vecto
             SPDLOG_INFO("set default pruning rule, group[{}] type[{}]", group, *(type.begin()));
         }
     }
-    
 }
-
 
 void DebugDrawRect(ImRect rect)
 {
     ImDrawList* draw_list    = ImGui::GetWindowDrawList();
-    ImU32       border_color = IM_COL32(255, 0, 0, 255); 
+    ImU32       border_color = IM_COL32(255, 0, 0, 255);
 
     float rounding  = 0.0f; // No corner rounding
     float thickness = 1.0f; // Border thickness
@@ -258,13 +267,13 @@ void NodeEditor::ShowInfos()
     ImGui::TextUnformatted("X -- delete selected node or link");
 }
 
-
 // TODO : redundant infomation here
 NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNode)
 {
-    Node newNode(
-        m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, yamlNode,
-        yamlNode.m_nodeYamlId == -1 ? nodeDesc.m_nodeName : nodeDesc.m_nodeName + std::to_string(yamlNode.m_nodeYamlId));
+    Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, yamlNode,
+                 yamlNode.m_nodeYamlId == -1
+                     ? nodeDesc.m_nodeName
+                     : nodeDesc.m_nodeName + std::to_string(yamlNode.m_nodeYamlId));
 
     NodeUniqueId ret = newNode.GetNodeUniqueId();
 
@@ -455,7 +464,8 @@ bool NodeEditor::IsInportAlreadyHasEdge(PortUniqueId portUid)
     return false;
 }
 
-void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid, const YamlEdge& yamlEdge, bool avoidMultipleInputLinks)
+void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
+                            const YamlEdge& yamlEdge, bool avoidMultipleInputLinks)
 {
     // avoid multiple edges linking to the same inport
     if (avoidMultipleInputLinks && IsInportAlreadyHasEdge(dstPortUid))
@@ -723,30 +733,33 @@ void NodeEditor::RearrangeNodesLayout(
         gridSpaceX += (columWidths[columIndex] + horizontalPadding);
     }
 
-    // set editor panning 
-    ImNodes::EditorContextResetPanning(ImVec2{0 , ImGui::GetWindowHeight() / 2.0f});
+    // set editor panning
+    ImNodes::EditorContextResetPanning(ImVec2{0, ImGui::GetWindowHeight() / 2.0f});
 }
 
 // resotre nodes and edges that match the currentPruningRule
-void NodeEditor::RestorePruning(const std::string& changedGroup, const std::string& originType, const std::string& newType)
+void NodeEditor::RestorePruning(const std::string& changedGroup, const std::string& originType,
+                                const std::string& newType)
 {
     assert(originType != newType);
-    SPDLOG_INFO("Restoring prunerule, group[{}], originType[{}], newType[{}]", changedGroup, originType, newType);
+    SPDLOG_INFO("Restoring prunerule, group[{}], originType[{}], newType[{}]", changedGroup,
+                originType, newType);
     // Restore pruned nodes first so ports exist when re-attaching edges.
     for (auto it = m_nodesPruned.begin(); it != m_nodesPruned.end();)
     {
         const NodeUniqueId nodeUid = it->first;
-        Node& node = it->second;
+        Node&              node    = it->second;
 
-        for(const auto& pruningRule: node.GetYamlNode().m_PruningRules)
+        for (const auto& pruningRule : node.GetYamlNode().m_PruningRules)
         {
             if (pruningRule.m_Group == changedGroup && pruningRule.m_Type == newType)
             {
                 assert(pruningRule.m_Type != originType);
                 if (m_nodes.find(nodeUid) == m_nodes.end())
                 {
-                    SPDLOG_INFO("Resotre node with nodeUid[{}], yamlNodeName[{}], yamlNodeId[{}]", 
-                    nodeUid, node.GetYamlNode().m_nodeName, node.GetYamlNode().m_nodeYamlId);
+                    SPDLOG_INFO("Resotre node with nodeUid[{}], yamlNodeName[{}], yamlNodeId[{}]",
+                                nodeUid, node.GetYamlNode().m_nodeName,
+                                node.GetYamlNode().m_nodeYamlId);
 
                     m_nodes.emplace(nodeUid, std::move(node));
 
@@ -754,33 +767,34 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
                     Node& restoredNode = m_nodes.at(nodeUid);
                     for (InputPort& inPort : restoredNode.GetInputPorts())
                     {
-                        m_inportPorts[inPort.GetPortUniqueId()] = restoredNode.GetInputPort(inPort.GetPortUniqueId());
+                        m_inportPorts[inPort.GetPortUniqueId()] =
+                            restoredNode.GetInputPort(inPort.GetPortUniqueId());
                     }
                     for (OutputPort& outPort : restoredNode.GetOutputPorts())
                     {
-                        m_outportPorts[outPort.GetPortUniqueId()] = restoredNode.GetOutputPort(outPort.GetPortUniqueId());
+                        m_outportPorts[outPort.GetPortUniqueId()] =
+                            restoredNode.GetOutputPort(outPort.GetPortUniqueId());
                     }
 
                     it = m_nodesPruned.erase(it);
                 }
                 else
                 {
-                    SPDLOG_ERROR("Pruned Node existed in m_nodesMap with nodeuid[{}], check it!", nodeUid);
+                    SPDLOG_ERROR("Pruned Node existed in m_nodesMap with nodeuid[{}], check it!",
+                                 nodeUid);
                     ++it;
                 }
             }
         }
-
     }
 
     // Restore pruned edges and reattach them to ports.
     for (auto it = m_edgesPruned.begin(); it != m_edgesPruned.end();)
     {
         const EdgeUniqueId edgeUid = it->first;
-        Edge& edge = it->second;
+        Edge&              edge    = it->second;
 
-
-        for(const auto& pruningRule: edge.GetYamlEdge().m_yamlDstPort.m_PruningRules)
+        for (const auto& pruningRule : edge.GetYamlEdge().m_yamlDstPort.m_PruningRules)
         {
             if (pruningRule.m_Group == changedGroup && pruningRule.m_Type == newType)
             {
@@ -788,8 +802,10 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
 
                 if (m_edges.find(edgeUid) == m_edges.end())
                 {
-                    SPDLOG_INFO("restore edge with edgeUid[{}], yamlSrcPortName[{}], yamlDstPortName[{}]",
-                    edgeUid, edge.GetYamlEdge().m_yamlSrcPort.m_portName, edge.GetYamlEdge().m_yamlDstPort.m_portName );
+                    SPDLOG_INFO(
+                        "restore edge with edgeUid[{}], yamlSrcPortName[{}], yamlDstPortName[{}]",
+                        edgeUid, edge.GetYamlEdge().m_yamlSrcPort.m_portName,
+                        edge.GetYamlEdge().m_yamlDstPort.m_portName);
                     m_edges.emplace(edgeUid, std::move(edge));
                     Edge& restoredEdge = m_edges.at(edgeUid);
                     // Reattach to input port
@@ -804,12 +820,12 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
                 }
                 else
                 {
-                    SPDLOG_ERROR("Pruned edge existed in m_edgesMap with edgeuid[{}], check it!", edgeUid);
+                    SPDLOG_ERROR("Pruned edge existed in m_edgesMap with edgeuid[{}], check it!",
+                                 edgeUid);
                     ++it;
                 }
             }
         }
-
     }
 
     // we need topo sort after resotre nodes and edges
@@ -820,7 +836,7 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
 {
     ImVec2 pruningRuleEditorWindowSize{mainWindowDisplaySize.x / 5, mainWindowDisplaySize.y / 5};
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-    // ImGuiCond_Appearing must be set, otherwise the window can not be moved or resized 
+    // ImGuiCond_Appearing must be set, otherwise the window can not be moved or resized
     ImGui::SetNextWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Appearing);
     ImGui::SetNextWindowSize(pruningRuleEditorWindowSize, ImGuiCond_Appearing);
     ImGui::Begin("PruningRuleEdit", nullptr, ImGuiWindowFlags_None);
@@ -831,7 +847,7 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
 
     for (auto& groupPair : m_allPruningRules)
     {
-        const std::string group = groupPair.first;
+        const std::string            group    = groupPair.first;
         const std::set<std::string>& typesSet = groupPair.second;
 
         ImGui::TextUnformatted(group.c_str());
@@ -840,7 +856,7 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
         std::vector<std::string> types(typesSet.begin(), typesSet.end());
 
         std::string& current = m_currentPruninngRule.at(group);
-        const char* preview = current.empty() ? "(none)" : current.c_str();
+        const char*  preview = current.empty() ? "(none)" : current.c_str();
 
         ImGui::PushID(group.c_str());
         if (ImGui::BeginCombo("##prune_combo", preview))
@@ -849,7 +865,7 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
             {
                 if (ImGui::Selectable(types[i].c_str()))
                 {
-                    if ( m_currentPruninngRule[group] != types[i])
+                    if (m_currentPruninngRule[group] != types[i])
                     {
                         SPDLOG_INFO("Select a different pruning rule, change the grapgh  ...");
                         std::string originType{std::move(m_currentPruninngRule[group])};
@@ -869,7 +885,6 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
 
     ImGui::End(); // end of pruningRuleEditorWindow
     ImGui::PopStyleVar();
-
 }
 
 void NodeEditor::HandleOtherUserInputs()
@@ -897,10 +912,8 @@ void NodeEditor::HandleOtherUserInputs()
 
 void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
 {
-
-    auto flags = ImGuiWindowFlags_NoDecoration
-                | ImGuiWindowFlags_NoSavedSettings
-                | ImGuiWindowFlags_NoBringToFrontOnFocus;
+    auto flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
+                 ImGuiWindowFlags_NoBringToFrontOnFocus;
 
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(mainWindowDisplaySize);
@@ -912,8 +925,9 @@ void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
 
     HandleAddNodes();
 
-    ShowNodes(); 
-    // only afer calling ImNodes::EndNode in the ShowNodes() function can we get the rect of nodeUi, and then we do toposort
+    ShowNodes();
+    // only afer calling ImNodes::EndNode in the ShowNodes() function can we get the rect of nodeUi,
+    // and then we do toposort
 
     if (m_needTopoSort)
     {
@@ -941,8 +955,8 @@ void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
 
 void NodeEditor::NodeEditorShow()
 {
-    ImGuiIO& io = ImGui::GetIO();
-    ImVec2 mainWindowDisplaySize = io.DisplaySize;
+    ImGuiIO& io                    = ImGui::GetIO();
+    ImVec2   mainWindowDisplaySize = io.DisplaySize;
 
     ShowGrapghEditWindow(mainWindowDisplaySize);
     ShowPruningRuleEditWinddow(mainWindowDisplaySize);

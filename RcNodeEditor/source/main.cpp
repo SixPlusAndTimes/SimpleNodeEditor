@@ -83,9 +83,9 @@ int main(int, char**)
 
     ImGui::CreateContext();
 
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO& io    = ImGui::GetIO();
     io.DisplaySize = ImVec2(static_cast<float>(windowWidth), static_cast<float>(windowHeight));
-    
+
     ImNodes::CreateContext();
     SimpleNodeEditor::NodeEditor nodeEditor;
     nodeEditor.NodeEditorInitialize();

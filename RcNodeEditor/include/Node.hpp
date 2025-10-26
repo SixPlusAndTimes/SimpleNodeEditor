@@ -55,12 +55,12 @@ struct YamlNode
           m_PruningRules()
     {
     }
-    std::string  m_nodeName;
-    NodeYamlId   m_nodeYamlId;
-    bool         m_isSrcNode;
-    YamlNodeType m_nodeYamlType;
+    std::string                          m_nodeName;
+    NodeYamlId                           m_nodeYamlId;
+    bool                                 m_isSrcNode;
+    YamlNodeType                         m_nodeYamlType;
     std::vector<YamlPropertyDescription> m_Properties;
-    std::vector<YamlPruningRule> m_PruningRules;
+    std::vector<YamlPruningRule>         m_PruningRules;
 };
 
 struct YamlPort
@@ -145,16 +145,17 @@ public:
     using EdgeUPtr = std::unique_ptr<Edge>;
 
 public:
-    Edge(PortUniqueId sourcePortUid, PortUniqueId destinationPortUid, EdgeUniqueId edgeUid, YamlEdge yamlEdge = {});
+    Edge(PortUniqueId sourcePortUid, PortUniqueId destinationPortUid, EdgeUniqueId edgeUid,
+         YamlEdge yamlEdge = {});
     Edge(PortUniqueId sourcePortUid, NodeUniqueId sourceNodeUid, PortUniqueId destinationPortUid,
          NodeUniqueId destinationNodeUid, EdgeUniqueId edgeUid, YamlEdge yamlEdge);
-    EdgeUniqueId GetEdgeUniqueId() const;
-    PortUniqueId GetSourcePortUid() const;
-    PortUniqueId GetDestinationPortUid() const;
-    NodeUniqueId GetSourceNodeUid() const;
-    NodeUniqueId GetDestinationNodeUid() const;
-    void         SetSourceNodeUid(NodeUniqueId nodeUid);
-    void         SetDestinationNodeUid(NodeUniqueId nodeUid);
+    EdgeUniqueId    GetEdgeUniqueId() const;
+    PortUniqueId    GetSourcePortUid() const;
+    PortUniqueId    GetDestinationPortUid() const;
+    NodeUniqueId    GetSourceNodeUid() const;
+    NodeUniqueId    GetDestinationNodeUid() const;
+    void            SetSourceNodeUid(NodeUniqueId nodeUid);
+    void            SetDestinationNodeUid(NodeUniqueId nodeUid);
     const YamlEdge& GetYamlEdge();
     const YamlEdge& GetYamlEdge() const;
 
@@ -165,7 +166,7 @@ private:
     NodeUniqueId m_dstNodeUid;
     EdgeUniqueId m_edgeUid;
 
-    YamlEdge     m_yamlEdge;
+    YamlEdge m_yamlEdge;
 };
 
 class Node
@@ -182,8 +183,8 @@ public: // type def
 
 public:
     // Node();
-    Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode, const std::string& nodeTitle,
-         float nodeWidth = 100.f);
+    Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode,
+         const std::string& nodeTitle, float nodeWidth = 100.f);
     void SetNodePosition(const ImVec2& pos);
 
     void                           AddInputPort(const InputPort& inPort);
@@ -198,10 +199,10 @@ public:
     InputPort*                     GetInputPort(PortUniqueId portUid);
     OutputPort*                    GetOutputPort(PortUniqueId portUid);
 
-    PortUniqueId FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const;
-    PortUniqueId FindPortUidAmongInports(YamlPort::PortYamlId portYamlId) const;
-    const YamlNode&                 GetYamlNode();
-    const YamlNode&                 GetYamlNode() const;
+    PortUniqueId    FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const;
+    PortUniqueId    FindPortUidAmongInports(YamlPort::PortYamlId portYamlId) const;
+    const YamlNode& GetYamlNode();
+    const YamlNode& GetYamlNode() const;
 
     // yaml node related
     void                 SetNodeYamlId(YamlNode::NodeYamlId nodeYamlId);
@@ -219,7 +220,7 @@ private:
 
     // yaml node related
     YamlNode::NodeYamlId m_yamlNodeId;
-    YamlNode m_yamlNode;
+    YamlNode             m_yamlNode;
 };
 } // namespace SimpleNodeEditor
 

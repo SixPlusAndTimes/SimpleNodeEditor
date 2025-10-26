@@ -75,13 +75,17 @@ OutputPort::OutputPort(PortUniqueId portUid, PortId portId, const std::string& n
                 portId, name);
 }
 
-Edge::Edge(PortUniqueId sourcePortUid, PortUniqueId destinationPortUid, EdgeUniqueId edgeUid, YamlEdge yamlEdge)
-    : m_srcPortUid(sourcePortUid), m_dstPortUid(destinationPortUid), m_edgeUid(edgeUid), m_yamlEdge(yamlEdge)
+Edge::Edge(PortUniqueId sourcePortUid, PortUniqueId destinationPortUid, EdgeUniqueId edgeUid,
+           YamlEdge yamlEdge)
+    : m_srcPortUid(sourcePortUid),
+      m_dstPortUid(destinationPortUid),
+      m_edgeUid(edgeUid),
+      m_yamlEdge(yamlEdge)
 {
 }
 
 Edge::Edge(PortUniqueId sourcePortUid, NodeUniqueId sourceNodeUid, PortUniqueId destinationPortUid,
-         NodeUniqueId destinationNodeUid, EdgeUniqueId edgeUid, YamlEdge yamlEdge)
+           NodeUniqueId destinationNodeUid, EdgeUniqueId edgeUid, YamlEdge yamlEdge)
     : m_srcPortUid(sourcePortUid),
       m_srcNodeUid(sourceNodeUid),
       m_dstPortUid(destinationPortUid),
@@ -136,10 +140,8 @@ NodeUniqueId Edge::GetDestinationNodeUid() const
     return m_dstNodeUid;
 }
 
-// Node::Node() : Node(-1, NodeType::Unknown, "Default") {}
-
-Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode, const std::string& nodeTitle,
-         float nodeWidth)
+Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode,
+           const std::string& nodeTitle, float nodeWidth)
     : m_nodeUid(nodeUid),
       m_nodeType(nodeType),
       m_nodeWidth(nodeWidth),
@@ -153,7 +155,6 @@ Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode, co
     SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid,
                 m_yamlNodeId, m_nodeTitle);
 }
-
 
 const YamlNode& Node::GetYamlNode()
 {

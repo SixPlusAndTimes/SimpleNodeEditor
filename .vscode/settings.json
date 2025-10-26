@@ -1,6 +1,5 @@
 {
     "files.associations": {
-        
         "unordered_map": "cpp",
         "array": "cpp",
         "atomic": "cpp",
@@ -71,6 +70,8 @@
         "any": "cpp",
         "list": "cpp",
         "iostream": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "forward_list": "cpp",
+        "unordered_set": "cpp"
     }
 }
