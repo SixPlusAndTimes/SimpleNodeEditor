@@ -36,9 +36,32 @@ NodeEditor::NodeEditor()
         s_nodeDescriptionsNameDesMap.emplace(nodeD.m_nodeName, nodeD);
     }
 
-    std::string    pipeLineYamlFileName = "./resource/testpipelines/pipelinetest1.yaml";
+}
+
+void NodeEditor::ClearCurrentPipeLine()
+{
+    m_nodes.clear();
+    m_edges.clear();
+    m_inportPorts.clear();
+    m_outportPorts.clear();
+    m_allPruningRules.clear();
+    m_currentPruninngRule.clear();
+    m_nodesPruned.clear();
+    m_edgesPruned.clear();
+}
+
+void NodeEditor::HandleFileDrop(const std::string& filePath)
+{
+    ClearCurrentPipeLine();
+    LoadPipelineFromFile(filePath);
+}
+
+bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
+{
+    bool ret = true;
+
     PipelineParser pipeLineParser;
-    if (pipeLineParser.LoadFile(pipeLineYamlFileName))
+    if (pipeLineParser.LoadFile(filePath))
     {
         std::vector<YamlNode> yamlNodes = pipeLineParser.ParseNodes();
         std::vector<YamlEdge> yamlEdges = pipeLineParser.ParseEdges();
@@ -67,19 +90,22 @@ NodeEditor::NodeEditor()
             AddNewEdge(srcNode.FindPortUidAmongOutports(yamlEdge.m_yamlSrcPort.m_portYamlId),
                        dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId), yamlEdge);
         }
-        m_needTopoSort = true;
 
         ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges);
         for (const auto&[group, type]: m_currentPruninngRule)
         {
             SPDLOG_INFO("currentpruning rule is : group[{}] type[{}], any node or edge that matches the group but not matches the type will be removed", group, type);
         }
+
+        m_needTopoSort = true;
     }
     else
     {
         SPDLOG_ERROR("pipelineparser loadfile failed, filename is [{}], check it!",
-                     pipeLineYamlFileName);
+                     filePath);
+        ret = false;
     }
+    return ret;
 }
 
 void NodeEditor::ApplyPruningRule(std::unordered_map<std::string, std::string> currentPruningRule, 
@@ -698,8 +724,7 @@ void NodeEditor::RearrangeNodesLayout(
     }
 
     // set editor panning 
-    ImVec2 curretPanning = ImNodes::EditorContextGetPanning();
-    ImNodes::EditorContextResetPanning({curretPanning.x, curretPanning.y + ImGui::GetWindowHeight() / 2.0f});
+    ImNodes::EditorContextResetPanning(ImVec2{0 , ImGui::GetWindowHeight() / 2.0f});
 }
 
 // resotre nodes and edges that match the currentPruningRule

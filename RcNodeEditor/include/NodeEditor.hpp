@@ -16,6 +16,7 @@ public:
     void NodeEditorShow();
     void NodeEditorDestroy();
     void HandleDeletingNodes();
+    void HandleFileDrop(const std::string& filePath);
 
 private:
     void         ShowMenu();
@@ -32,6 +33,7 @@ private:
     void         DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid);
     bool         IsInportAlreadyHasEdge(PortUniqueId portUid);
     void         DeleteEdgeUidFromPort(EdgeUniqueId edgeUid);
+
     void         SaveState();
     void RearrangeNodesLayout(const std::vector<std::vector<NodeUniqueId>>& topologicalOrder,
                               const std::unordered_map<NodeUniqueId, Node>& nodesMap);
@@ -44,6 +46,9 @@ private:
     void ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize);
 
     void HandleOtherUserInputs();
+
+    bool LoadPipelineFromFile(const std::string& filePath);
+    void ClearCurrentPipeLine();
 
 
 private:

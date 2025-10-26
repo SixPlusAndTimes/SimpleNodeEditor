@@ -107,10 +107,24 @@ int main(int, char**)
         while (SDL_PollEvent(&event))
         {
             ImGui_ImplSDL2_ProcessEvent(&event);
-            if (event.type == SDL_QUIT) done = true;
-            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE &&
-                event.window.windowID == SDL_GetWindowID(window))
-                done = true;
+            switch (event.type)
+            {
+                case SDL_QUIT:
+                    done = true;
+                    break;
+                case SDL_WINDOWEVENT:
+                    if (event.window.event == SDL_WINDOWEVENT_CLOSE &&
+                        event.window.windowID == SDL_GetWindowID(window))
+                    {
+                        done = true;
+                    }
+                    break;
+                case SDL_DROPFILE:
+                    SPDLOG_INFO("SDL drop file path : {}", event.drop.file);
+                    nodeEditor.HandleFileDrop(event.drop.file);
+                    SDL_free(event.drop.file);
+                    break;
+            }
         }
 
         // Start the Dear ImGui frame
