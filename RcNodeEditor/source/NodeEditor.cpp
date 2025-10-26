@@ -788,7 +788,7 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
 
                 if (m_edges.find(edgeUid) == m_edges.end())
                 {
-                    SPDLOG_ERROR("restore edge with edgeUid[{}], yamlSrcPortName[{}], yamlDstPortName[{}]",
+                    SPDLOG_INFO("restore edge with edgeUid[{}], yamlSrcPortName[{}], yamlDstPortName[{}]",
                     edgeUid, edge.GetYamlEdge().m_yamlSrcPort.m_portName, edge.GetYamlEdge().m_yamlDstPort.m_portName );
                     m_edges.emplace(edgeUid, std::move(edge));
                     Edge& restoredEdge = m_edges.at(edgeUid);
@@ -878,7 +878,23 @@ void NodeEditor::HandleOtherUserInputs()
     {
         m_needTopoSort = true;
     }
+
+    NodeUniqueId selectedNode = -1;
+    EdgeUniqueId selectedEdge = -1;
+
+    if (ImNodes::IsNodeHovered(&selectedNode) && ImGui::IsMouseDoubleClicked(0))
+    {
+        assert(selectedNode != -1);
+        SPDLOG_INFO("node with nodeUid[{}] has been double clicked", selectedNode);
+    }
+
+    if (ImNodes::IsLinkHovered(&selectedEdge) && ImGui::IsMouseDoubleClicked(0))
+    {
+        assert(selectedEdge != -1);
+        SPDLOG_INFO("Edge with EdgeUid[{}] has been double clicked", selectedEdge);
+    }
 }
+
 void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
 {
 
@@ -918,7 +934,7 @@ void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
 
     HandleDeletingNodes();
 
-    // S : toposort
+    // S : toposort; double click(left mouse button) event
     HandleOtherUserInputs();
     ImGui::End(); // end of "SimpleNodeEditor"
 }
