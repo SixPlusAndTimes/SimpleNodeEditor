@@ -40,15 +40,16 @@ private:
                               const std::unordered_map<NodeUniqueId, Node>& nodesMap);
     void CollectPruningRules(std::vector<YamlNode> yamlNodes, std::vector<YamlEdge> yamlEdges);
 
-    void ApplyPruningRule(std::unordered_map<std::string, std::string> currentPruningRule,
-                          std::unordered_map<NodeUniqueId, Node>       nodesMap,
-                          std::unordered_map<EdgeUniqueId, Edge>       edgesMap);
+    void ApplyPruningRule(const std::unordered_map<std::string, std::string>& currentPruningRule,
+                                  std::unordered_map<NodeUniqueId, Node>       nodesMap,
+                                  std::unordered_map<EdgeUniqueId, Edge>       edgesMap);
     void RestorePruning(const std::string& group, const std::string& orignType,
                         const std::string& newType);
 
     void ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize);
     void ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize);
 
+    [[nodiscard]] bool IsAllEdgesHasBeenPruned(NodeUniqueId nodeUid);
     void HandleOtherUserInputs();
 
     [[nodiscard]] bool LoadPipelineFromFile(const std::string& filePath);

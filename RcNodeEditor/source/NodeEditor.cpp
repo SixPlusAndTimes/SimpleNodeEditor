@@ -117,7 +117,33 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
     return ret;
 }
 
-void NodeEditor::ApplyPruningRule(std::unordered_map<std::string, std::string> currentPruningRule,
+bool NodeEditor::IsAllEdgesHasBeenPruned(NodeUniqueId nodeUid)
+{
+    Node& node = m_nodes.at(nodeUid);
+
+    for (InputPort& port : node.GetInputPorts())
+    {
+        if (!port.HasNoEdgeLinked())
+        {
+            SPDLOG_ERROR("NodeUid[{}], InPortUid[{}], still has Edge ", node.GetNodeUniqueId(), port.GetPortUniqueId());
+            return false;
+        }
+    }
+
+    for (OutputPort& port : node.GetOutputPorts())
+    {
+        if (!port.HasNoEdgeLinked())
+        {
+            SPDLOG_ERROR("NodeUid[{}], OutPortUid[{}], still has Edge ", node.GetNodeUniqueId(), port.GetPortUniqueId());
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+
+void NodeEditor::ApplyPruningRule(const std::unordered_map<std::string, std::string>& currentPruningRule,
                                   std::unordered_map<NodeUniqueId, Node>       nodesMap,
                                   std::unordered_map<EdgeUniqueId, Edge>       edgesMap)
 {
@@ -161,10 +187,17 @@ void NodeEditor::ApplyPruningRule(std::unordered_map<std::string, std::string> c
                     auto iter = m_nodes.find(nodeUid);
                     if (iter != m_nodes.end())
                     {
-                        SPDLOG_INFO("Prune Node with NodeUid[{}] NodeYamlId[{}]", nodeUid,
-                                    node.GetYamlNode().m_nodeYamlId);
-                        m_nodesPruned.insert(*iter);
-                        DeleteNode(nodeUid);
+                        if (IsAllEdgesHasBeenPruned(nodeUid))
+                        {
+                            SPDLOG_INFO("Prune Node with NodeUid[{}] NodeYamlId[{}]", nodeUid,
+                                        node.GetYamlNode().m_nodeYamlId);
+                            m_nodesPruned.insert(*iter);
+                            DeleteNode(nodeUid);
+                        }
+                        else 
+                        {
+                            SPDLOG_ERROR("CheckAllEdgesHasBeenPruned({}) fail, please check if all edges has the correspoding prune rule!!!", nodeUid);
+                        }
                     }
                     else
                     {
@@ -741,7 +774,10 @@ void NodeEditor::RearrangeNodesLayout(
 void NodeEditor::RestorePruning(const std::string& changedGroup, const std::string& originType,
                                 const std::string& newType)
 {
+    SPDLOG_ERROR("RestorePruning Begin");
+
     assert(originType != newType);
+
     SPDLOG_INFO("Restoring prunerule, group[{}], originType[{}], newType[{}]", changedGroup,
                 originType, newType);
     // Restore pruned nodes first so ports exist when re-attaching edges.
@@ -785,6 +821,10 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
                     ++it;
                 }
             }
+            else
+            {
+                ++it;
+            }
         }
     }
 
@@ -799,7 +839,6 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
             if (pruningRule.m_Group == changedGroup && pruningRule.m_Type == newType)
             {
                 assert(pruningRule.m_Type != originType);
-
                 if (m_edges.find(edgeUid) == m_edges.end())
                 {
                     SPDLOG_INFO(
@@ -825,11 +864,16 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
                     ++it;
                 }
             }
+            else
+            {
+                ++it;
+            }
         }
     }
 
     // we need topo sort after resotre nodes and edges
     m_needTopoSort = true;
+    SPDLOG_ERROR("RestorePruning done");
 }
 
 void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
@@ -871,9 +915,12 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
                         std::string originType{std::move(m_currentPruninngRule[group])};
                         m_currentPruninngRule[group] = types[i];
 
+                        // m_nodes and m_edges can not be reference，see the logic of ApplyPruningRule: erase elem of m_nodes and m_edges in the iteration, but has not handle the invalid iterator properly
+                        // TODO : change this to pass by reference
+                        ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges); 
+
                         RestorePruning(group, originType, m_currentPruninngRule[group]);
 
-                        ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges);
                     }
                 }
             }

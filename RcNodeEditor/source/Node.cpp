@@ -67,12 +67,22 @@ EdgeUniqueId InputPort::GetEdgeUid()
     return m_linkFrom;
 }
 
+bool InputPort::HasNoEdgeLinked()
+{
+    return m_linkFrom == -1;
+}
+
 OutputPort::OutputPort(PortUniqueId portUid, PortId portId, const std::string& name,
                        NodeUniqueId ownedBy, YamlPort::PortYamlId portYamlId)
     : Port(portUid, portId, name, ownedBy, portYamlId), m_linkTos()
 {
     SPDLOG_INFO("OutputPort construced with portUid = {}, portId = {}, portName = {}", portUid,
                 portId, name);
+}
+
+bool OutputPort::HasNoEdgeLinked() 
+{
+    return m_linkTos.size() == 0;
 }
 
 Edge::Edge(PortUniqueId sourcePortUid, PortUniqueId destinationPortUid, EdgeUniqueId edgeUid,
