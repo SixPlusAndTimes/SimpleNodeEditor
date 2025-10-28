@@ -4,6 +4,7 @@
 #include "spdlog/spdlog.h"
 #include <cstdint>
 #include "Helpers.h"
+#include <unordered_set>
 #include "YamlParser.hpp"
 #include <set>
 
@@ -72,7 +73,6 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
         std::vector<YamlNode> yamlNodes = pipeLineParser.ParseNodes();
         std::vector<YamlEdge> yamlEdges = pipeLineParser.ParseEdges();
 
-        CollectPruningRules(yamlNodes, yamlEdges);
 
         // add node in Editor
         float                                                  x_axis = 0.f, y_axis = 0.f;
@@ -98,13 +98,20 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
                        yamlEdge);
         }
 
-        ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges);
-        for (const auto& [group, type] : m_currentPruninngRule)
+        CollectPruningRules(yamlNodes, yamlEdges);
+        if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))
         {
-            SPDLOG_INFO(
-                "currentpruning rule is : group[{}] type[{}], any node or edge that matches the "
-                "group but not matches the type will be removed",
-                group, type);
+            for (const auto& [group, type] : m_currentPruninngRule)
+            {
+                SPDLOG_INFO(
+                    "currentpruning rule is : group[{}] type[{}], any node or edge that matches the "
+                    "group but not matches the type will be removed",
+                    group, type);
+            }
+        }
+        else
+        {
+            SPDLOG_ERROR("ApplyPruningRule Fail!!");
         }
 
         m_needTopoSort = true;
@@ -142,11 +149,34 @@ bool NodeEditor::IsAllEdgesHasBeenPruned(NodeUniqueId nodeUid)
     return true;
 }
 
+bool NodeEditor::IsAllEdgesWillBePruned(NodeUniqueId nodeUid, const std::unordered_set<EdgeUniqueId>& shouldBeDeleteEdges)
+{
+    const Node& node = m_nodes.at(nodeUid);
+    const std::vector<EdgeUniqueId>& edges = node.GetAllEdges();
 
-void NodeEditor::ApplyPruningRule(const std::unordered_map<std::string, std::string>& currentPruningRule,
+    bool ret = true;
+    for (EdgeUniqueId edgeUid : edges)
+    {
+        if (!shouldBeDeleteEdges.contains(edgeUid))
+        {
+            SPDLOG_ERROR("NodeUid[{}] NodeYamlId[{}], still has EdgeUid[{}] not pruned", 
+                        nodeUid, 
+                        m_nodes.at(nodeUid).GetYamlNode().m_nodeYamlId, 
+                        edgeUid);
+            ret = false;
+        }
+    }
+    return ret;
+}
+
+bool NodeEditor::ApplyPruningRule(const std::unordered_map<std::string, std::string>& currentPruningRule,
                                   std::unordered_map<NodeUniqueId, Node>       nodesMap,
                                   std::unordered_map<EdgeUniqueId, Edge>       edgesMap)
 {
+    bool applyPruningRuleSuccess = true;
+    std::unordered_set<NodeUniqueId> shouldBeDeleteEdges;
+    std::unordered_set<NodeUniqueId> shouldBeDeleteNodes;
+
     for (const auto& [group, type] : currentPruningRule)
     {
         // prune edges first
@@ -166,12 +196,15 @@ void NodeEditor::ApplyPruningRule(const std::unordered_map<std::string, std::str
                             edge.GetYamlEdge().m_yamlSrcPort.m_nodeYamlId,
                             edge.GetDestinationNodeUid(),
                             edge.GetYamlEdge().m_yamlDstPort.m_nodeYamlId);
-                        m_edgesPruned.insert(*iter);
-                        DeleteEdge(edgeUid);
+                        shouldBeDeleteEdges.insert(edgeUid);
+                        // m_edgesPruned.insert(*iter);
+                        // DeleteEdge(edgeUid);
                     }
                     else
                     {
                         SPDLOG_ERROR("Cannot find edge in m_edges with edgeuid[{}]", edgeUid);
+                        applyPruningRuleSuccess = false;
+                        break;
                     }
                 }
             }
@@ -187,26 +220,50 @@ void NodeEditor::ApplyPruningRule(const std::unordered_map<std::string, std::str
                     auto iter = m_nodes.find(nodeUid);
                     if (iter != m_nodes.end())
                     {
-                        if (IsAllEdgesHasBeenPruned(nodeUid))
+                        if (IsAllEdgesWillBePruned(nodeUid, shouldBeDeleteEdges))
                         {
                             SPDLOG_INFO("Prune Node with NodeUid[{}] NodeYamlId[{}]", nodeUid,
                                         node.GetYamlNode().m_nodeYamlId);
-                            m_nodesPruned.insert(*iter);
-                            DeleteNode(nodeUid);
+                            // m_nodesPruned.insert(*iter);
+                            // DeleteNode(nodeUid);
+                            shouldBeDeleteNodes.insert(nodeUid);
                         }
                         else 
                         {
-                            SPDLOG_ERROR("CheckAllEdgesHasBeenPruned({}) fail, please check if all edges has the correspoding prune rule!!!", nodeUid);
+                            SPDLOG_ERROR("Not All edges of Node({}) has been pruned, please check if all edges has the correspoding prune rule!!!", nodeUid);
+                            applyPruningRuleSuccess = false;
+                            break;
                         }
                     }
                     else
                     {
                         SPDLOG_ERROR("Cannot find node in m_nodes with nodeuid[{}]", nodeUid);
+                        applyPruningRuleSuccess = false;
+                        break;
                     }
                 }
             }
         }
     }
+    
+    // actually do the pruning operation
+    if (applyPruningRuleSuccess)
+    {
+        for (EdgeUniqueId edgeUid : shouldBeDeleteEdges)
+        {
+            m_edgesPruned.insert(*m_edges.find(edgeUid));
+            // edges will also be deleted in DeleteNode() function though
+            DeleteEdge(edgeUid);
+        }
+
+        for (NodeUniqueId nodeUid : shouldBeDeleteNodes)
+        {
+            m_nodesPruned.insert(*m_nodes.find(nodeUid));
+            DeleteNode(nodeUid);
+        }
+    }
+
+    return applyPruningRuleSuccess;
 }
 
 void NodeEditor::CollectPruningRules(std::vector<YamlNode> yamlNodes,
@@ -926,14 +983,20 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
                     if (m_currentPruninngRule[group] != types[i])
                     {
                         SPDLOG_INFO("Select a different pruning rule, change the grapgh  ...");
-                        std::string originType{std::move(m_currentPruninngRule[group])};
+                        std::string originType{m_currentPruninngRule[group]};
                         m_currentPruninngRule[group] = types[i];
 
                         // m_nodes and m_edges can not pass by reference, see the logic of ApplyPruningRule: erase elem of m_nodes and m_edges in the iteration, but has not handled the erased iterator properly
                         // TODO : change this to pass by reference
-                        ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges); 
+                        if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))
+                        {
+                            RestorePruning(group, originType, m_currentPruninngRule[group]);
+                        }
+                        else 
+                        {
+                            m_currentPruninngRule[group] = originType;
+                        }
 
-                        RestorePruning(group, originType, m_currentPruninngRule[group]);
 
                     }
                 }

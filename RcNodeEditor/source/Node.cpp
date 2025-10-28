@@ -67,6 +67,11 @@ EdgeUniqueId InputPort::GetEdgeUid()
     return m_linkFrom;
 }
 
+EdgeUniqueId InputPort::GetEdgeUid() const
+{
+    return m_linkFrom;
+}
+
 bool InputPort::HasNoEdgeLinked()
 {
     return m_linkFrom == -1;
@@ -164,6 +169,29 @@ Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode,
 {
     SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid,
                 m_yamlNodeId, m_nodeTitle);
+}
+
+std::vector<EdgeUniqueId> Node::GetAllEdges() const
+{
+    std::vector<EdgeUniqueId> edges{};
+
+    for (const InputPort& inPort : m_inputPorts)
+    {
+        if (inPort.GetEdgeUid() != -1)
+        {
+            edges.push_back(inPort.GetEdgeUid());
+        }
+    }
+
+    for (const OutputPort& outPort : m_outputPorts)
+    {
+        if (outPort.GetEdgeUids().size() != 0)
+        {
+            edges.insert(edges.end(), outPort.GetEdgeUids().begin(), outPort.GetEdgeUids().end());
+        }
+    }
+
+    return edges;
 }
 
 const YamlNode& Node::GetYamlNode()

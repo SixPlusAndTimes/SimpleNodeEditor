@@ -100,7 +100,7 @@ public:
     PortId           GetPortId() const;
     PortUniqueId     GetPortUniqueId() const;
     NodeUniqueId     OwnedByNodeUid() const; // return the uid of the node that this port belongs to
-    virtual bool         HasNoEdgeLinked() = 0;
+    virtual bool         HasNoEdgeLinked() = 0; // may is a redundant method
 
     YamlPort::PortYamlId GetPortYamlId() const;
 
@@ -121,6 +121,7 @@ public:
               YamlPort::PortYamlId portYamlId = -1);
     void         SetEdgeUid(EdgeUniqueId);
     EdgeUniqueId GetEdgeUid();
+    EdgeUniqueId GetEdgeUid() const;
     virtual bool HasNoEdgeLinked() override;
 
 private:
@@ -201,6 +202,7 @@ public:
     std::vector<OutputPort>&       GetOutputPorts();
     InputPort*                     GetInputPort(PortUniqueId portUid);
     OutputPort*                    GetOutputPort(PortUniqueId portUid);
+    std::vector<EdgeUniqueId>      GetAllEdges() const;
 
     PortUniqueId    FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const;
     PortUniqueId    FindPortUidAmongInports(YamlPort::PortYamlId portYamlId) const;

@@ -3,6 +3,7 @@
 #include "Node.hpp"
 #include "imnodes.h"
 #include "NodeDescription.hpp"
+#include <unordered_set>
 #include <set>
 
 namespace SimpleNodeEditor
@@ -40,7 +41,9 @@ private:
                               const std::unordered_map<NodeUniqueId, Node>& nodesMap);
     void CollectPruningRules(std::vector<YamlNode> yamlNodes, std::vector<YamlEdge> yamlEdges);
 
-    void ApplyPruningRule(const std::unordered_map<std::string, std::string>& currentPruningRule,
+    bool IsAllEdgesWillBePruned(NodeUniqueId nodeUid, const std::unordered_set<EdgeUniqueId>& shouldBeDeleteEdges);
+
+    [[nodiscard]] bool ApplyPruningRule(const std::unordered_map<std::string, std::string>& currentPruningRule,
                                   std::unordered_map<NodeUniqueId, Node>       nodesMap,
                                   std::unordered_map<EdgeUniqueId, Edge>       edgesMap);
     void RestorePruning(const std::string& group, const std::string& orignType,
