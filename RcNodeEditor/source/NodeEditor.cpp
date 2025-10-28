@@ -568,21 +568,32 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid)
         return;
     }
 
-    // Node& node = m_nodes[nodeUid]; // this line require that Node has a default constructor
     Node& node = m_nodes.at(nodeUid);
     for (InputPort& inPort : node.GetInputPorts())
     {
-        m_edges.erase(inPort.GetEdgeUid());
-        inPort.SetEdgeUid(-1);
+        if (inPort.GetEdgeUid() != -1)
+        {
+            DeleteEdge(inPort.GetEdgeUid());
+        }
     }
 
     for (OutputPort& outPort : node.GetOutputPorts())
     {
         for (EdgeUniqueId edgeUid : outPort.GetEdgeUids())
         {
-            m_edges.erase(edgeUid);
+            DeleteEdge(edgeUid);
         }
-        outPort.ClearEdges();
+    }
+
+    // runtime check that we has already delete all edges from Node
+    for (InputPort& inPort : node.GetInputPorts())
+    {
+        assert(inPort.GetEdgeUid() == -1);
+    }
+
+    for (OutputPort& outPort : node.GetOutputPorts())
+    {
+        assert(outPort.GetEdgeUids().size() == 0);
     }
 }
 
@@ -660,6 +671,11 @@ void NodeEditor::DeleteEdgeUidFromPort(EdgeUniqueId edgeUid)
 
 void NodeEditor::DeleteEdge(EdgeUniqueId edgeUid)
 {
+    if (m_edges.count(edgeUid) == 0)
+    {
+        SPDLOG_WARN("try to delte a non-exist edgeUid[{}]", edgeUid);
+        return;
+    }
     DeleteEdgeUidFromPort(edgeUid);
     m_edges.erase(edgeUid);
 }
@@ -693,8 +709,7 @@ void NodeEditor::HandleDeletingEdges()
     {
         if (m_edges.count(detachedEdgeUId) != 0)
         {
-            DeleteEdgeUidFromPort(detachedEdgeUId);
-            m_edges.erase(detachedEdgeUId);
+            DeleteEdge(detachedEdgeUId);
         }
         else
         {
@@ -710,8 +725,7 @@ void NodeEditor::HandleDeletingEdges()
     // {
     //     if (m_edges.count(dropedEdgeUId) != 0)
     //     {
-    //         DeleteEdgeUidFromPort(dropedEdgeUId);
-    //         m_edges.erase(dropedEdgeUId);
+    //          DeleteEdge(dropedEdgeUId);
     //     }
     //     else
     //     {
@@ -915,7 +929,7 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
                         std::string originType{std::move(m_currentPruninngRule[group])};
                         m_currentPruninngRule[group] = types[i];
 
-                        // m_nodes and m_edges can not be reference，see the logic of ApplyPruningRule: erase elem of m_nodes and m_edges in the iteration, but has not handle the invalid iterator properly
+                        // m_nodes and m_edges can not pass by reference, see the logic of ApplyPruningRule: erase elem of m_nodes and m_edges in the iteration, but has not handled the erased iterator properly
                         // TODO : change this to pass by reference
                         ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges); 
 
