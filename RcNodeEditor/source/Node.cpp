@@ -110,7 +110,7 @@ Edge::Edge(PortUniqueId sourcePortUid, NodeUniqueId sourceNodeUid, PortUniqueId 
 {
 }
 
-const YamlEdge& Edge::GetYamlEdge()
+YamlEdge& Edge::GetYamlEdge()
 {
     return m_yamlEdge;
 }
@@ -194,7 +194,7 @@ std::vector<EdgeUniqueId> Node::GetAllEdges() const
     return edges;
 }
 
-const YamlNode& Node::GetYamlNode()
+YamlNode& Node::GetYamlNode()
 {
     return m_yamlNode;
 }

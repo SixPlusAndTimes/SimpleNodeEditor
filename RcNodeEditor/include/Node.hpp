@@ -160,7 +160,7 @@ public:
     NodeUniqueId    GetDestinationNodeUid() const;
     void            SetSourceNodeUid(NodeUniqueId nodeUid);
     void            SetDestinationNodeUid(NodeUniqueId nodeUid);
-    const YamlEdge& GetYamlEdge();
+    YamlEdge& GetYamlEdge();
     const YamlEdge& GetYamlEdge() const;
 
 private:
@@ -206,7 +206,7 @@ public:
 
     PortUniqueId    FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const;
     PortUniqueId    FindPortUidAmongInports(YamlPort::PortYamlId portYamlId) const;
-    const YamlNode& GetYamlNode();
+    YamlNode& GetYamlNode();
     const YamlNode& GetYamlNode() const;
 
     // yaml node related

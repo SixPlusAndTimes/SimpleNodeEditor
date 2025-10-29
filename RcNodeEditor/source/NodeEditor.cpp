@@ -1021,10 +1021,108 @@ void NodeEditor::HandleOtherUserInputs()
     NodeUniqueId selectedNode = -1;
     EdgeUniqueId selectedEdge = -1;
 
+    // Local static state for the popup so we don't need class-wide members or header changes.
+    static bool     popup_active = false;
+    static NodeUniqueId popup_node_id = -1;
+    static char     popup_name_buf[256] = {};
+    static int      popup_yaml_id = -1;
+    static bool     popup_is_src = false;
+    static int      popup_yaml_type = 0;
+    // support up to 32 properties in the editor popup; increase if you need more
+    static const int MAX_PROPS = 32;
+    static char     popup_prop_bufs[MAX_PROPS][256];
+    static int      popup_prop_count = 0;
+
     if (ImNodes::IsNodeHovered(&selectedNode) && ImGui::IsMouseDoubleClicked(0))
     {
         assert(selectedNode != -1);
         SPDLOG_INFO("node with nodeUid[{}] has been double clicked", selectedNode);
+
+        // Initialize popup buffers from the node's current YAML data
+        if (m_nodes.find(selectedNode) != m_nodes.end())
+        {
+            const YamlNode& yn = m_nodes.at(selectedNode).GetYamlNode();
+            strncpy(popup_name_buf, yn.m_nodeName.c_str(), sizeof(popup_name_buf) - 1);
+            popup_yaml_id = static_cast<int>(yn.m_nodeYamlId);
+            popup_is_src = yn.m_isSrcNode;
+            popup_yaml_type = static_cast<int>(yn.m_nodeYamlType);
+
+            popup_prop_count = (int)std::min<size_t>(yn.m_Properties.size(), MAX_PROPS);
+            for (int i = 0; i < popup_prop_count; ++i)
+            {
+                strncpy(popup_prop_bufs[i], yn.m_Properties[i].m_propertyValue.c_str(), sizeof(popup_prop_bufs[i]) - 1);
+            }
+
+            popup_node_id = selectedNode;
+            popup_active = true;
+            ImGui::OpenPopup("Node Info Editor");
+        }
+    }
+
+    // Render the popup modal every frame (BeginPopupModal handles visibility)
+    if (ImGui::BeginPopupModal("Node Info Editor", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        if (!popup_active || popup_node_id == -1 || m_nodes.find(popup_node_id) == m_nodes.end())
+        {
+            ImGui::TextUnformatted("No node selected or node was removed.");
+            if (ImGui::Button("Close"))
+            {
+                popup_active = false;
+                popup_node_id = -1;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+        else
+        {
+            ImGui::Text("Node UID: %d", popup_node_id);
+            ImGui::Separator();
+
+            // Editable YAML-backed fields
+            ImGui::InputText("Name", popup_name_buf, sizeof(popup_name_buf));
+            ImGui::InputInt("Yaml Id", &popup_yaml_id);
+            ImGui::Checkbox("Is Source", &popup_is_src);
+            ImGui::InputInt("Yaml Type", &popup_yaml_type);
+
+            ImGui::Separator();
+            ImGui::TextUnformatted("Properties:");
+            for (int i = 0; i < popup_prop_count; ++i)
+            {
+                // show property name (read-only) then editable value
+                const std::string prop_label = std::string("##prop_val_") + std::to_string(i);
+                ImGui::TextUnformatted(m_nodes.at(popup_node_id).GetYamlNode().m_Properties[i].m_propertyName.c_str());
+                ImGui::SameLine();
+                ImGui::InputText(prop_label.c_str(), popup_prop_bufs[i], sizeof(popup_prop_bufs[i]));
+            }
+
+            ImGui::Separator();
+            if (ImGui::Button("Save"))
+            {
+                // Commit edited values back into the node's YamlNode
+                YamlNode& yn = m_nodes.at(popup_node_id).GetYamlNode();
+                yn.m_nodeName = std::string(popup_name_buf);
+                yn.m_nodeYamlId = static_cast<YamlNode::NodeYamlId>(popup_yaml_id);
+                yn.m_isSrcNode = popup_is_src;
+                yn.m_nodeYamlType = static_cast<YamlNodeType>(popup_yaml_type);
+                for (int i = 0; i < popup_prop_count; ++i)
+                {
+                    yn.m_Properties[i].m_propertyValue = std::string(popup_prop_bufs[i]);
+                }
+
+                popup_active = false;
+                popup_node_id = -1;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel"))
+            {
+                // Discard changes (we only wrote into buffers)
+                popup_active = false;
+                popup_node_id = -1;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
     }
 
     if (ImNodes::IsLinkHovered(&selectedEdge) && ImGui::IsMouseDoubleClicked(0))
