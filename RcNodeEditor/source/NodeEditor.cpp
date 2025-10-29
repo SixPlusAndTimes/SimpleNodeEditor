@@ -1033,6 +1033,23 @@ void NodeEditor::HandleOtherUserInputs()
     static char     popup_prop_bufs[MAX_PROPS][256];
     static int      popup_prop_count = 0;
 
+    // Edge popup state (function-local to avoid header changes)
+    static bool        edge_popup_active = false;
+    static EdgeUniqueId edge_popup_id = -1;
+    static char        edge_src_node_name[128] = {};
+    static int         edge_src_node_id = -1;
+    static char        edge_src_port_name[128] = {};
+    static int         edge_src_port_id = -1;
+    static char        edge_dst_node_name[128] = {};
+    static int         edge_dst_node_id = -1;
+    static char        edge_dst_port_name[128] = {};
+    static int         edge_dst_port_id = -1;
+    // pruning rules for dst port (editable in the edge popup)
+    static const int   EDGE_MAX_PRUNE_RULES = 8;
+    static char        edge_dst_prune_group[EDGE_MAX_PRUNE_RULES][64] = {};
+    static char        edge_dst_prune_type[EDGE_MAX_PRUNE_RULES][64] = {};
+    static int         edge_dst_prune_count = 0;
+
     if (ImNodes::IsNodeHovered(&selectedNode) && ImGui::IsMouseDoubleClicked(0))
     {
         assert(selectedNode != -1);
@@ -1129,6 +1146,147 @@ void NodeEditor::HandleOtherUserInputs()
     {
         assert(selectedEdge != -1);
         SPDLOG_INFO("Edge with EdgeUid[{}] has been double clicked", selectedEdge);
+
+        // Initialize edge popup buffers from the edge's current YAML data
+        if (m_edges.find(selectedEdge) != m_edges.end())
+        {
+            YamlEdge& ye = m_edges.at(selectedEdge).GetYamlEdge();
+            // src
+            strncpy(edge_src_node_name, ye.m_yamlSrcPort.m_nodeName.c_str(), sizeof(edge_src_node_name) - 1);
+            edge_src_node_id = static_cast<int>(ye.m_yamlSrcPort.m_nodeYamlId);
+            strncpy(edge_src_port_name, ye.m_yamlSrcPort.m_portName.c_str(), sizeof(edge_src_port_name) - 1);
+            edge_src_port_id = static_cast<int>(ye.m_yamlSrcPort.m_portYamlId);
+            // dst
+            strncpy(edge_dst_node_name, ye.m_yamlDstPort.m_nodeName.c_str(), sizeof(edge_dst_node_name) - 1);
+            edge_dst_node_id = static_cast<int>(ye.m_yamlDstPort.m_nodeYamlId);
+            strncpy(edge_dst_port_name, ye.m_yamlDstPort.m_portName.c_str(), sizeof(edge_dst_port_name) - 1);
+            edge_dst_port_id = static_cast<int>(ye.m_yamlDstPort.m_portYamlId);
+            // dst pruning rules init
+            edge_dst_prune_count = (int)std::min<size_t>(ye.m_yamlDstPort.m_PruningRules.size(), (size_t)EDGE_MAX_PRUNE_RULES);
+            for (int pi = 0; pi < edge_dst_prune_count; ++pi)
+            {
+                const YamlPruningRule& pr = ye.m_yamlDstPort.m_PruningRules[pi];
+                strncpy(edge_dst_prune_group[pi], pr.m_Group.c_str(), sizeof(edge_dst_prune_group[pi]) - 1);
+                strncpy(edge_dst_prune_type[pi], pr.m_Type.c_str(), sizeof(edge_dst_prune_type[pi]) - 1);
+            }
+
+            edge_popup_id = selectedEdge;
+            edge_popup_active = true;
+            ImGui::OpenPopup("Edge Info Editor");
+        }
+    }
+
+    // Edge editor popup modal
+    if (ImGui::BeginPopupModal("Edge Info Editor", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        if (!edge_popup_active || edge_popup_id == -1 || m_edges.find(edge_popup_id) == m_edges.end())
+        {
+            ImGui::TextUnformatted("No edge selected or edge was removed.");
+            if (ImGui::Button("Close"))
+            {
+                edge_popup_active = false;
+                edge_popup_id = -1;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+        else
+        {
+            ImGui::Text("Edge UID: %d", edge_popup_id);
+            ImGui::Separator();
+
+            ImGui::TextUnformatted("Source Port:");
+            ImGui::InputText("Src Node Name", edge_src_node_name, sizeof(edge_src_node_name));
+            ImGui::InputInt("Src Node Yaml Id", &edge_src_node_id);
+            ImGui::InputText("Src Port Name", edge_src_port_name, sizeof(edge_src_port_name));
+            ImGui::InputInt("Src Port Yaml Id", &edge_src_port_id);
+
+            ImGui::Separator();
+            ImGui::TextUnformatted("Destination Port:");
+            ImGui::InputText("Dst Node Name", edge_dst_node_name, sizeof(edge_dst_node_name));
+            ImGui::InputInt("Dst Node Yaml Id", &edge_dst_node_id);
+            ImGui::InputText("Dst Port Name", edge_dst_port_name, sizeof(edge_dst_port_name));
+            ImGui::InputInt("Dst Port Yaml Id", &edge_dst_port_id);
+
+            ImGui::Separator();
+            ImGui::TextUnformatted("Destination Port Pruning Rules:");
+            // allow removing one rule per-frame (deferred index)
+            int remove_prune_idx = -1;
+            for (int i = 0; i < edge_dst_prune_count; ++i)
+            {
+                // unique labels
+                std::string grp_label = std::string("Group ##dst_prune_grp_") + std::to_string(i);
+                std::string typ_label = std::string("Type  ##dst_prune_typ_") + std::to_string(i);
+                ImGui::InputText(grp_label.c_str(), edge_dst_prune_group[i], sizeof(edge_dst_prune_group[i]));
+                ImGui::SameLine();
+                ImGui::InputText(typ_label.c_str(), edge_dst_prune_type[i], sizeof(edge_dst_prune_type[i]));
+                ImGui::SameLine();
+                if (ImGui::SmallButton((std::string("Remove") + std::to_string(i)).c_str()))
+                {
+                    remove_prune_idx = i;
+                }
+            }
+            if (remove_prune_idx != -1)
+            {
+                for (int j = remove_prune_idx; j + 1 < edge_dst_prune_count; ++j)
+                {
+                    strncpy(edge_dst_prune_group[j], edge_dst_prune_group[j + 1], sizeof(edge_dst_prune_group[j]) - 1);
+                    strncpy(edge_dst_prune_type[j], edge_dst_prune_type[j + 1], sizeof(edge_dst_prune_type[j]) - 1);
+                }
+                // clear last
+                edge_dst_prune_group[edge_dst_prune_count - 1][0] = '\0';
+                edge_dst_prune_type[edge_dst_prune_count - 1][0] = '\0';
+                edge_dst_prune_count -= 1;
+            }
+            ImGui::Spacing();
+            if (edge_dst_prune_count < EDGE_MAX_PRUNE_RULES)
+            {
+                if (ImGui::Button("Add Prune Rule"))
+                {
+                    edge_dst_prune_group[edge_dst_prune_count][0] = '\0';
+                    edge_dst_prune_type[edge_dst_prune_count][0] = '\0';
+                    edge_dst_prune_count += 1;
+                }
+            }
+
+            ImGui::Separator();
+            if (ImGui::Button("Save"))
+            {
+                // Commit edited values back into the edge's YamlEdge
+                YamlEdge& ye = m_edges.at(edge_popup_id).GetYamlEdge();
+                ye.m_yamlSrcPort.m_nodeName = std::string(edge_src_node_name);
+                ye.m_yamlSrcPort.m_nodeYamlId = static_cast<YamlNode::NodeYamlId>(edge_src_node_id);
+                ye.m_yamlSrcPort.m_portName = std::string(edge_src_port_name);
+                ye.m_yamlSrcPort.m_portYamlId = static_cast<YamlPort::PortYamlId>(edge_src_port_id);
+
+                ye.m_yamlDstPort.m_nodeName = std::string(edge_dst_node_name);
+                ye.m_yamlDstPort.m_nodeYamlId = static_cast<YamlNode::NodeYamlId>(edge_dst_node_id);
+                ye.m_yamlDstPort.m_portName = std::string(edge_dst_port_name);
+                ye.m_yamlDstPort.m_portYamlId = static_cast<YamlPort::PortYamlId>(edge_dst_port_id);
+
+                // commit dst pruning rules
+                ye.m_yamlDstPort.m_PruningRules.clear();
+                for (int i = 0; i < edge_dst_prune_count; ++i)
+                {
+                    YamlPruningRule pr;
+                    pr.m_Group = std::string(edge_dst_prune_group[i]);
+                    pr.m_Type = std::string(edge_dst_prune_type[i]);
+                    ye.m_yamlDstPort.m_PruningRules.push_back(std::move(pr));
+                }
+
+                edge_popup_active = false;
+                edge_popup_id = -1;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel"))
+            {
+                edge_popup_active = false;
+                edge_popup_id = -1;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
     }
 }
 
