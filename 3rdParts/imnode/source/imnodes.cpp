@@ -7,7 +7,6 @@
 // [SECTION] API implementation
 
 #include "imnodes_internal.h"
-
 // Check minimum ImGui version
 #define MINIMUM_COMPATIBLE_IMGUI_VERSION 17400
 #if IMGUI_VERSION_NUM < MINIMUM_COMPATIBLE_IMGUI_VERSION
@@ -21,6 +20,7 @@
 #include <stdio.h> // for fwrite, ssprintf, sscanf
 #include <stdlib.h>
 #include <string.h> // strlen, strncmp
+#include <iostream>
 
 // Use secure CRT function variants to avoid MSVC compiler errors
 #ifdef _MSC_VER
@@ -725,7 +725,7 @@ void BeginCanvasInteraction(ImNodesEditorContext& editor)
         return;
     }
 
-    // not the prority of panning is bigger than hover event
+    // not the prority of panning is higher than hover event
     const bool started_panning = GImNodes->AltMouseClicked || GImNodes->RightMouseDragging;
     if (started_panning)
     {
@@ -832,11 +832,12 @@ void TranslateSelectedNodes(ImNodesEditorContext& editor)
 {
     if (GImNodes->LeftMouseDragging)
     {
-        // If we have grid snap enabled, don't start moving nodes until we've moved the mouse
-        // slightly
-        const bool shouldTranslate = (GImNodes->Style.Flags & ImNodesStyleFlags_GridSnapping)
-                                         ? ImGui::GetIO().MouseDragMaxDistanceSqr[0] > 5.0
-                                         : true;
+        bool isDoubleClick = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+        
+        const float dragThresholdSqr = 5.0f; 
+        const bool hasValidDrag = ImGui::GetIO().MouseDragMaxDistanceSqr[0] > dragThresholdSqr;
+        const bool shouldTranslate = !isDoubleClick && hasValidDrag;
+        // std::cout << "(GImNodes->Style.Flags & ImNodesStyleFlags_GridSnapping) =  " <<(GImNodes->Style.Flags & ImNodesStyleFlags_GridSnapping) <<  " ImGui::GetIO().MouseDragMaxDistanceSqr[1] > 5.0  = " << (ImGui::GetIO().MouseDragMaxDistanceSqr[0] > 5.0) << std::endl;
 
         const ImVec2 origin = SnapOriginToGrid(
             GImNodes->MousePos - GImNodes->CanvasOriginScreenSpace - editor.Panning +
@@ -2407,8 +2408,14 @@ void EndNodeEditor()
             direction = direction * ImInvLength(direction, 0.0);
 
             editor.AutoPanningDelta =
-                direction * ImGui::GetIO().DeltaTime * GImNodes->Io.AutoPanningSpeed;
-            editor.Panning += editor.AutoPanningDelta;
+                    direction * ImGui::GetIO().DeltaTime * GImNodes->Io.AutoPanningSpeed;
+
+
+            ImVec2 disVec = direction * ImGui::GetIO().DeltaTime;
+            if (std::sqrt(disVec.x * disVec.x + disVec.y * disVec.y) > 5.0f)
+            {
+                editor.Panning += editor.AutoPanningDelta;
+            }
         }
     }
     ClickInteractionUpdate(editor);

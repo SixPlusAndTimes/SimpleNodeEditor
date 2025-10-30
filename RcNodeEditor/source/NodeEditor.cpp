@@ -36,6 +36,7 @@ NodeEditor::NodeEditor()
         s_nodeDescriptionsTypeDesMap.emplace(nodeD.m_yamlNodeType, nodeD);
         s_nodeDescriptionsNameDesMap.emplace(nodeD.m_nodeName, nodeD);
     }
+    // ImNodes::GetStyle().Flags |= ImNodesStyleFlags_GridSnapping;
 }
 
 void NodeEditor::ClearCurrentPipeLine()
