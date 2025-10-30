@@ -1019,36 +1019,15 @@ void NodeEditor::HandleOtherUserInputs()
     }
 
     NodeUniqueId selectedNode = -1;
-    EdgeUniqueId selectedEdge = -1;
 
-    // Local static state for the popup so we don't need class-wide members or header changes.
-    static bool     popup_active = false;
-    static NodeUniqueId popup_node_id = -1;
     static char     popup_name_buf[256] = {};
     static int      popup_yaml_id = -1;
     static bool     popup_is_src = false;
     static int      popup_yaml_type = 0;
-    // support up to 32 properties in the editor popup; increase if you need more
+
     static const int MAX_PROPS = 32;
     static char     popup_prop_bufs[MAX_PROPS][256];
     static int      popup_prop_count = 0;
-
-    // Edge popup state (function-local to avoid header changes)
-    static bool        edge_popup_active = false;
-    static EdgeUniqueId edge_popup_id = -1;
-    static char        edge_src_node_name[128] = {};
-    static int         edge_src_node_id = -1;
-    static char        edge_src_port_name[128] = {};
-    static int         edge_src_port_id = -1;
-    static char        edge_dst_node_name[128] = {};
-    static int         edge_dst_node_id = -1;
-    static char        edge_dst_port_name[128] = {};
-    static int         edge_dst_port_id = -1;
-    // pruning rules for dst port (editable in the edge popup)
-    static const int   EDGE_MAX_PRUNE_RULES = 8;
-    static char        edge_dst_prune_group[EDGE_MAX_PRUNE_RULES][64] = {};
-    static char        edge_dst_prune_type[EDGE_MAX_PRUNE_RULES][64] = {};
-    static int         edge_dst_prune_count = 0;
 
     if (ImNodes::IsNodeHovered(&selectedNode) && ImGui::IsMouseDoubleClicked(0))
     {
@@ -1056,7 +1035,7 @@ void NodeEditor::HandleOtherUserInputs()
         SPDLOG_INFO("node with nodeUid[{}] has been double clicked", selectedNode);
 
         // Initialize popup buffers from the node's current YAML data
-        if (m_nodes.find(selectedNode) != m_nodes.end())
+        if (m_nodes.contains(selectedNode))
         {
             const YamlNode& yn = m_nodes.at(selectedNode).GetYamlNode();
             strncpy(popup_name_buf, yn.m_nodeName.c_str(), sizeof(popup_name_buf) - 1);
@@ -1070,29 +1049,14 @@ void NodeEditor::HandleOtherUserInputs()
                 strncpy(popup_prop_bufs[i], yn.m_Properties[i].m_propertyValue.c_str(), sizeof(popup_prop_bufs[i]) - 1);
             }
 
-            popup_node_id = selectedNode;
-            popup_active = true;
             ImGui::OpenPopup("Node Info Editor");
         }
     }
 
-    // Render the popup modal every frame (BeginPopupModal handles visibility)
     if (ImGui::BeginPopupModal("Node Info Editor", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        if (!popup_active || popup_node_id == -1 || m_nodes.find(popup_node_id) == m_nodes.end())
-        {
-            ImGui::TextUnformatted("No node selected or node was removed.");
-            if (ImGui::Button("Close"))
-            {
-                popup_active = false;
-                popup_node_id = -1;
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
-        }
-        else
-        {
-            ImGui::Text("Node UID: %d", popup_node_id);
+
+            ImGui::Text("Node UID: %d", selectedNode);
             ImGui::Separator();
 
             // Editable YAML-backed fields
@@ -1107,7 +1071,7 @@ void NodeEditor::HandleOtherUserInputs()
             {
                 // show property name (read-only) then editable value
                 const std::string prop_label = std::string("##prop_val_") + std::to_string(i);
-                ImGui::TextUnformatted(m_nodes.at(popup_node_id).GetYamlNode().m_Properties[i].m_propertyName.c_str());
+                ImGui::TextUnformatted(m_nodes.at(selectedNode).GetYamlNode().m_Properties[i].m_propertyName.c_str());
                 ImGui::SameLine();
                 ImGui::InputText(prop_label.c_str(), popup_prop_bufs[i], sizeof(popup_prop_bufs[i]));
             }
@@ -1116,7 +1080,7 @@ void NodeEditor::HandleOtherUserInputs()
             if (ImGui::Button("Save"))
             {
                 // Commit edited values back into the node's YamlNode
-                YamlNode& yn = m_nodes.at(popup_node_id).GetYamlNode();
+                YamlNode& yn = m_nodes.at(selectedNode).GetYamlNode();
                 yn.m_nodeName = std::string(popup_name_buf);
                 yn.m_nodeYamlId = static_cast<YamlNode::NodeYamlId>(popup_yaml_id);
                 yn.m_isSrcNode = popup_is_src;
@@ -1126,29 +1090,40 @@ void NodeEditor::HandleOtherUserInputs()
                     yn.m_Properties[i].m_propertyValue = std::string(popup_prop_bufs[i]);
                 }
 
-                popup_active = false;
-                popup_node_id = -1;
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
             if (ImGui::Button("Cancel"))
             {
-                // Discard changes (we only wrote into buffers)
-                popup_active = false;
-                popup_node_id = -1;
                 ImGui::CloseCurrentPopup();
             }
             ImGui::EndPopup();
-        }
     }
 
+
+    EdgeUniqueId selectedEdge = -1;
+
+    // Edge popup state (function-local to avoid header changes)
+    static char        edge_src_node_name[128] = {};
+    static int         edge_src_node_id = -1;
+    static char        edge_src_port_name[128] = {};
+    static int         edge_src_port_id = -1;
+    static char        edge_dst_node_name[128] = {};
+    static int         edge_dst_node_id = -1;
+    static char        edge_dst_port_name[128] = {};
+    static int         edge_dst_port_id = -1;
+    // pruning rules for dst port (editable in the edge popup)
+    static const int   EDGE_MAX_PRUNE_RULES = 8;
+    static char        edge_dst_prune_group[EDGE_MAX_PRUNE_RULES][64] = {};
+    static char        edge_dst_prune_type[EDGE_MAX_PRUNE_RULES][64] = {};
+    static int         edge_dst_prune_count = 0;
     if (ImNodes::IsLinkHovered(&selectedEdge) && ImGui::IsMouseDoubleClicked(0))
     {
         assert(selectedEdge != -1);
         SPDLOG_INFO("Edge with EdgeUid[{}] has been double clicked", selectedEdge);
 
         // Initialize edge popup buffers from the edge's current YAML data
-        if (m_edges.find(selectedEdge) != m_edges.end())
+        if (m_edges.contains(selectedEdge))
         {
             YamlEdge& ye = m_edges.at(selectedEdge).GetYamlEdge();
             // src
@@ -1170,8 +1145,6 @@ void NodeEditor::HandleOtherUserInputs()
                 strncpy(edge_dst_prune_type[pi], pr.m_Type.c_str(), sizeof(edge_dst_prune_type[pi]) - 1);
             }
 
-            edge_popup_id = selectedEdge;
-            edge_popup_active = true;
             ImGui::OpenPopup("Edge Info Editor");
         }
     }
@@ -1179,20 +1152,7 @@ void NodeEditor::HandleOtherUserInputs()
     // Edge editor popup modal
     if (ImGui::BeginPopupModal("Edge Info Editor", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        if (!edge_popup_active || edge_popup_id == -1 || m_edges.find(edge_popup_id) == m_edges.end())
-        {
-            ImGui::TextUnformatted("No edge selected or edge was removed.");
-            if (ImGui::Button("Close"))
-            {
-                edge_popup_active = false;
-                edge_popup_id = -1;
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
-        }
-        else
-        {
-            ImGui::Text("Edge UID: %d", edge_popup_id);
+            ImGui::Text("Edge UID: %d", selectedEdge);
             ImGui::Separator();
 
             ImGui::TextUnformatted("Source Port:");
@@ -1253,7 +1213,7 @@ void NodeEditor::HandleOtherUserInputs()
             if (ImGui::Button("Save"))
             {
                 // Commit edited values back into the edge's YamlEdge
-                YamlEdge& ye = m_edges.at(edge_popup_id).GetYamlEdge();
+                YamlEdge& ye = m_edges.at(selectedEdge).GetYamlEdge();
                 ye.m_yamlSrcPort.m_nodeName = std::string(edge_src_node_name);
                 ye.m_yamlSrcPort.m_nodeYamlId = static_cast<YamlNode::NodeYamlId>(edge_src_node_id);
                 ye.m_yamlSrcPort.m_portName = std::string(edge_src_port_name);
@@ -1274,19 +1234,16 @@ void NodeEditor::HandleOtherUserInputs()
                     ye.m_yamlDstPort.m_PruningRules.push_back(std::move(pr));
                 }
 
-                edge_popup_active = false;
-                edge_popup_id = -1;
                 ImGui::CloseCurrentPopup();
             }
+
             ImGui::SameLine();
+
             if (ImGui::Button("Cancel"))
             {
-                edge_popup_active = false;
-                edge_popup_id = -1;
                 ImGui::CloseCurrentPopup();
             }
             ImGui::EndPopup();
-        }
     }
 }
 
