@@ -7,6 +7,7 @@
 // [SECTION] API implementation
 
 #include "imnodes_internal.h"
+
 // Check minimum ImGui version
 #define MINIMUM_COMPATIBLE_IMGUI_VERSION 17400
 #if IMGUI_VERSION_NUM < MINIMUM_COMPATIBLE_IMGUI_VERSION
@@ -20,7 +21,6 @@
 #include <stdio.h> // for fwrite, ssprintf, sscanf
 #include <stdlib.h>
 #include <string.h> // strlen, strncmp
-#include <iostream>
 
 // Use secure CRT function variants to avoid MSVC compiler errors
 #ifdef _MSC_VER
@@ -350,11 +350,7 @@ void ImDrawListGrowChannels(ImDrawList* draw_list, const int num_channels)
         {
             ImDrawCmd draw_cmd;
             draw_cmd.ClipRect = draw_list->_ClipRectStack.back();
-#if IMGUI_VERSION_NUM < 19200
             draw_cmd.TextureId = draw_list->_TextureIdStack.back();
-#else
-            draw_cmd.TexRef = draw_list->_TextureStack.back();
-#endif
             channel._CmdBuffer.push_back(draw_cmd);
         }
     }
@@ -566,11 +562,7 @@ ImVec2 GetScreenSpacePinCoordinates(const ImNodesEditorContext& editor, const Im
 
 bool MouseInCanvas()
 {
-    // This flag should be true either when hovering or clicking something in the canvas.
-    const bool is_window_hovered_or_focused = ImGui::IsWindowHovered() || ImGui::IsWindowFocused();
-
-    return is_window_hovered_or_focused &&
-           GImNodes->CanvasRectScreenSpace.Contains(ImGui::GetMousePos());
+    return GImNodes->IsHovered;
 }
 
 void BeginNodeSelection(ImNodesEditorContext& editor, const int node_idx)
@@ -717,28 +709,23 @@ static inline bool IsMiniMapHovered();
 
 void BeginCanvasInteraction(ImNodesEditorContext& editor)
 {
+    const bool any_ui_element_hovered =
+        GImNodes->HoveredNodeIdx.HasValue() || GImNodes->HoveredLinkIdx.HasValue() ||
+        GImNodes->HoveredPinIdx.HasValue() || ImGui::IsAnyItemHovered();
 
     const bool mouse_not_in_canvas = !MouseInCanvas();
 
-    if (editor.ClickInteraction.Type != ImNodesClickInteractionType_None || mouse_not_in_canvas)
+    if (editor.ClickInteraction.Type != ImNodesClickInteractionType_None ||
+        any_ui_element_hovered || mouse_not_in_canvas)
     {
         return;
     }
 
-    // not the prority of panning is higher than hover event
-    const bool started_panning = GImNodes->AltMouseClicked || GImNodes->RightMouseDragging;
+    const bool started_panning = GImNodes->AltMouseClicked;
+
     if (started_panning)
     {
         editor.ClickInteraction.Type = ImNodesClickInteractionType_Panning;
-        return;
-    }
-
-    const bool any_ui_element_hovered =
-    GImNodes->HoveredNodeIdx.HasValue() || GImNodes->HoveredLinkIdx.HasValue() ||
-    GImNodes->HoveredPinIdx.HasValue() || ImGui::IsAnyItemHovered();
-    if (any_ui_element_hovered)
-    {
-        return ;
     }
     else if (GImNodes->LeftMouseClicked)
     {
@@ -832,12 +819,11 @@ void TranslateSelectedNodes(ImNodesEditorContext& editor)
 {
     if (GImNodes->LeftMouseDragging)
     {
-        bool isDoubleClick = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
-        
-        const float dragThresholdSqr = 5.0f; 
-        const bool hasValidDrag = ImGui::GetIO().MouseDragMaxDistanceSqr[0] > dragThresholdSqr;
-        const bool shouldTranslate = !isDoubleClick && hasValidDrag;
-        // std::cout << "(GImNodes->Style.Flags & ImNodesStyleFlags_GridSnapping) =  " <<(GImNodes->Style.Flags & ImNodesStyleFlags_GridSnapping) <<  " ImGui::GetIO().MouseDragMaxDistanceSqr[1] > 5.0  = " << (ImGui::GetIO().MouseDragMaxDistanceSqr[0] > 5.0) << std::endl;
+        // If we have grid snap enabled, don't start moving nodes until we've moved the mouse
+        // slightly
+        const bool shouldTranslate = (GImNodes->Style.Flags & ImNodesStyleFlags_GridSnapping)
+                                         ? ImGui::GetIO().MouseDragMaxDistanceSqr[0] > 5.0
+                                         : true;
 
         const ImVec2 origin = SnapOriginToGrid(
             GImNodes->MousePos - GImNodes->CanvasOriginScreenSpace - editor.Panning +
@@ -1059,7 +1045,7 @@ void ClickInteractionUpdate(ImNodesEditorContext& editor)
             cubic_bezier.P2,
             cubic_bezier.P3,
             GImNodes->Style.Colors[ImNodesCol_Link],
-            GImNodes->Style.LinkThickness,
+            GImNodes->Style.LinkThickness / editor.ZoomScale,
             cubic_bezier.NumSegments);
 
         const bool link_creation_on_snap =
@@ -1101,7 +1087,7 @@ void ClickInteractionUpdate(ImNodesEditorContext& editor)
     break;
     case ImNodesClickInteractionType_Panning:
     {
-        const bool dragging = GImNodes->AltMouseDragging || GImNodes->RightMouseDragging;
+        const bool dragging = GImNodes->AltMouseDragging;
 
         if (dragging)
         {
@@ -1356,6 +1342,44 @@ void DrawGrid(ImNodesEditorContext& editor, const ImVec2& canvas_size)
             EditorSpaceToScreenSpace(ImVec2(canvas_size.x, y)),
             offset.y - y == 0.f && draw_primary ? line_color_prim : line_color);
     }
+}
+
+inline void AppendDrawData(ImDrawList* src, ImVec2 origin, float scale)
+{
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const int   vtx_start = dl->VtxBuffer.size();
+    const int   idx_start = dl->IdxBuffer.size();
+    dl->VtxBuffer.resize(dl->VtxBuffer.size() + src->VtxBuffer.size());
+    dl->IdxBuffer.resize(dl->IdxBuffer.size() + src->IdxBuffer.size());
+    dl->CmdBuffer.reserve(dl->CmdBuffer.size() + src->CmdBuffer.size());
+    dl->_VtxWritePtr = dl->VtxBuffer.Data + vtx_start;
+    dl->_IdxWritePtr = dl->IdxBuffer.Data + idx_start;
+    const ImDrawVert* vtx_read = src->VtxBuffer.Data;
+    const ImDrawIdx*  idx_read = src->IdxBuffer.Data;
+    for (int i = 0, c = src->VtxBuffer.size(); i < c; ++i)
+    {
+        dl->_VtxWritePtr[i].uv = vtx_read[i].uv;
+        dl->_VtxWritePtr[i].col = vtx_read[i].col;
+        dl->_VtxWritePtr[i].pos = vtx_read[i].pos * scale + origin;
+    }
+    for (int i = 0, c = src->IdxBuffer.size(); i < c; ++i)
+    {
+        dl->_IdxWritePtr[i] = idx_read[i] + (ImDrawIdx)vtx_start;
+    }
+    for (int i = 0, c = src->CmdBuffer.size(); i < c; ++i)
+    {
+        ImDrawCmd cmd = src->CmdBuffer[i];
+        cmd.IdxOffset += idx_start;
+        cmd.ClipRect.x = cmd.ClipRect.x * scale + origin.x;
+        cmd.ClipRect.y = cmd.ClipRect.y * scale + origin.y;
+        cmd.ClipRect.z = cmd.ClipRect.z * scale + origin.x;
+        cmd.ClipRect.w = cmd.ClipRect.w * scale + origin.y;
+        dl->CmdBuffer.push_back(cmd);
+    }
+
+    dl->_VtxCurrentIdx += src->VtxBuffer.size();
+    dl->_VtxWritePtr = dl->VtxBuffer.Data + dl->VtxBuffer.size();
+    dl->_IdxWritePtr = dl->IdxBuffer.Data + dl->IdxBuffer.size();
 }
 
 struct QuadOffsets
@@ -1633,7 +1657,7 @@ void DrawLink(ImNodesEditorContext& editor, const int link_idx)
         cubic_bezier.P2,
         cubic_bezier.P3,
         link_color,
-        GImNodes->Style.LinkThickness,
+        GImNodes->Style.LinkThickness / editor.ZoomScale,
         cubic_bezier.NumSegments);
 }
 
@@ -1690,6 +1714,11 @@ void EndPinAttribute()
 
 void Initialize(ImNodesContext* context)
 {
+    context->NodeEditorImgCtx = ImGui::CreateContext(ImGui::GetIO().Fonts);
+    context->NodeEditorImgCtx->IO.IniFilename = nullptr;
+    context->OriginalImgCtx = nullptr;
+
+    context->CanvasOriginalOrigin = ImVec2(0.0f, 0.0f);
     context->CanvasOriginScreenSpace = ImVec2(0.0f, 0.0f);
     context->CanvasRectScreenSpace = ImRect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
     context->CurrentScope = ImNodesScope_None;
@@ -1706,7 +1735,11 @@ void Initialize(ImNodesContext* context)
     StyleColorsDark(&context->Style);
 }
 
-void Shutdown(ImNodesContext* ctx) { EditorContextFree(ctx->DefaultEditorCtx); }
+void Shutdown(ImNodesContext* ctx)
+{
+    EditorContextFree(ctx->DefaultEditorCtx);
+    ImGui::DestroyContext(ctx->NodeEditorImgCtx);
+}
 
 // [SECTION] minimap
 
@@ -1727,8 +1760,8 @@ static inline bool IsMiniMapHovered()
 static inline void CalcMiniMapLayout()
 {
     ImNodesEditorContext& editor = EditorContextGet();
-    const ImVec2          offset = GImNodes->Style.MiniMapOffset;
-    const ImVec2          border = GImNodes->Style.MiniMapPadding;
+    const ImVec2          offset = GImNodes->Style.MiniMapOffset / editor.ZoomScale;
+    const ImVec2          border = GImNodes->Style.MiniMapPadding / editor.ZoomScale;
     const ImRect          editor_rect = GImNodes->CanvasRectScreenSpace;
 
     // Compute the size of the mini-map area
@@ -1824,7 +1857,7 @@ static void MiniMapDrawNode(ImNodesEditorContext& editor, const int node_idx)
         node_rect.Min, node_rect.Max, mini_map_node_background, mini_map_node_rounding);
 
     GImNodes->CanvasDrawList->AddRect(
-        node_rect.Min, node_rect.Max, mini_map_node_outline, mini_map_node_rounding);
+        node_rect.Min, node_rect.Max, mini_map_node_outline, mini_map_node_rounding, 0, 1 / editor.ZoomScale);
 }
 
 static void MiniMapDrawLink(ImNodesEditorContext& editor, const int link_idx)
@@ -1864,7 +1897,7 @@ static void MiniMapDrawLink(ImNodesEditorContext& editor, const int link_idx)
         cubic_bezier.P2,
         cubic_bezier.P3,
         link_color,
-        GImNodes->Style.LinkThickness * editor.MiniMapScaling,
+        GImNodes->Style.LinkThickness * editor.MiniMapScaling / editor.ZoomScale,
         cubic_bezier.NumSegments);
 }
 
@@ -1895,7 +1928,12 @@ static void MiniMapUpdate()
         mini_map_rect.Min, mini_map_rect.Max, mini_map_background);
 
     GImNodes->CanvasDrawList->AddRect(
-        mini_map_rect.Min, mini_map_rect.Max, GImNodes->Style.Colors[ImNodesCol_MiniMapOutline]);
+        mini_map_rect.Min,
+        mini_map_rect.Max,
+        GImNodes->Style.Colors[ImNodesCol_MiniMapOutline],
+        0,
+        0,
+        1 / editor.ZoomScale);
 
     // Clip draw list items to mini-map rect (after drawing background/outline)
     GImNodes->CanvasDrawList->PushClipRect(
@@ -1925,7 +1963,8 @@ static void MiniMapUpdate()
         const ImRect rect = ScreenSpaceToMiniMapSpace(editor, GImNodes->CanvasRectScreenSpace);
 
         GImNodes->CanvasDrawList->AddRectFilled(rect.Min, rect.Max, canvas_color);
-        GImNodes->CanvasDrawList->AddRect(rect.Min, rect.Max, outline_color);
+        GImNodes->CanvasDrawList->AddRect(
+            rect.Min, rect.Max, outline_color, 0, 0, 1 / editor.ZoomScale);
     }
 
     // Have to pop mini-map clip rect
@@ -2067,6 +2106,8 @@ void EditorContextMoveToNode(const int node_id)
     editor.Panning.x = -node.Origin.x;
     editor.Panning.y = -node.Origin.y;
 }
+
+ImGuiContext* GetNodeEditorImGuiContext() { return GImNodes->NodeEditorImgCtx; }
 
 void SetImGuiContext(ImGuiContext* ctx) { ImGui::SetCurrentContext(ctx); }
 
@@ -2230,15 +2271,97 @@ void BeginNodeEditor()
 
     GImNodes->ImNodesUIState = ImNodesUIState_None;
 
+    GImNodes->ActiveAttribute = false;
+    GImNodes->IsHovered = false;
+
+    ImGui::BeginGroup();
+    {
+        // Setup zoom context
+        ImVec2 canvas_size = ImGui::GetContentRegionAvail();
+        GImNodes->CanvasOriginalOrigin = ImGui::GetCursorScreenPos();
+        GImNodes->OriginalImgCtx = ImGui::GetCurrentContext();
+
+        // Copy config settings in IO from main context, avoiding input fields
+        memcpy(
+            (void*)&GImNodes->NodeEditorImgCtx->IO,
+            (void*)&GImNodes->OriginalImgCtx->IO,
+            offsetof(ImGuiIO, SetPlatformImeDataFn) +
+                sizeof(GImNodes->OriginalImgCtx->IO.SetPlatformImeDataFn));
+
+        GImNodes->NodeEditorImgCtx->IO.BackendPlatformUserData = nullptr;
+        GImNodes->NodeEditorImgCtx->IO.BackendRendererUserData = nullptr;
+        GImNodes->NodeEditorImgCtx->IO.IniFilename = nullptr;
+        GImNodes->NodeEditorImgCtx->IO.ConfigInputTrickleEventQueue = false;
+        GImNodes->NodeEditorImgCtx->IO.DisplaySize = ImMax(canvas_size / editor.ZoomScale, ImVec2(0, 0));
+        GImNodes->NodeEditorImgCtx->Style = GImNodes->OriginalImgCtx->Style;
+
+        // Nav (tabbing) needs to be disabled otherwise it doubles up with the main context
+        // not sure how to get this working correctly
+        ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
+                                       ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoMove;
+
+        // Button to capture mouse events and hover test
+        ImGui::BeginChild("canvas_no_drag", canvas_size, 0, windowFlags);
+
+        if (ImGui::IsWindowHovered())
+        {
+            GImNodes->IsHovered = true;            
+        }
+        else
+        {
+            windowFlags |= ImGuiWindowFlags_NoInputs;
+            GImNodes->NodeEditorImgCtx->IO.ConfigFlags |= ImGuiConfigFlags_NoMouse;
+        }
+
+        // Copy IO events
+        GImNodes->NodeEditorImgCtx->InputEventsQueue = GImNodes->OriginalImgCtx->InputEventsTrail;
+        for (ImGuiInputEvent& e : GImNodes->NodeEditorImgCtx->InputEventsQueue)
+        {
+            if (e.Type == ImGuiInputEventType_MousePos)
+            {
+                e.MousePos.PosX =
+                    (e.MousePos.PosX - GImNodes->CanvasOriginalOrigin.x) / editor.ZoomScale;
+                e.MousePos.PosY =
+                    (e.MousePos.PosY - GImNodes->CanvasOriginalOrigin.y) / editor.ZoomScale;                
+            }
+        }
+
+        ImGui::SetCurrentContext(GImNodes->NodeEditorImgCtx);
+        ImGui::NewFrame();
+
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
+        ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, GImNodes->Style.Colors[ImNodesCol_GridBackground]);
+        ImGui::Begin("editor_canvas", nullptr, windowFlags);
+        ImGui::PopStyleVar(2);
+        ImGui::PopStyleColor();
+
+        GImNodes->CanvasOriginScreenSpace = ImGui::GetCursorScreenPos();
+
+        // NOTE: we have to fetch the canvas draw list *after* we call
+        // BeginChild(), otherwise the ImGui UI elements are going to be
+        // rendered into the parent window draw list.
+        DrawListSet(ImGui::GetWindowDrawList());
+
+        {
+            const ImVec2 window_size = ImGui::GetWindowSize();
+            GImNodes->CanvasRectScreenSpace = ImRect(
+                EditorSpaceToScreenSpace(ImVec2(0.f, 0.f)), EditorSpaceToScreenSpace(window_size));
+
+            if (GImNodes->Style.Flags & ImNodesStyleFlags_GridLines)
+            {
+                DrawGrid(editor, window_size);
+            }
+        }
+    }
+
+    // Cache inputs
     GImNodes->MousePos = ImGui::GetIO().MousePos;
     GImNodes->LeftMouseClicked = ImGui::IsMouseClicked(0);
     GImNodes->LeftMouseReleased = ImGui::IsMouseReleased(0);
     GImNodes->LeftMouseDragging = ImGui::IsMouseDragging(0, 0.0f);
-
-    GImNodes->RightMouseClicked = ImGui::IsMouseClicked(1);
-    GImNodes->RightMouseReleased = ImGui::IsMouseReleased(1);
-    GImNodes->RightMouseDragging = ImGui::IsMouseDragging(1, 0.0f);
-
     GImNodes->AltMouseClicked =
         (GImNodes->Io.EmulateThreeButtonMouse.Modifier != NULL &&
          *GImNodes->Io.EmulateThreeButtonMouse.Modifier && GImNodes->LeftMouseClicked) ||
@@ -2252,38 +2375,6 @@ void BeginNodeEditor()
         (GImNodes->Io.MultipleSelectModifier.Modifier != NULL
              ? *GImNodes->Io.MultipleSelectModifier.Modifier
              : ImGui::GetIO().KeyCtrl);
-
-    GImNodes->ActiveAttribute = false;
-
-    ImGui::BeginGroup();
-    {
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1.f, 1.f));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, GImNodes->Style.Colors[ImNodesCol_GridBackground]);
-        ImGui::BeginChild(
-            "scrolling_region",
-            ImVec2(0.f, 0.f),
-            true,
-            ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove |
-                ImGuiWindowFlags_NoScrollWithMouse);
-        GImNodes->CanvasOriginScreenSpace = ImGui::GetCursorScreenPos();
-
-        // NOTE: we have to fetch the canvas draw list *after* we call
-        // BeginChild(), otherwise the ImGui UI elements are going to be
-        // rendered into the parent window draw list.
-        DrawListSet(ImGui::GetWindowDrawList());
-
-        {
-            const ImVec2 canvas_size = ImGui::GetWindowSize();
-            GImNodes->CanvasRectScreenSpace = ImRect(
-                EditorSpaceToScreenSpace(ImVec2(0.f, 0.f)), EditorSpaceToScreenSpace(canvas_size));
-
-            if (GImNodes->Style.Flags & ImNodesStyleFlags_GridLines)
-            {
-                DrawGrid(editor, canvas_size);
-            }
-        }
-    }
 }
 
 void EndNodeEditor()
@@ -2391,7 +2482,7 @@ void EndNodeEditor()
 
         else if (
             GImNodes->LeftMouseClicked || GImNodes->LeftMouseReleased ||
-            GImNodes->AltMouseClicked || GImNodes->AltMouseScrollDelta != 0.f || GImNodes->RightMouseClicked || GImNodes->RightMouseReleased)
+            GImNodes->AltMouseClicked || GImNodes->AltMouseScrollDelta != 0.f)
         {
             BeginCanvasInteraction(editor);
         }
@@ -2408,14 +2499,8 @@ void EndNodeEditor()
             direction = direction * ImInvLength(direction, 0.0);
 
             editor.AutoPanningDelta =
-                    direction * ImGui::GetIO().DeltaTime * GImNodes->Io.AutoPanningSpeed;
-
-
-            ImVec2 disVec = direction * ImGui::GetIO().DeltaTime;
-            if (std::sqrt(disVec.x * disVec.x + disVec.y * disVec.y) > 5.0f)
-            {
-                editor.Panning += editor.AutoPanningDelta;
-            }
+                direction * ImGui::GetIO().DeltaTime * GImNodes->Io.AutoPanningSpeed;
+            editor.Panning += editor.AutoPanningDelta;
         }
     }
     ClickInteractionUpdate(editor);
@@ -2434,12 +2519,30 @@ void EndNodeEditor()
     // Finally, merge the draw channels
     GImNodes->CanvasDrawList->ChannelsMerge();
 
-    // pop style
-    ImGui::EndChild();      // end scrolling region
-    ImGui::PopStyleColor(); // pop child window background color
-    ImGui::PopStyleVar();   // pop window padding
-    ImGui::PopStyleVar();   // pop frame padding
+    GImNodes->OriginalImgCtx->WantTextInputNextFrame = ImMax(
+        GImNodes->OriginalImgCtx->WantTextInputNextFrame,
+        GImNodes->NodeEditorImgCtx->WantTextInputNextFrame);
+
+    if (MouseInCanvas())
+    {
+        GImNodes->OriginalImgCtx->MouseCursor = GImNodes->NodeEditorImgCtx->MouseCursor;
+    }
+
+    // End frame for zoom context
+    ImGui::End();
+    ImGui::Render();
+
+    ImDrawData* draw_data = ImGui::GetDrawData();
+
+    ImGui::SetCurrentContext(GImNodes->OriginalImgCtx);
+    GImNodes->OriginalImgCtx = nullptr;
+
+    ImGui::EndChild();
     ImGui::EndGroup();
+
+    // Copy draw data over to original context
+    for (int i = 0; i < draw_data->CmdListsCount; ++i)
+        AppendDrawData(draw_data->CmdLists[i], GImNodes->CanvasOriginalOrigin, editor.ZoomScale);
 }
 
 void MiniMap(
@@ -2830,6 +2933,34 @@ void SnapNodeToGrid(int node_id)
     ImNodesEditorContext& editor = EditorContextGet();
     ImNodeData&           node = ObjectPoolFindOrCreateObject(editor.Nodes, node_id);
     node.Origin = SnapOriginToGrid(node.Origin);
+}
+
+float EditorContextGetZoom() { return EditorContextGet().ZoomScale; }
+
+void EditorContextSetZoom(float zoom_scale, ImVec2 zoom_centering_pos)
+{
+    IM_ASSERT(GImNodes->CurrentScope == ImNodesScope_None);
+
+    ImNodesEditorContext& editor = EditorContextGet();
+    const float new_zoom = ImMax(0.1f, ImMin(10.0f, zoom_scale));
+
+    zoom_centering_pos -= GImNodes->CanvasOriginalOrigin;
+    editor.Panning += zoom_centering_pos / new_zoom - zoom_centering_pos / editor.ZoomScale;
+
+    // Fix mouse position
+    GImNodes->NodeEditorImgCtx->IO.MousePos *= editor.ZoomScale / new_zoom;
+
+    editor.ZoomScale = new_zoom;
+}
+
+ImVec2 ConvertToEditorContextSpace(const ImVec2& screen_space_pos)
+{
+    return (screen_space_pos - GImNodes->CanvasOriginalOrigin) / EditorContextGet().ZoomScale;
+}
+
+ImVec2 ConvertFromEditorContextSpace(const ImVec2& screen_space_pos)
+{
+    return (screen_space_pos * EditorContextGet().ZoomScale) + GImNodes->CanvasOriginalOrigin;    
 }
 
 bool IsEditorHovered() { return MouseInCanvas(); }
