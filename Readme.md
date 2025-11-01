@@ -1,4 +1,4 @@
-# Imgui Cmake Starter
+# Simple Node Editor
 ## notice
 **only tested on windows and wsl**
 
@@ -33,9 +33,8 @@ If you want intall it at another dir, just modify the default intallation path i
 
 [imnode](https://github.com/Nelarius/imnodes)
 
-zoom feature is copied from here
 
-[imnode zoom](https://github.com/Nelarius/imnodes/pull/192)
+[imnode zoom](https://github.com/Nelarius/imnodes/pull/192)  zoom feature is copied from here
 
 # TODOS
 
