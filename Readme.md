@@ -33,6 +33,10 @@ If you want intall it at another dir, just modify the default intallation path i
 
 [imnode](https://github.com/Nelarius/imnodes)
 
+zoom feature is copied from here
+
+[imnode zoom](https://github.com/Nelarius/imnodes/pull/192)
+
 # TODOS
 
 - port口名字显示时排版美化
