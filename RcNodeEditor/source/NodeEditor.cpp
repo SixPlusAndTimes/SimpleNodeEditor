@@ -1050,6 +1050,7 @@ void NodeEditor::HandleOtherUserInputs()
                 strncpy(popup_prop_bufs[i], yn.m_Properties[i].m_propertyValue.c_str(), sizeof(popup_prop_bufs[i]) - 1);
             }
 
+            ImGui::SetNextWindowPos(ImGui::GetMousePos());
             ImGui::OpenPopup("Node Info Editor");
         }
     }
@@ -1147,6 +1148,7 @@ void NodeEditor::HandleOtherUserInputs()
             }
 
             ImGui::OpenPopup("Edge Info Editor");
+            ImGui::SetNextWindowPos(ImGui::GetMousePos());
         }
     }
 
