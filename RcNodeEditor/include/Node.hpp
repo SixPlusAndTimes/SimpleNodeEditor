@@ -9,6 +9,9 @@
 #include <vector>
 #include <string>
 #include "NodeDescription.hpp"
+#include <optional>
+
+struct ImNodesStyle;
 
 namespace SimpleNodeEditor
 {
@@ -188,7 +191,7 @@ public: // type def
 public:
     // Node();
     Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode,
-         const std::string& nodeTitle, float nodeWidth = 100.f);
+         const std::string& nodeTitle, ImNodesStyle& nodeStyle);
     void SetNodePosition(const ImVec2& pos);
 
     void                           AddInputPort(const InputPort& inPort);
@@ -203,6 +206,7 @@ public:
     InputPort*                     GetInputPort(PortUniqueId portUid);
     OutputPort*                    GetOutputPort(PortUniqueId portUid);
     std::vector<EdgeUniqueId>      GetAllEdges() const;
+    float                          GetNodeWidth();
 
     PortUniqueId    FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const;
     PortUniqueId    FindPortUidAmongInports(YamlPort::PortYamlId portYamlId) const;
@@ -214,10 +218,12 @@ public:
     YamlNode::NodeYamlId GetNodeYamlId() const;
 
 private:
+    void CalcNodeWidth();
+
     // imnode lib need nodeuid to differentiate between nodes
     NodeUniqueId m_nodeUid; // used for imnode to draw UI
     NodeType     m_nodeType;
-    float        m_nodeWidth;
+    std::optional<float>        m_nodeWidth;
     std::string  m_nodeTitle; // nodetitle = nodename_in_nodedescription +  "_" + nodeid_in_yaml
     ImVec2       m_nodePos;
     std::vector<InputPort>  m_inputPorts;
@@ -226,6 +232,8 @@ private:
     // yaml node related
     YamlNode::NodeYamlId m_yamlNodeId;
     YamlNode             m_yamlNode;
+    ImNodesStyle& m_nodeStyle;
+
 };
 } // namespace SimpleNodeEditor
 

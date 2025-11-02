@@ -1,6 +1,9 @@
 #include "Node.hpp"
 #include <algorithm>
 #include "spdlog/spdlog.h"
+#include <cmath>
+#include "imnodes.h"
+
 namespace SimpleNodeEditor
 {
 
@@ -156,19 +159,48 @@ NodeUniqueId Edge::GetDestinationNodeUid() const
 }
 
 Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode,
-           const std::string& nodeTitle, float nodeWidth)
+           const std::string& nodeTitle, ImNodesStyle& nodeStyle)
     : m_nodeUid(nodeUid),
       m_nodeType(nodeType),
-      m_nodeWidth(nodeWidth),
+      m_nodeWidth(),
       m_nodeTitle(nodeTitle),
       m_nodePos(),
       m_inputPorts(),
       m_outputPorts(),
       m_yamlNodeId(yamlNode.m_nodeYamlId),
-      m_yamlNode(yamlNode)
+      m_yamlNode(yamlNode),
+      m_nodeStyle(nodeStyle)
 {
     SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid,
                 m_yamlNodeId, m_nodeTitle);
+}
+
+void Node::CalcNodeWidth()
+{
+    // if (m_nodeWidth.has_value())
+    // {
+    //     return ;
+    // }
+    // float maxInportNameLength = 0.f;
+    // float maxOutportNameLength = 0.f;
+    // for (InputPort inport : m_inputPorts)
+    // {
+    //     maxInportNameLength = std::max(maxInportNameLength, ImGui::CalcTextSize(inport.GetPortname().data()).x) ;
+    // }
+    // for (OutputPort outport : m_outputPorts)
+    // {
+    //     maxOutportNameLength = std::max(maxOutportNameLength, ImGui::CalcTextSize(outport.GetPortname().data()).x) ;
+    // }
+
+    // m_nodeWidth = maxInportNameLength + maxOutportNameLength + m_nodeStyle.NodePadding.x * 2 + m_nodeStyle.PinOffset * 2;
+    // SPDLOG_INFO("calc nodeuid[{}] nodewidth[{}]", m_nodeUid, m_nodeWidth.value());
+}
+
+float Node::GetNodeWidth()
+{
+    CalcNodeWidth();
+    assert(m_nodeWidth.has_value());
+    return m_nodeWidth.value();
 }
 
 std::vector<EdgeUniqueId> Node::GetAllEdges() const

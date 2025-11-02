@@ -25,7 +25,11 @@ NodeEditor::NodeEditor()
       m_edgeUidGenerator(),
       m_minimap_location(ImNodesMiniMapLocation_BottomRight),
       m_needTopoSort(false),
-      m_allPruningRules()
+      m_allPruningRules(),
+      m_currentPruninngRule(),
+      m_nodesPruned(),
+      m_edgesPruned(),
+      m_nodeStyle(ImNodes::GetStyle())
 {
     // TODO: file path may be a constant value or configed in Config.yaml?
     NodeDescriptionParser        nodeParser("./resource/NodeDescriptions.yaml");
@@ -364,7 +368,7 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const Yaml
     Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, yamlNode,
                  yamlNode.m_nodeYamlId == -1
                      ? nodeDesc.m_nodeName
-                     : nodeDesc.m_nodeName + std::to_string(yamlNode.m_nodeYamlId));
+                     : nodeDesc.m_nodeName + std::to_string(yamlNode.m_nodeYamlId), m_nodeStyle);
 
     NodeUniqueId ret = newNode.GetNodeUniqueId();
 
@@ -487,6 +491,28 @@ void NodeEditor::HandleAddNodes()
     ImGui::PopStyleVar();
 }
 
+void NodeEditor::DrawInputPort(PortUniqueId portUid, const char* portName)
+{
+    ImNodes::BeginInputAttribute(portUid);
+    ImGui::TextUnformatted(portName);
+    ImNodes::EndInputAttribute();
+}
+
+void NodeEditor::DrawOutputPort(PortUniqueId portUid, const char* portName, const char* correstpondingInputportName, float nodeWidth)
+{
+
+    ImNodes::BeginOutputAttribute(portUid);
+
+    const static float EPISILON = 1e-5f;
+    if (std::fabs(nodeWidth < EPISILON))
+    {
+        ImGui::Indent(nodeWidth - ImGui::CalcTextSize(portName).x - ImGui::CalcTextSize(correstpondingInputportName).x);
+    }
+
+    ImGui::TextUnformatted(portName);
+    ImNodes::EndOutputAttribute();
+}
+
 void NodeEditor::ShowNodes()
 {
     for (auto& [nodeUid, node] : m_nodes)
@@ -496,40 +522,73 @@ void NodeEditor::ShowNodes()
         ImGui::TextUnformatted(node.GetNodeTitle().data());
         ImNodes::EndNodeTitleBar();
 
-        size_t min_count = std::min(node.GetInputPorts().size(), node.GetOutputPorts().size());
+        // We want input and output labels to form two aligned columns even when the counts
+        // differ. Compute the max label widths and render rows = max(in_count, out_count).
+        const auto& inPorts = node.GetInputPorts();
+        const auto& outPorts = node.GetOutputPorts();
+        const size_t inCount = inPorts.size();
+        const size_t outCount = outPorts.size();
+        const size_t rows = std::max(inCount, outCount);
 
-        for (size_t i = 0; i < min_count; i++)
+        // compute max widths
+        float maxInLabelWidth = 0.0f;
+        float maxOutLabelWidth = 0.0f;
+        for (const auto& p : inPorts)
         {
-            // draw input port
-            ImNodes::BeginInputAttribute(node.GetInputPorts()[i].GetPortUniqueId());
-            ImGui::TextUnformatted(node.GetInputPorts()[i].GetPortname().data());
-            ImNodes::EndInputAttribute();
-
-            // put output port on the same line
-            ImGui::SameLine();
-
-            // draw output port
-            ImNodes::BeginOutputAttribute(node.GetOutputPorts()[i].GetPortUniqueId());
-            ImGui::TextUnformatted(node.GetOutputPorts()[i].GetPortname().data());
-            ImNodes::EndOutputAttribute();
+            auto n = p.GetPortname();
+            maxInLabelWidth = std::max(maxInLabelWidth, ImGui::CalcTextSize(n.data(), n.data() + n.size()).x);
+        }
+        for (const auto& p : outPorts)
+        {
+            auto n = p.GetPortname();
+            maxOutLabelWidth = std::max(maxOutLabelWidth, ImGui::CalcTextSize(n.data(), n.data() + n.size()).x);
         }
 
-        if (min_count < node.GetInputPorts().size())
+        // small gap between columns
+        const float innerGap = 8.0f;
+
+        // remember the starting X of the content area so we can compute column X positions
+        const float baseX = ImGui::GetCursorPosX();
+        const float outColumnX = baseX + maxInLabelWidth + innerGap;
+
+        for (size_t row = 0; row < rows; ++row)
         {
-            for (size_t i = min_count; i < node.GetInputPorts().size(); i++)
+            // Input column (left)
+            if (row < inCount)
             {
-                ImNodes::BeginInputAttribute(node.GetInputPorts()[i].GetPortUniqueId());
-                ImGui::TextUnformatted(node.GetInputPorts()[i].GetPortname().data());
+                const InputPort& ip = inPorts[row];
+                ImNodes::BeginInputAttribute(ip.GetPortUniqueId());
+                ImGui::TextUnformatted(ip.GetPortname().data());
                 ImNodes::EndInputAttribute();
             }
-        }
-        else if (min_count < node.GetOutputPorts().size())
-        {
-            for (size_t i = min_count; i < node.GetOutputPorts().size(); i++)
+            else
             {
-                ImNodes::BeginOutputAttribute(node.GetOutputPorts()[i].GetPortUniqueId());
-                ImGui::TextUnformatted(node.GetOutputPorts()[i].GetPortname().data());
+                // reserve the same vertical space as a normal label so rows remain aligned
+                ImGui::Dummy(ImVec2(maxInLabelWidth, ImGui::GetTextLineHeight()));
+            }
+
+            // move to output column
+            ImGui::SameLine();
+            ImGui::SetCursorPosX(outColumnX);
+
+            if (row < outCount)
+            {
+                const OutputPort& op = outPorts[row];
+                // Measure text width and right-align it within the output column
+                auto name = op.GetPortname();
+                const float textW = ImGui::CalcTextSize(name.data(), name.data() + name.size()).x;
+                const float textPosX = outColumnX + (maxOutLabelWidth - textW);
+
+                ImNodes::BeginOutputAttribute(op.GetPortUniqueId());
+                // Position the text so its right edge aligns with the column's right edge
+                ImGui::SetCursorPosX(textPosX);
+                ImGui::TextUnformatted(op.GetPortname().data());
                 ImNodes::EndOutputAttribute();
+            }
+            else
+            {
+                // reserve space for missing output
+                ImGui::Dummy(ImVec2(maxOutLabelWidth, ImGui::GetTextLineHeight()));
             }
         }
         ImNodes::EndNode();
@@ -817,6 +876,7 @@ void NodeEditor::RearrangeNodesLayout(
         for (NodeUniqueId nodeUid : nodeUIdVec)
         {
             columWidth = std::max(ImNodes::GetNodeRect(nodeUid).GetWidth(), columWidth);
+            SPDLOG_INFO("nodeuid[{}], nodewidth[{}]", nodeUid, ImNodes::GetNodeRect(nodeUid).GetWidth());
             columHeight += (ImNodes::GetNodeRect(nodeUid).GetHeight() + verticalPadding);
         }
         columWidths.push_back(columWidth);

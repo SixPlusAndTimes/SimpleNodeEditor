@@ -6,6 +6,9 @@
 #include <unordered_set>
 #include <set>
 
+
+struct ImNodesStyle;
+
 namespace SimpleNodeEditor
 {
 
@@ -27,7 +30,10 @@ private:
     void         DeleteNode(NodeUniqueId nodeUid);
     void         ShowNodes();
     void         ShowEdges();
+    void         DrawInputPort(PortUniqueId portUid, const char* portName);
+    void         DrawOutputPort(PortUniqueId portUid, const char* portName, const char* correstpondingInputportName, float nodeWidth);
     void         HandleAddEdges();
+
     void AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid, const YamlEdge& yamlEdge = {},
                     bool avoidMultipleInputLinks = true);
     void HandleDeletingEdges();
@@ -90,6 +96,8 @@ private:
 
     std::unordered_map<EdgeUniqueId, Edge>
         m_edgesPruned; // store edges that will be rendered on canvas
+
+    ImNodesStyle& m_nodeStyle;
 };
 } // namespace SimpleNodeEditor
 
