@@ -21,6 +21,7 @@
 #include <stdio.h> // for fwrite, ssprintf, sscanf
 #include <stdlib.h>
 #include <string.h> // strlen, strncmp
+#include <cmath>
 
 // Use secure CRT function variants to avoid MSVC compiler errors
 #ifdef _MSC_VER
@@ -709,23 +710,28 @@ static inline bool IsMiniMapHovered();
 
 void BeginCanvasInteraction(ImNodesEditorContext& editor)
 {
-    const bool any_ui_element_hovered =
-        GImNodes->HoveredNodeIdx.HasValue() || GImNodes->HoveredLinkIdx.HasValue() ||
-        GImNodes->HoveredPinIdx.HasValue() || ImGui::IsAnyItemHovered();
 
     const bool mouse_not_in_canvas = !MouseInCanvas();
 
-    if (editor.ClickInteraction.Type != ImNodesClickInteractionType_None ||
-        any_ui_element_hovered || mouse_not_in_canvas)
+    if (editor.ClickInteraction.Type != ImNodesClickInteractionType_None || mouse_not_in_canvas)
     {
         return;
     }
 
-    const bool started_panning = GImNodes->AltMouseClicked;
+    const bool started_panning = GImNodes->AltMouseClicked || GImNodes->RightMouseClicked;
 
     if (started_panning)
     {
         editor.ClickInteraction.Type = ImNodesClickInteractionType_Panning;
+        return ;
+    }
+
+    const bool any_ui_element_hovered =
+    GImNodes->HoveredNodeIdx.HasValue() || GImNodes->HoveredLinkIdx.HasValue() ||
+    GImNodes->HoveredPinIdx.HasValue() || ImGui::IsAnyItemHovered();
+    if (any_ui_element_hovered)
+    {
+        return;
     }
     else if (GImNodes->LeftMouseClicked)
     {
@@ -819,11 +825,12 @@ void TranslateSelectedNodes(ImNodesEditorContext& editor)
 {
     if (GImNodes->LeftMouseDragging)
     {
-        // If we have grid snap enabled, don't start moving nodes until we've moved the mouse
-        // slightly
-        const bool shouldTranslate = (GImNodes->Style.Flags & ImNodesStyleFlags_GridSnapping)
-                                         ? ImGui::GetIO().MouseDragMaxDistanceSqr[0] > 5.0
-                                         : true;
+
+        bool isDoubleClick = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+        
+        const float dragThresholdSqr = 5.0f; 
+        const bool hasValidDrag = ImGui::GetIO().MouseDragMaxDistanceSqr[0] > dragThresholdSqr;
+        const bool shouldTranslate = !isDoubleClick && hasValidDrag;
 
         const ImVec2 origin = SnapOriginToGrid(
             GImNodes->MousePos - GImNodes->CanvasOriginScreenSpace - editor.Panning +
@@ -1087,8 +1094,7 @@ void ClickInteractionUpdate(ImNodesEditorContext& editor)
     break;
     case ImNodesClickInteractionType_Panning:
     {
-        const bool dragging = GImNodes->AltMouseDragging;
-
+        const bool dragging = GImNodes->AltMouseDragging || GImNodes->RightMouseDragging;
         if (dragging)
         {
             editor.Panning += ImGui::GetIO().MouseDelta;
@@ -2362,6 +2368,11 @@ void BeginNodeEditor()
     GImNodes->LeftMouseClicked = ImGui::IsMouseClicked(0);
     GImNodes->LeftMouseReleased = ImGui::IsMouseReleased(0);
     GImNodes->LeftMouseDragging = ImGui::IsMouseDragging(0, 0.0f);
+    // right click detect
+    GImNodes->RightMouseClicked = ImGui::IsMouseClicked(1);
+    GImNodes->RightMouseReleased = ImGui::IsMouseReleased(1);
+    GImNodes->RightMouseDragging = ImGui::IsMouseDragging(1, 0.0f);
+
     GImNodes->AltMouseClicked =
         (GImNodes->Io.EmulateThreeButtonMouse.Modifier != NULL &&
          *GImNodes->Io.EmulateThreeButtonMouse.Modifier && GImNodes->LeftMouseClicked) ||
@@ -2482,7 +2493,7 @@ void EndNodeEditor()
 
         else if (
             GImNodes->LeftMouseClicked || GImNodes->LeftMouseReleased ||
-            GImNodes->AltMouseClicked || GImNodes->AltMouseScrollDelta != 0.f)
+            GImNodes->AltMouseClicked || GImNodes->AltMouseScrollDelta != 0.f || GImNodes->RightMouseClicked || GImNodes->RightMouseReleased)
         {
             BeginCanvasInteraction(editor);
         }
@@ -2500,7 +2511,12 @@ void EndNodeEditor()
 
             editor.AutoPanningDelta =
                 direction * ImGui::GetIO().DeltaTime * GImNodes->Io.AutoPanningSpeed;
-            editor.Panning += editor.AutoPanningDelta;
+
+            ImVec2 disVec = direction * ImGui::GetIO().DeltaTime;
+            if (std::sqrt(disVec.x * disVec.x + disVec.y * disVec.y) > 5.0f)
+            {
+                editor.Panning += editor.AutoPanningDelta;
+            }
         }
     }
     ClickInteractionUpdate(editor);
