@@ -11,7 +11,15 @@
 #include "NodeDescription.hpp"
 #include <optional>
 
+// forward declaration
 struct ImNodesStyle;
+// static vars
+static constexpr uint32_t NODE_NAME_MAX_LENGTH = 64;
+static constexpr uint32_t NODE_MAX_PROPS = 32;
+static constexpr uint32_t PROP_NAME_MAX_LENGTH = 64;
+static constexpr uint32_t EDGE_MAX_PRUNE_RULES = 8;
+static constexpr uint32_t RRUNE_RULE_NAME_MAX_LENGTH = 64;
+
 
 namespace SimpleNodeEditor
 {

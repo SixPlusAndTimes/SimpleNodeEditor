@@ -30,8 +30,6 @@ private:
     void         DeleteNode(NodeUniqueId nodeUid);
     void         ShowNodes();
     void         ShowEdges();
-    void         DrawInputPort(PortUniqueId portUid, const char* portName);
-    void         DrawOutputPort(PortUniqueId portUid, const char* portName, const char* correstpondingInputportName, float nodeWidth);
     void         HandleAddEdges();
 
     void AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid, const YamlEdge& yamlEdge = {},
@@ -59,10 +57,13 @@ private:
     void ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize);
 
     [[nodiscard]] bool IsAllEdgesHasBeenPruned(NodeUniqueId nodeUid);
-    void HandleOtherUserInputs();
 
     [[nodiscard]] bool LoadPipelineFromFile(const std::string& filePath);
     void               ClearCurrentPipeLine();
+
+    void HandleOtherUserInputs();
+    void HandleNodeInfoEditing();
+    void HandleEdgeInfoEditing();
 
 private:
     std::unordered_map<NodeUniqueId, Node> m_nodes; // store nodes that will be rendered on canvas

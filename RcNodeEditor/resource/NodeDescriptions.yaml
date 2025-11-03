@@ -3,11 +3,12 @@ NodeDescriptions:
     NodeName: ADD
     NodeType: 1
     InputPorts:
-      - inputport1
-      - inputport2
+      - AAA_SD_RRR_IN
+      - AAA_LLUF_RRR_IN
+
     OutputPorts:
-      - outputport1
-      - outputport2
+      - AAA_SD_RRR_OUT 
+      - AAA_LLUF_RRR_OUT
   - 
     NodeName: Select
     NodeType: 2
