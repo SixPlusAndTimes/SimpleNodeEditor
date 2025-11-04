@@ -5,7 +5,7 @@
 #include "NodeDescription.hpp"
 #include <unordered_set>
 #include <set>
-
+#include "Helpers.h"
 
 struct ImNodesStyle;
 
@@ -27,7 +27,7 @@ private:
     void         ShowInfos();
     void         HandleAddNodes();
     NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNode = {});
-    void         DeleteNode(NodeUniqueId nodeUid);
+    void         DeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid);
     void         ShowNodes();
     void         ShowEdges();
     void         HandleAddEdges();
@@ -35,8 +35,8 @@ private:
     void AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid, const YamlEdge& yamlEdge = {},
                     bool avoidMultipleInputLinks = true);
     void HandleDeletingEdges();
-    void DeleteEdge(EdgeUniqueId edgeUid);
-    void DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid);
+    void DeleteEdge(EdgeUniqueId edgeUid, bool shouldUnregisterUid);
+    void DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid);
     [[nodiscard]] bool IsInportAlreadyHasEdge(PortUniqueId portUid);
     void               DeleteEdgeUidFromPort(EdgeUniqueId edgeUid);
 
@@ -75,9 +75,9 @@ private:
     std::unordered_map<PortUniqueId, OutputPort*> m_outportPorts;
 
     // uniqueid generators
-    UniqueIdGenerator<NodeUniqueId> m_nodeUidGenerator;
-    UniqueIdGenerator<PortUniqueId> m_portUidGenerator;
-    UniqueIdGenerator<EdgeUniqueId> m_edgeUidGenerator;
+    UniqueIdAllocator<NodeUniqueId> m_nodeUidGenerator;
+    UniqueIdAllocator<PortUniqueId> m_portUidGenerator;
+    UniqueIdAllocator<EdgeUniqueId> m_edgeUidGenerator;
 
     ImNodesMiniMapLocation m_minimap_location;
 

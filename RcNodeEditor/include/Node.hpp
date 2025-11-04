@@ -24,15 +24,6 @@ static constexpr uint32_t RRUNE_RULE_NAME_MAX_LENGTH = 64;
 namespace SimpleNodeEditor
 {
 
-template <typename T>
-struct UniqueIdGenerator
-{
-    T m_Uid{};
-    T AllocUniqueID()
-    {
-        return m_Uid++;
-    }
-};
 
 // used by imnodes, imnode lib need nodeuid to differentiate between
 // nodes links and ports

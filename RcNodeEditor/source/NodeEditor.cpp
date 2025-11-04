@@ -3,10 +3,10 @@
 #include "imgui_internal.h"
 #include "spdlog/spdlog.h"
 #include <cstdint>
-#include "Helpers.h"
 #include <unordered_set>
 #include "YamlParser.hpp"
 #include <set>
+#include <algorithm>
 
 namespace SimpleNodeEditor
 {
@@ -258,13 +258,13 @@ bool NodeEditor::ApplyPruningRule(const std::unordered_map<std::string, std::str
         {
             m_edgesPruned.insert(*m_edges.find(edgeUid));
             // edges will also be deleted in DeleteNode() function though
-            DeleteEdge(edgeUid);
+            DeleteEdge(edgeUid, false /*shouldUnregisterUid*/);
         }
 
         for (NodeUniqueId nodeUid : shouldBeDeleteNodes)
         {
             m_nodesPruned.insert(*m_nodes.find(nodeUid));
-            DeleteNode(nodeUid);
+            DeleteNode(nodeUid, false /*shouldUnregisterUid*/);
         }
     }
 
@@ -655,7 +655,7 @@ void NodeEditor::ShowEdges()
     }
 }
 
-void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid)
+void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid)
 {
     if (m_nodes.count(nodeUid) == 0)
     {
@@ -668,7 +668,7 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid)
     {
         if (inPort.GetEdgeUid() != -1)
         {
-            DeleteEdge(inPort.GetEdgeUid());
+            DeleteEdge(inPort.GetEdgeUid(), shouldUnregisterUid);
         }
     }
 
@@ -676,7 +676,7 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid)
     {
         for (EdgeUniqueId edgeUid : outPort.GetEdgeUids())
         {
-            DeleteEdge(edgeUid);
+            DeleteEdge(edgeUid, shouldUnregisterUid);
         }
     }
 
@@ -692,7 +692,7 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid)
     }
 }
 
-void NodeEditor::DeleteNode(NodeUniqueId nodeUid)
+void NodeEditor::DeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid)
 {
     if (m_nodes.count(nodeUid) == 0)
     {
@@ -700,17 +700,30 @@ void NodeEditor::DeleteNode(NodeUniqueId nodeUid)
         return;
     }
     // before we erase the node, we need delete the linked edge first
-    DeleteEdgesBeforDeleteNode(nodeUid);
+    DeleteEdgesBeforDeleteNode(nodeUid, shouldUnregisterUid);
 
     // erase pointer in m_inportPorts and m_outportPorts
-    for (const auto& inputPort : m_nodes.at(nodeUid).GetInputPorts())
+    auto processPorts = [this]<typename PortType>(
+        const std::vector<PortType>& portsBelongToNode,
+        std::unordered_map<PortUniqueId, PortType*>& refsToPorts,
+        bool shouldUnregisterUid)
     {
-        m_inportPorts.erase(inputPort.GetPortUniqueId());
-    }
+        for (const auto& port : portsBelongToNode)
+        {
+            refsToPorts.erase(port.GetPortUniqueId());
+            if (shouldUnregisterUid)
+            {
+                // also need to unregister portUids
+                m_portUidGenerator.UnregisterUniqueID(port.GetPortUniqueId());
+            }
+        }
+    };
+    processPorts(m_nodes.at(nodeUid).GetInputPorts(), m_inportPorts, shouldUnregisterUid);
+    processPorts(m_nodes.at(nodeUid).GetOutputPorts(), m_outportPorts, shouldUnregisterUid);
 
-    for (const auto& outputPort : m_nodes.at(nodeUid).GetOutputPorts())
+    if (shouldUnregisterUid)
     {
-        m_outportPorts.erase(outputPort.GetPortUniqueId());
+        m_nodeUidGenerator.UnregisterUniqueID(nodeUid);
     }
 
     m_nodes.erase(nodeUid);
@@ -727,7 +740,7 @@ void NodeEditor::HandleDeletingNodes()
         ImNodes::GetSelectedNodes(selected_nodes.data());
         for (const NodeUniqueId nodeUid : selected_nodes)
         {
-            DeleteNode(nodeUid);
+            DeleteNode(nodeUid, true/*shouldUnregisterUid*/);
         }
     }
 }
@@ -764,7 +777,7 @@ void NodeEditor::DeleteEdgeUidFromPort(EdgeUniqueId edgeUid)
     }
 }
 
-void NodeEditor::DeleteEdge(EdgeUniqueId edgeUid)
+void NodeEditor::DeleteEdge(EdgeUniqueId edgeUid, bool shouldUnregisterUid)
 {
     if (m_edges.count(edgeUid) == 0)
     {
@@ -773,6 +786,7 @@ void NodeEditor::DeleteEdge(EdgeUniqueId edgeUid)
     }
     DeleteEdgeUidFromPort(edgeUid);
     m_edges.erase(edgeUid);
+    m_edgeUidGenerator.UnregisterUniqueID(edgeUid);
 }
 
 void NodeEditor::HandleDeletingEdges()
@@ -788,7 +802,7 @@ void NodeEditor::HandleDeletingEdges()
         {
             if (m_edges.count(edgeUid) != 0)
             {
-                DeleteEdge(edgeUid);
+                DeleteEdge(edgeUid, true);
             }
             else
             {
@@ -804,7 +818,7 @@ void NodeEditor::HandleDeletingEdges()
     {
         if (m_edges.count(detachedEdgeUId) != 0)
         {
-            DeleteEdge(detachedEdgeUId);
+            DeleteEdge(detachedEdgeUId, true);
         }
         else
         {
