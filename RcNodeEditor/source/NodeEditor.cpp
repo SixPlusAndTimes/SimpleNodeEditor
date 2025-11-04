@@ -703,9 +703,9 @@ void NodeEditor::DeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid)
     DeleteEdgesBeforDeleteNode(nodeUid, shouldUnregisterUid);
 
     // erase pointer in m_inportPorts and m_outportPorts
-    auto processPorts = [this]<typename PortType>(
-        const std::vector<PortType>& portsBelongToNode,
-        std::unordered_map<PortUniqueId, PortType*>& refsToPorts,
+    auto processPorts = [this](
+        const auto& portsBelongToNode,
+        auto& refsToPorts,
         bool shouldUnregisterUid)
     {
         for (const auto& port : portsBelongToNode)
