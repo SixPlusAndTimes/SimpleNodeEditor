@@ -189,8 +189,7 @@ public: // type def
 
 public:
     // Node();
-    Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode,
-         const std::string& nodeTitle, ImNodesStyle& nodeStyle);
+    Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode, const NodeDescription& nodeDes, ImNodesStyle& nodeStyle);
     void SetNodePosition(const ImVec2& pos);
 
     void                           AddInputPort(const InputPort& inPort);
@@ -209,12 +208,10 @@ public:
 
     PortUniqueId    FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const;
     PortUniqueId    FindPortUidAmongInports(YamlPort::PortYamlId portYamlId) const;
-    YamlNode& GetYamlNode();
-    const YamlNode& GetYamlNode() const;
 
     // yaml node related
-    void                 SetNodeYamlId(YamlNode::NodeYamlId nodeYamlId);
-    YamlNode::NodeYamlId GetNodeYamlId() const;
+    YamlNode& GetYamlNode();
+    const YamlNode& GetYamlNode() const;
 
 private:
     void CalcNodeWidth();
@@ -223,15 +220,15 @@ private:
     NodeUniqueId m_nodeUid; // used for imnode to draw UI
     NodeType     m_nodeType;
     std::optional<float>        m_nodeWidth;
-    std::string  m_nodeTitle; // nodetitle = nodename_in_nodedescription +  "_" + nodeid_in_yaml
     ImVec2       m_nodePos;
     std::vector<InputPort>  m_inputPorts;
     std::vector<OutputPort> m_outputPorts;
 
     // yaml node related
-    YamlNode::NodeYamlId m_yamlNodeId;
     YamlNode             m_yamlNode;
     ImNodesStyle& m_nodeStyle;
+        
+    std::string  m_nodeTitle; // nodetitle = nodename_in_nodedescription +  "_" + nodeid_in_yaml
 
 };
 } // namespace SimpleNodeEditor

@@ -115,43 +115,29 @@ struct convert<SimpleNodeEditor::YamlPort>
         {
             return false;
         }
+        if(isInvalidKey(node, "NodeName")) rhs.m_nodeName = node["NodeName"].as<std::string>();
+        if(isInvalidKey(node, "NodeId")) rhs.m_nodeYamlId = node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>();
+        if(isInvalidKey(node, "PortName")) rhs.m_portName = node["PortName"].as<std::string>();
+        if(isInvalidKey(node, "PortId")) rhs.m_portYamlId = node["PortId"].as<SimpleNodeEditor::YamlPort::PortYamlId>();
 
-        if (isInvalidKey(node, "NodeName") && isInvalidKey(node, "NodeId") &&
-            isInvalidKey(node, "PortName") && isInvalidKey(node, "PortId"))
+        std::string pruneRuleKey = "PruneRule";
+        if (isInvalidKey(node, pruneRuleKey))
         {
-            rhs.m_nodeName   = node["NodeName"].as<std::string>();
-            rhs.m_nodeYamlId = node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>();
-            rhs.m_portName   = node["PortName"].as<std::string>();
-            rhs.m_portYamlId = node["PortId"].as<SimpleNodeEditor::YamlPort::PortYamlId>();
-
-            std::string pruneRuleKey = "PruneRule";
-            if (isInvalidKey(node, pruneRuleKey))
+            for (YAML::const_iterator iter = node[pruneRuleKey].begin();
+                    iter != node[pruneRuleKey].end(); ++iter)
             {
-                for (YAML::const_iterator iter = node[pruneRuleKey].begin();
-                     iter != node[pruneRuleKey].end(); ++iter)
-                {
-                    rhs.m_PruningRules.push_back(iter->as<SimpleNodeEditor::YamlPruningRule>());
-                }
+                rhs.m_PruningRules.push_back(iter->as<SimpleNodeEditor::YamlPruningRule>());
             }
-            else
-            {
-                SPDLOG_ERROR(
-                    "invalide key[{}], when parsing ports, nodeName[{}], nodeyamlId[{}], "
-                    "portName[{}], portYamlId[{}]",
-                    pruneRuleKey, rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_portName,
-                    rhs.m_portYamlId);
-            }
-
-            SPDLOG_INFO(
-                "decode yamlport success, portname[{}], portYamlId[{}], nodename[{}], nodeid[{}]",
-                rhs.m_portName, rhs.m_portYamlId, rhs.m_nodeName, rhs.m_nodeYamlId);
-            return true;
         }
         else
         {
-            SPDLOG_ERROR("Invalid key when yaml-cpp decode from yaml");
-            return false;
+            SPDLOG_ERROR(
+                "invalide key[{}], when parsing ports, nodeName[{}], nodeyamlId[{}], "
+                "portName[{}], portYamlId[{}]",
+                pruneRuleKey, rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_portName,
+                rhs.m_portYamlId);
         }
+        return true;
     }
 };
 

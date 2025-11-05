@@ -20,9 +20,10 @@ NodeEditor::NodeEditor()
       m_edges(),
       m_inportPorts(),
       m_outportPorts(),
-      m_nodeUidGenerator(),
-      m_portUidGenerator(),
-      m_edgeUidGenerator(),
+      m_nodeUidGenerator("nodeUidAllocator"),
+      m_portUidGenerator("portUidAllocator"),
+      m_edgeUidGenerator("edgeUidAllocator"),
+      m_yamlNodeUidGenerator("yamlNodeUidAllocator"),
       m_minimap_location(ImNodesMiniMapLocation_BottomRight),
       m_needTopoSort(false),
       m_allPruningRules(),
@@ -53,6 +54,10 @@ void NodeEditor::ClearCurrentPipeLine()
     m_currentPruninngRule.clear();
     m_nodesPruned.clear();
     m_edgesPruned.clear();
+
+    m_portUidGenerator.Clear();
+    m_nodeUidGenerator.Clear();
+    m_edgeUidGenerator.Clear();
 }
 
 void NodeEditor::HandleFileDrop(const std::string& filePath)
@@ -100,7 +105,7 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
             const Node& dstNode = m_nodes.at(ownedByDstNodeUid);
             AddNewEdge(srcNode.FindPortUidAmongOutports(yamlEdge.m_yamlSrcPort.m_portYamlId),
                        dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId),
-                       yamlEdge);
+                       yamlEdge, false /*avoidMultipleInputLinks*/); // allow multiple edges there, multiple inportEdges will be pruned later
         }
 
         CollectPruningRules(yamlNodes, yamlEdges);
@@ -362,13 +367,20 @@ void NodeEditor::ShowInfos()
     ImGui::TextUnformatted("X -- delete selected node or link");
 }
 
+NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc)
+{
+    YamlNode newYamlNode;
+    newYamlNode.m_nodeYamlId = m_yamlNodeUidGenerator.AllocUniqueID();
+    return AddNewNodes(nodeDesc, newYamlNode);
+}
+
 // TODO : redundant infomation here
 NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNode)
 {
-    Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, yamlNode,
-                 yamlNode.m_nodeYamlId == -1
-                     ? nodeDesc.m_nodeName
-                     : nodeDesc.m_nodeName + std::to_string(yamlNode.m_nodeYamlId), m_nodeStyle);
+    assert(yamlNode.m_nodeYamlId != -1);
+    m_yamlNodeUidGenerator.RegisterUniqueID(yamlNode.m_nodeYamlId);
+
+    Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, yamlNode, nodeDesc, m_nodeStyle);
 
     NodeUniqueId ret = newNode.GetNodeUniqueId();
 
@@ -680,7 +692,7 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid, bool shouldUnr
         }
     }
 
-    // runtime check that we has already delete all edges from Node
+    // check that we has already deletes all edges from Node
     for (InputPort& inPort : node.GetInputPorts())
     {
         assert(inPort.GetEdgeUid() == -1);
@@ -703,7 +715,7 @@ void NodeEditor::DeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid)
     DeleteEdgesBeforDeleteNode(nodeUid, shouldUnregisterUid);
 
     // erase pointer in m_inportPorts and m_outportPorts
-    auto processPorts = [this](
+    auto erasePointersInMember = [this](
         const auto& portsBelongToNode,
         auto& refsToPorts,
         bool shouldUnregisterUid)
@@ -718,12 +730,13 @@ void NodeEditor::DeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid)
             }
         }
     };
-    processPorts(m_nodes.at(nodeUid).GetInputPorts(), m_inportPorts, shouldUnregisterUid);
-    processPorts(m_nodes.at(nodeUid).GetOutputPorts(), m_outportPorts, shouldUnregisterUid);
+    erasePointersInMember(m_nodes.at(nodeUid).GetInputPorts(), m_inportPorts, shouldUnregisterUid);
+    erasePointersInMember(m_nodes.at(nodeUid).GetOutputPorts(), m_outportPorts, shouldUnregisterUid);
 
     if (shouldUnregisterUid)
     {
         m_nodeUidGenerator.UnregisterUniqueID(nodeUid);
+        m_yamlNodeUidGenerator.UnregisterUniqueID(m_nodes.at(nodeUid).GetYamlNode().m_nodeYamlId);
     }
 
     m_nodes.erase(nodeUid);
@@ -1364,6 +1377,10 @@ void NodeEditor::HandleOtherUserInputs()
 
     // handle edge editing
     HandleEdgeInfoEditing();
+
+
+    // handle saving to file, i.e serialize the pipeline to a yaml
+
 }
 
 void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
