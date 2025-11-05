@@ -158,21 +158,20 @@ NodeUniqueId Edge::GetDestinationNodeUid() const
     return m_dstNodeUid;
 }
 
-Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode,
-           const std::string& nodeTitle, ImNodesStyle& nodeStyle)
+Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode, const NodeDescription& nodeDes, ImNodesStyle& nodeStyle)
     : m_nodeUid(nodeUid),
       m_nodeType(nodeType),
       m_nodeWidth(),
-      m_nodeTitle(nodeTitle),
       m_nodePos(),
       m_inputPorts(),
       m_outputPorts(),
-      m_yamlNodeId(yamlNode.m_nodeYamlId),
       m_yamlNode(yamlNode),
-      m_nodeStyle(nodeStyle)
+      m_nodeStyle(nodeStyle),
+      m_nodeTitle(nodeDes.m_nodeName + std::to_string(m_yamlNode.m_nodeYamlId))
 {
     SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid,
-                m_yamlNodeId, m_nodeTitle);
+                m_yamlNode.m_nodeYamlId, m_nodeTitle);
+    
 }
 
 void Node::CalcNodeWidth()
@@ -236,10 +235,6 @@ const YamlNode& Node::GetYamlNode() const
     return m_yamlNode;
 }
 
-void Node::SetNodeYamlId(YamlNode::NodeYamlId nodeYamlId)
-{
-    m_yamlNodeId = nodeYamlId;
-}
 
 PortUniqueId Node::FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const
 {
@@ -303,11 +298,6 @@ void Node::SetNodeTitle(const std::string& nodeTitle)
 const std::string_view Node::GetNodeTitle() const
 {
     return m_nodeTitle;
-}
-
-YamlNode::NodeYamlId Node::GetNodeYamlId() const
-{
-    return m_yamlNodeId;
 }
 
 const std::vector<InputPort>& Node::GetInputPorts() const

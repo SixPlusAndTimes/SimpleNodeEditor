@@ -26,7 +26,8 @@ private:
     void         ShowMenu();
     void         ShowInfos();
     void         HandleAddNodes();
-    NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNode = {});
+    NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc);
+    NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc, const YamlNode&);
     void         DeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid);
     void         ShowNodes();
     void         ShowEdges();
@@ -78,6 +79,10 @@ private:
     UniqueIdAllocator<NodeUniqueId> m_nodeUidGenerator;
     UniqueIdAllocator<PortUniqueId> m_portUidGenerator;
     UniqueIdAllocator<EdgeUniqueId> m_edgeUidGenerator;
+
+    
+    UniqueIdAllocator<YamlNode::NodeYamlId> m_yamlNodeUidGenerator;
+
 
     ImNodesMiniMapLocation m_minimap_location;
 

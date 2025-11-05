@@ -15,7 +15,7 @@ using NodeUniqueId = int32_t;
 template <typename UidType, typename = std::enable_if_t< std::is_integral_v<UidType> && !std::is_same_v<UidType, bool> >>
 class UniqueIdAllocator {
 public:
-    explicit UniqueIdAllocator(UidType start = 0) : m_initial_start(start), m_nextUid(start) {}
+    explicit UniqueIdAllocator(const std::string& name = "UnknownAllocator", UidType start = 0) : m_initial_start(start), m_nextUid(start), m_name(name){}
 
     UidType AllocUniqueID() {
         while (m_registeredUids.contains(m_nextUid)) {
@@ -27,6 +27,10 @@ public:
     }
 
     bool RegisterUniqueID(UidType uid) {
+        if (m_registeredUids.contains(uid))
+        {
+            SPDLOG_INFO("allocator[{}] uid[{}] has already been allocated or registered", m_name, uid);
+        }
         return m_registeredUids.insert(uid).second;
     }
 
@@ -51,6 +55,7 @@ private:
     const UidType m_initial_start;
     UidType m_nextUid;
     std::unordered_set<UidType> m_registeredUids;
+    std::string m_name;
 };
 
 template <typename T>
