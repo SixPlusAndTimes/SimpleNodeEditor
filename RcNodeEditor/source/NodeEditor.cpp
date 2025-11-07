@@ -604,6 +604,44 @@ bool NodeEditor::IsInportAlreadyHasEdge(PortUniqueId portUid)
     return false;
 }
 
+std::optional<YamlPruningRule> GetMatchedPruningRuleByGroup(const YamlPruningRule& findRule, const std::vector<YamlPruningRule>& ruleContainer)
+{
+    auto iter = std::find_if(ruleContainer.begin(), ruleContainer.end(), [&findRule](const YamlPruningRule& comp){
+        return findRule.m_Group == comp.m_Group;
+    });
+
+    if (iter != ruleContainer.end())
+    {
+        return *iter;
+    }
+    return std::nullopt;
+}
+
+void NodeEditor::SyncPruningRuleBetweenNodeAndEdge(const Node& node, Edge& edge)
+{
+    // any pruning rule that the node has but the edge does not have will be automatically added in the yamledge
+    // if the pruning rule of node and edge are confilc, should we complain an error? shutdown the APP?
+    for (const auto& pruningRule : node.GetYamlNode().m_PruningRules)
+    {
+        auto ret = GetMatchedPruningRuleByGroup(pruningRule, edge.GetYamlEdge().m_yamlDstPort.m_PruningRules);
+        if (ret)
+        {
+            if (ret.value().m_Type != pruningRule.m_Type) 
+            {
+                SPDLOG_ERROR("Pruning rules confliced, check it! nodeUid[{}] nodeName[{}] pruning_mGroup[{}] pruning_mType[{}];"
+                             "edgeUid[{}] edgeSrcPortName[{}] edgeDstPortName[{}] pruning_mGroup[{}] pruning_mType[{}]", 
+                            node.GetNodeUniqueId(), node.GetNodeTitle(), pruningRule.m_Group, pruningRule.m_Type,
+                            edge.GetEdgeUniqueId(), edge.GetYamlEdge().m_yamlSrcPort.m_portName, edge.GetYamlEdge().m_yamlDstPort.m_portName, ret.value().m_Group, ret.value().m_Type);
+            }
+        }
+        else
+        {
+            edge.GetYamlEdge().m_yamlDstPort.m_PruningRules.push_back(pruningRule);
+        }
+    }
+
+}
+
 void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
                             const YamlEdge& yamlEdge, bool avoidMultipleInputLinks)
 {
@@ -622,6 +660,7 @@ void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
         InputPort& inputPort = *m_inportPorts[dstPortUid];
         inputPort.SetEdgeUid(newEdge.GetEdgeUniqueId());
         newEdge.SetDestinationNodeUid(inputPort.OwnedByNodeUid());
+        SyncPruningRuleBetweenNodeAndEdge(m_nodes.at(inputPort.OwnedByNodeUid()), newEdge);
     }
     else
     {
@@ -637,6 +676,7 @@ void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
         OutputPort& outpurPort = *m_outportPorts[srcPortUid];
         outpurPort.PushEdge(newEdge.GetEdgeUniqueId());
         newEdge.SetSourceNodeUid(outpurPort.OwnedByNodeUid());
+        SyncPruningRuleBetweenNodeAndEdge(m_nodes.at(outpurPort.OwnedByNodeUid()), newEdge);
     }
     else
     {

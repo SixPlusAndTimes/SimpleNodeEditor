@@ -62,6 +62,7 @@ private:
     [[nodiscard]] bool LoadPipelineFromFile(const std::string& filePath);
     void               ClearCurrentPipeLine();
 
+    void SyncPruningRuleBetweenNodeAndEdge(const Node& node, Edge& edge);
     void HandleOtherUserInputs();
     void HandleNodeInfoEditing();
     void HandleEdgeInfoEditing();
