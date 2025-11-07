@@ -217,7 +217,7 @@ std::vector<YamlEdge> PipelineParser::ParseEdges()
             {
                 for (size_t portIterIdx = 0; portIterIdx < dstPortsNode.size(); ++portIterIdx)
                 {
-                    result.emplace_back(srcPort, dstPortsNode[portIterIdx].as<YamlPort>());
+                    result.emplace_back(srcPort, dstPortsNode[portIterIdx].as<YamlPort>(), true);
                 }
             }
             else

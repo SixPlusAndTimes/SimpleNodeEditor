@@ -27,11 +27,13 @@ private:
     void         ShowInfos();
     void         HandleAddNodes();
     NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc);
-    NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc, const YamlNode&);
+    NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNde);
     void         DeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid);
     void         ShowNodes();
     void         ShowEdges();
     void         HandleAddEdges();
+
+    void FillYamlEdgePort(YamlPort& yamlPort, const Port& port);
 
     void AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid, const YamlEdge& yamlEdge = {},
                     bool avoidMultipleInputLinks = true);

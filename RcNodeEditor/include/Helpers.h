@@ -3,8 +3,9 @@
 #include <vector>
 #include <unordered_map>
 #include "spdlog/spdlog.h"
+#include "Node.hpp"
 #include <type_traits> 
-
+#include <ranges>
 
 namespace SimpleNodeEditor
 {
@@ -35,7 +36,7 @@ public:
     }
 
     bool UnregisterUniqueID(UidType uid) {
-        bool existed = m_registeredUids.erase(uid) > 0;
+        bool existed = m_registeredUids.erase(uid);
         if (existed && uid < m_nextUid) {
             m_nextUid = uid;
         }
@@ -68,15 +69,31 @@ struct UniqueIdGenerator
     }
 };
 
+inline void DumpEdge(const Edge& edge)
+{
+    SPDLOG_INFO("EdgeInfo , EdgeUid[{}]:", edge.GetEdgeUniqueId());
+    SPDLOG_INFO("\t srcNodeUid[{}] srcYamlNodeName[{}], srcYamlportName[{}]", edge.GetSourceNodeUid(), edge.GetYamlEdge().m_yamlSrcPort.m_nodeName, edge.GetYamlEdge().m_yamlSrcPort.m_portName);
+    SPDLOG_INFO("\t dstNodeUid[{}] dstYajmlNodeName[{}], dstYamlportName[{}]", edge.GetDestinationNodeUid(), edge.GetYamlEdge().m_yamlDstPort.m_nodeName, edge.GetYamlEdge().m_yamlDstPort.m_portName);
+}
+
 // must be a inline function to avoid vialation of OneDefinitionRule
 inline std::vector<std::vector<NodeUniqueId>> TopologicalSort(
     std::unordered_map<NodeUniqueId, Node>& nodesMap,
     std::unordered_map<EdgeUniqueId, Edge>& edgesMap)
 {
     std::vector<std::vector<NodeUniqueId>> result;
-    if (nodesMap.size() == 0 || edgesMap.size() == 0)
+
+    if (nodesMap.size() == 0 )
     {
-        SPDLOG_WARN("nodesMap or edgesMap size == 0");
+        SPDLOG_WARN("nodesMap size == 0");
+        return {};
+    }
+
+    if (edgesMap.size() == 0)
+    {
+        auto nodeIds = nodesMap | std::views::keys; 
+        SPDLOG_WARN("edgesMap size == 0, ret one topo order, nodesize = [{}]", nodeIds.size());
+        result.emplace_back(nodeIds.begin(), nodeIds.end());
         return result;
     }
 

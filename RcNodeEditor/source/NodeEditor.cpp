@@ -642,13 +642,23 @@ void NodeEditor::SyncPruningRuleBetweenNodeAndEdge(const Node& node, Edge& edge)
 
 }
 
+void NodeEditor::FillYamlEdgePort(YamlPort& yamlPort, const Port& port)
+{
+    const Node& node = m_nodes.at(port.OwnedByNodeUid());
+    yamlPort.m_nodeName = node.GetNodeTitle();
+    yamlPort.m_nodeYamlId = node.GetYamlNode().m_nodeYamlId;
+    yamlPort.m_portName = port.GetPortname();
+    yamlPort.m_portYamlId = port.GetPortYamlId();
+}
+
+
 void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
                             const YamlEdge& yamlEdge, bool avoidMultipleInputLinks)
 {
     // avoid multiple edges linking to the same inport
     if (avoidMultipleInputLinks && IsInportAlreadyHasEdge(dstPortUid))
     {
-        SPDLOG_WARN("inport port can not have multiple edges, inportUid = {}", dstPortUid);
+        SPDLOG_WARN("inport port can not have multiple edges, inportUid[{}] portName[{}]", dstPortUid, m_inportPorts.at(dstPortUid)->GetPortname());
         return;
     }
 
@@ -660,6 +670,10 @@ void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
         InputPort& inputPort = *m_inportPorts[dstPortUid];
         inputPort.SetEdgeUid(newEdge.GetEdgeUniqueId());
         newEdge.SetDestinationNodeUid(inputPort.OwnedByNodeUid());
+        if (!yamlEdge.m_isValid)
+        {
+            FillYamlEdgePort(newEdge.GetYamlEdge().m_yamlDstPort, inputPort);
+        }
         SyncPruningRuleBetweenNodeAndEdge(m_nodes.at(inputPort.OwnedByNodeUid()), newEdge);
     }
     else
@@ -676,6 +690,10 @@ void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
         OutputPort& outpurPort = *m_outportPorts[srcPortUid];
         outpurPort.PushEdge(newEdge.GetEdgeUniqueId());
         newEdge.SetSourceNodeUid(outpurPort.OwnedByNodeUid());
+        if (!yamlEdge.m_isValid)
+        {
+            FillYamlEdgePort(newEdge.GetYamlEdge().m_yamlSrcPort, outpurPort);
+        }
         SyncPruningRuleBetweenNodeAndEdge(m_nodes.at(outpurPort.OwnedByNodeUid()), newEdge);
     }
     else
@@ -685,7 +703,9 @@ void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
             "srcPortUid is {}",
             srcPortUid);
     }
-    m_edges.emplace(newEdge.GetEdgeUniqueId(), std::move(newEdge));
+    DumpEdge(newEdge);
+    newEdge.GetYamlEdge().m_isValid = true;
+    m_edges.emplace(newEdge.GetEdgeUniqueId(), (newEdge));
 }
 
 void NodeEditor::HandleAddEdges()
@@ -838,8 +858,13 @@ void NodeEditor::DeleteEdge(EdgeUniqueId edgeUid, bool shouldUnregisterUid)
         return;
     }
     DeleteEdgeUidFromPort(edgeUid);
+
+    if (shouldUnregisterUid)
+    {
+        m_edgeUidGenerator.UnregisterUniqueID(edgeUid);
+    }
+
     m_edges.erase(edgeUid);
-    m_edgeUidGenerator.UnregisterUniqueID(edgeUid);
 }
 
 void NodeEditor::HandleDeletingEdges()

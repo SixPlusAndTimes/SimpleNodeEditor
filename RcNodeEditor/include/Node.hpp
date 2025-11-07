@@ -79,8 +79,11 @@ struct YamlPort
 // srcport info maybe redundant in different edges, check it later
 struct YamlEdge
 {
+    YamlEdge(): m_yamlSrcPort(), m_yamlDstPort(), m_isValid(false){};
+    YamlEdge(const YamlPort& srcPort, const YamlPort& dstPort, bool isValid): m_yamlSrcPort(srcPort), m_yamlDstPort(dstPort), m_isValid(isValid){};
     YamlPort m_yamlSrcPort;
     YamlPort m_yamlDstPort;
+    bool    m_isValid;
 
     // TODO : add properties
 };
