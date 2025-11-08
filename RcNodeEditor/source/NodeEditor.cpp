@@ -4,7 +4,6 @@
 #include "spdlog/spdlog.h"
 #include <cstdint>
 #include <unordered_set>
-#include "YamlParser.hpp"
 #include <set>
 #include <algorithm>
 
@@ -30,11 +29,12 @@ NodeEditor::NodeEditor()
       m_currentPruninngRule(),
       m_nodesPruned(),
       m_edgesPruned(),
-      m_nodeStyle(ImNodes::GetStyle())
+      m_nodeStyle(ImNodes::GetStyle()),
+      m_pipeLineParser()
 {
     // TODO: file path may be a constant value or configed in Config.yaml?
-    NodeDescriptionParser        nodeParser("./resource/NodeDescriptions.yaml");
-    std::vector<NodeDescription> nodeDescriptions = nodeParser.ParseNodeDescriptions();
+    NodeDescriptionParser        nodeTemplateParser("./resource/NodeDescriptions.yaml");
+    std::vector<NodeDescription> nodeDescriptions = nodeTemplateParser.ParseNodeDescriptions();
     for (auto& nodeD : nodeDescriptions)
     {
         // TODO : remove redundant info
@@ -58,6 +58,7 @@ void NodeEditor::ClearCurrentPipeLine()
     m_portUidGenerator.Clear();
     m_nodeUidGenerator.Clear();
     m_edgeUidGenerator.Clear();
+    m_pipeLineParser.Clear();
 }
 
 void NodeEditor::HandleFileDrop(const std::string& filePath)
@@ -77,11 +78,10 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
 {
     bool ret = true;
 
-    PipelineParser pipeLineParser;
-    if (pipeLineParser.LoadFile(filePath))
+    if (m_pipeLineParser.LoadFile(filePath))
     {
-        std::vector<YamlNode> yamlNodes = pipeLineParser.ParseNodes();
-        std::vector<YamlEdge> yamlEdges = pipeLineParser.ParseEdges();
+        std::vector<YamlNode> yamlNodes = m_pipeLineParser.ParseNodes();
+        std::vector<YamlEdge> yamlEdges = m_pipeLineParser.ParseEdges();
 
 
         // add node in Editor

@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <set>
 #include "Helpers.h"
+#include "YamlParser.hpp"
 
 struct ImNodesStyle;
 
@@ -107,6 +108,8 @@ private:
         m_edgesPruned; // store edges that will be rendered on canvas
 
     ImNodesStyle& m_nodeStyle;
+
+    PipelineParser m_pipeLineParser;
 };
 } // namespace SimpleNodeEditor
 

@@ -150,6 +150,7 @@ class YamlParser
 {
 public:
     [[nodiscard]] virtual bool LoadFile(const std::string& filePath);
+    virtual void Clear();
 
 protected:
     YAML::Node       m_rootNode;
@@ -199,6 +200,7 @@ public:
     std::vector<YamlEdge> ParseEdges();
 
     [[nodiscard]] virtual bool LoadFile(const std::string& filePath);
+    virtual void Clear() override;
 
 private:
     YAML::Node m_nodeListNode;

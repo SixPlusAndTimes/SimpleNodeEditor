@@ -1,22 +1,41 @@
 #include "spdlog/spdlog.h"
 #include "YamlParser.hpp"
+#include <filesystem>
 
 namespace SimpleNodeEditor
 {
 
 bool YamlParser::LoadFile(const std::string& filePath)
 {
-    m_rootNode = YAML::LoadFile(filePath);
-    if (m_rootNode)
+    if (std::filesystem::is_regular_file(filePath))
     {
-        m_filePath = filePath;
-        return true;
-    }
+        m_rootNode = YAML::LoadFile(filePath);
+
+        if (m_rootNode)
+        {
+            m_filePath = filePath;
+            return true;
+        }
+        else
+        {
+            SPDLOG_ERROR("no valid rootNode, check the file [{}]", filePath);
+            return false;
+        }
+    } 
     else
     {
+        SPDLOG_ERROR("[{}] is not a regular file", filePath);
         return false;
     }
+
 }
+
+void YamlParser::Clear()
+{
+    m_rootNode = YAML::Node();
+    m_filePath = {};
+}
+
 
 ConfigParser::ConfigParser(const std::string& filePath)
 {
@@ -238,4 +257,12 @@ std::vector<YamlEdge> PipelineParser::ParseEdges()
 
     return result;
 }
+
+void PipelineParser::Clear()
+{
+    m_edgeListNode = YAML::Node();
+    m_nodeListNode = YAML::Node();
+    YamlParser::Clear();
+}
+
 } // namespace SimpleNodeEditor
