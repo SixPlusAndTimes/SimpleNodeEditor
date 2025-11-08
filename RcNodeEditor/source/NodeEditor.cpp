@@ -331,41 +331,64 @@ void NodeEditor::NodeEditorInitialize()
     io.LinkDetachWithModifierClick.Modifier = &ImGui::GetIO().KeyCtrl;
 }
 
-void NodeEditor::ShowMenu()
+void MenuStyle()
+{
+
+    if (ImGui::BeginMenu("Style"))
+    {
+        if (ImGui::MenuItem("Classic"))
+        {
+            ImGui::StyleColorsClassic();
+            ImNodes::StyleColorsClassic();
+        }
+        if (ImGui::MenuItem("Dark"))
+        {
+            ImGui::StyleColorsDark();
+            ImNodes::StyleColorsDark();
+        }
+        if (ImGui::MenuItem("Light"))
+        {
+            ImGui::StyleColorsLight();
+            ImNodes::StyleColorsLight();
+        }
+        ImGui::EndMenu();
+    }
+
+}
+
+void MenuFile()
+{
+    if (ImGui::BeginMenu("File"))
+    {
+        if (ImGui::MenuItem("Open", nullptr, false, true))
+        {
+            SPDLOG_INFO("Open Not Implemented!");
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem("Save", "Ctrl + d", false, true))
+        {
+            SPDLOG_INFO("Save Not Implemented!");
+        }
+        if (ImGui::MenuItem("Save As...", nullptr, false, true))
+        {
+            SPDLOG_INFO("Save as Not Implemented!");
+        }
+
+        ImGui::EndMenu();
+    }
+}
+
+void NodeEditor::DrawMenu()
 {
     if (ImGui::BeginMenuBar())
     {
+        MenuFile();
         // ShowMiniMapMenu();
-        if (ImGui::BeginMenu("Style"))
-        {
-            if (ImGui::MenuItem("Classic"))
-            {
-                ImGui::StyleColorsClassic();
-                ImNodes::StyleColorsClassic();
-            }
-            if (ImGui::MenuItem("Dark"))
-            {
-                ImGui::StyleColorsDark();
-                ImNodes::StyleColorsDark();
-            }
-            if (ImGui::MenuItem("Light"))
-            {
-                ImGui::StyleColorsLight();
-                ImNodes::StyleColorsLight();
-            }
-            ImGui::EndMenu();
-        }
-
+        MenuStyle();
         ImGui::EndMenuBar();
     }
 }
 
-void NodeEditor::ShowInfos()
-{
-    ImGui::TextUnformatted("Edit the color of the output color window using nodes.");
-    ImGui::TextUnformatted("A -- add node");
-    ImGui::TextUnformatted("X -- delete selected node or link");
-}
 
 NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc)
 {
@@ -1080,7 +1103,7 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
     ImVec2 pruningRuleEditorWindowSize{mainWindowDisplaySize.x / 5, mainWindowDisplaySize.y / 5};
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
     // ImGuiCond_Appearing must be set, otherwise the window can not be moved or resized
-    ImGui::SetNextWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Appearing);
+    ImGui::SetNextWindowPos(ImVec2(30.f, 30.f), ImGuiCond_Appearing);
     ImGui::SetNextWindowSize(pruningRuleEditorWindowSize, ImGuiCond_Appearing);
     ImGui::Begin("PruningRuleEdit", nullptr, ImGuiWindowFlags_None);
 
@@ -1491,10 +1514,25 @@ void NodeEditor::HandleEdgeInfoEditing()
     }
 }
 
+
+
+void NodeEditor::SaveToFile()
+{
+
+    SPDLOG_INFO("SaveToFile not implemented");
+}
+
 void NodeEditor::HandleOtherUserInputs()
 {
+    ImGuiIO& io = ImGui::GetIO();
+    // handle saving to file, i.e serialize the pipeline to a yaml
+    if (ImGui::IsKeyPressed(ImGuiKey_S) && io.KeyCtrl)
+    {
+        SaveToFile();
+    }
+
     // handle toposort
-    if (ImGui::IsKeyReleased(ImGuiKey_S))
+    if (ImGui::IsKeyReleased(ImGuiKey_S) && !io.KeyCtrl)
     {
         m_needTopoSort = true;
     }
@@ -1505,15 +1543,12 @@ void NodeEditor::HandleOtherUserInputs()
     // handle edge editing
     HandleEdgeInfoEditing();
 
-
-    // handle saving to file, i.e serialize the pipeline to a yaml
-
 }
 
 void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
 {
     auto flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
-                 ImGuiWindowFlags_NoBringToFrontOnFocus;
+                 ImGuiWindowFlags_NoBringToFrontOnFocus| ImGuiWindowFlags_MenuBar;
 
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(mainWindowDisplaySize);
@@ -1521,6 +1556,9 @@ void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
     // The node editor window
     ImGui::Begin("SimpleNodeEditor", nullptr, flags);
     ImNodes::GetIO().EmulateThreeButtonMouse.Modifier = &ImGui::GetIO().KeyAlt;
+
+    DrawMenu();
+
     ImNodes::BeginNodeEditor();
 
     HandleAddNodes();

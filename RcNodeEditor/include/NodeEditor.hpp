@@ -24,8 +24,7 @@ public:
     void HandleFileDrop(const std::string& filePath);
 
 private:
-    void         ShowMenu();
-    void         ShowInfos();
+    void         DrawMenu();
     void         HandleAddNodes();
     NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc);
     NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNde);
@@ -45,6 +44,7 @@ private:
     void               DeleteEdgeUidFromPort(EdgeUniqueId edgeUid);
 
     void SaveState();
+    void SaveToFile();
     void RearrangeNodesLayout(const std::vector<std::vector<NodeUniqueId>>& topologicalOrder,
                               const std::unordered_map<NodeUniqueId, Node>& nodesMap);
     void CollectPruningRules(std::vector<YamlNode> yamlNodes, std::vector<YamlEdge> yamlEdges);
@@ -83,10 +83,8 @@ private:
     UniqueIdAllocator<NodeUniqueId> m_nodeUidGenerator;
     UniqueIdAllocator<PortUniqueId> m_portUidGenerator;
     UniqueIdAllocator<EdgeUniqueId> m_edgeUidGenerator;
-
     
     UniqueIdAllocator<YamlNode::NodeYamlId> m_yamlNodeUidGenerator;
-
 
     ImNodesMiniMapLocation m_minimap_location;
 
@@ -94,9 +92,6 @@ private:
 
     bool m_needTopoSort;
 
-    // store all pruning rules
-    // key : group
-    // value : set of type
     std::unordered_map<std::string, std::set<std::string>> m_allPruningRules;
     // key : group, value : type
     std::unordered_map<std::string, std::string> m_currentPruninngRule;
