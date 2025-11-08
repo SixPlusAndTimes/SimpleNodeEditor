@@ -775,10 +775,7 @@ void NodeEditor::DeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid)
     DeleteEdgesBeforDeleteNode(nodeUid, shouldUnregisterUid);
 
     // erase pointer in m_inportPorts and m_outportPorts
-    auto erasePointersInMember = [this](
-        const auto& portsBelongToNode,
-        auto& refsToPorts,
-        bool shouldUnregisterUid)
+    auto erasePointersInMember = [this](const auto& portsBelongToNode, auto& refsToPorts, bool shouldUnregisterUid)
     {
         for (const auto& port : portsBelongToNode)
         {
@@ -1151,6 +1148,10 @@ void NodeEditor::HandleNodeInfoEditing()
 
     static char     popup_prop_bufs[NODE_MAX_PROPS][PROP_NAME_MAX_LENGTH];
     static int      popup_prop_count = 0;
+    // pruning rules buffers for node (editable in the node popup)
+    static char     node_prune_group[EDGE_MAX_PRUNE_RULES][RRUNE_RULE_NAME_MAX_LENGTH] = {};
+    static char     node_prune_type[EDGE_MAX_PRUNE_RULES][RRUNE_RULE_NAME_MAX_LENGTH] = {};
+    static int      node_prune_count = 0;
 
     if (ImNodes::IsNodeHovered(&selectedNode) && ImGui::IsMouseDoubleClicked(0))
     {
@@ -1173,6 +1174,15 @@ void NodeEditor::HandleNodeInfoEditing()
                 strncpy(popup_prop_bufs[i], yn.m_Properties[i].m_propertyValue.c_str(), sizeof(popup_prop_bufs[i]) - 1);
             }
 
+                // initialize pruning-rule buffers from the node's YAML
+                node_prune_count = (int)std::min<size_t>(yn.m_PruningRules.size(), (size_t)EDGE_MAX_PRUNE_RULES);
+                for (int pi = 0; pi < node_prune_count; ++pi)
+                {
+                    const YamlPruningRule& pr = yn.m_PruningRules[pi];
+                    strncpy(node_prune_group[pi], pr.m_Group.c_str(), sizeof(node_prune_group[pi]) - 1);
+                    strncpy(node_prune_type[pi], pr.m_Type.c_str(), sizeof(node_prune_type[pi]) - 1);
+                }
+
             ImGui::SetNextWindowPos(ImGui::GetMousePos());
             ImGui::OpenPopup("Node Info Editor");
         }
@@ -1186,9 +1196,9 @@ void NodeEditor::HandleNodeInfoEditing()
 
             // Editable YAML-backed fields
             ImGui::InputText("Name", popup_name_buf, sizeof(popup_name_buf));
-            ImGui::InputInt("Yaml Id", &popup_yaml_id);
-            ImGui::Checkbox("Is Source", &popup_is_src);
-            ImGui::InputInt("Yaml Type", &popup_yaml_type);
+            ImGui::Checkbox("IsSource", &popup_is_src);
+            ImGui::Text("YamlId: %d", popup_yaml_id);
+            ImGui::Text("YamlType: %d", popup_yaml_type);
 
             ImGui::Separator();
             ImGui::TextUnformatted("Properties:");
@@ -1199,6 +1209,46 @@ void NodeEditor::HandleNodeInfoEditing()
                 ImGui::TextUnformatted(m_nodes.at(nodeUidToBePoped).GetYamlNode().m_Properties[i].m_propertyName.c_str());
                 ImGui::SameLine();
                 ImGui::InputText(prop_label.c_str(), popup_prop_bufs[i], sizeof(popup_prop_bufs[i]));
+            }
+
+            // Editable pruning rules for this node
+            ImGui::Separator();
+            ImGui::TextUnformatted("Pruning Rules:");
+            // allow removing one rule per-frame (deferred index)
+            int remove_node_prune_idx = -1;
+            for (int i = 0; i < node_prune_count; ++i)
+            {
+                std::string grp_label = std::string("Group ##node_prune_grp_") + std::to_string(i);
+                std::string typ_label = std::string("Type  ##node_prune_typ_") + std::to_string(i);
+                ImGui::InputText(grp_label.c_str(), node_prune_group[i], sizeof(node_prune_group[i]));
+                ImGui::SameLine();
+                ImGui::InputText(typ_label.c_str(), node_prune_type[i], sizeof(node_prune_type[i]));
+                ImGui::SameLine();
+                if (ImGui::SmallButton((std::string("Remove") + std::to_string(i)).c_str()))
+                {
+                    remove_node_prune_idx = i;
+                }
+            }
+            if (remove_node_prune_idx != -1)
+            {
+                for (int j = remove_node_prune_idx; j + 1 < node_prune_count; ++j)
+                {
+                    strncpy(node_prune_group[j], node_prune_group[j + 1], sizeof(node_prune_group[j]) - 1);
+                    strncpy(node_prune_type[j], node_prune_type[j + 1], sizeof(node_prune_type[j]) - 1);
+                }
+                node_prune_group[node_prune_count - 1][0] = '\0';
+                node_prune_type[node_prune_count - 1][0] = '\0';
+                node_prune_count -= 1;
+            }
+            ImGui::Spacing();
+            if (node_prune_count < EDGE_MAX_PRUNE_RULES)
+            {
+                if (ImGui::Button("Add Prune Rule"))
+                {
+                    node_prune_group[node_prune_count][0] = '\0';
+                    node_prune_type[node_prune_count][0] = '\0';
+                    node_prune_count += 1;
+                }
             }
 
             ImGui::Separator();
@@ -1220,6 +1270,18 @@ void NodeEditor::HandleNodeInfoEditing()
                 for (int i = 0; i < popup_prop_count; ++i)
                 {
                     yn.m_Properties[i].m_propertyValue = std::string(popup_prop_bufs[i]);
+                }
+                // Commit edited pruning rules back into the node's YamlNode
+                yn.m_PruningRules.clear();
+                for (int i = 0; i < node_prune_count; ++i)
+                {
+                    YamlPruningRule pr;
+                    pr.m_Group = std::string(node_prune_group[i]);
+                    pr.m_Type = std::string(node_prune_type[i]);
+                    // skip empty rules
+                    if (pr.m_Group.empty() && pr.m_Type.empty())
+                        continue;
+                    yn.m_PruningRules.push_back(std::move(pr));
                 }
                 ImGui::CloseCurrentPopup();
                 }

@@ -40,6 +40,7 @@ If you want intall it at another dir, just modify the default intallation path i
 
 - port口名字显示时排版美化
 - Node Edge 属性的显示和编辑功能 
+    - node的属性裁剪规则显示还没有完成
 - node Edge 的裁剪功能
     - 目前只能处理完全从yaml文件解析出来的pipeline，如果手动添加edge可能会crash，以后再修复
     - bug原因：restore edge时要借助yamlnode属性，但是手动添加的edge没有yaml属性, 需要自动生成yamlnode、links 属性

@@ -81,8 +81,6 @@ inline std::vector<std::vector<NodeUniqueId>> TopologicalSort(
     std::unordered_map<NodeUniqueId, Node>& nodesMap,
     std::unordered_map<EdgeUniqueId, Edge>& edgesMap)
 {
-    std::vector<std::vector<NodeUniqueId>> result;
-
     if (nodesMap.size() == 0 )
     {
         SPDLOG_WARN("nodesMap size == 0");
@@ -92,11 +90,11 @@ inline std::vector<std::vector<NodeUniqueId>> TopologicalSort(
     if (edgesMap.size() == 0)
     {
         auto nodeIds = nodesMap | std::views::keys; 
-        SPDLOG_WARN("edgesMap size == 0, ret one topo order, nodesize = [{}]", nodeIds.size());
-        result.emplace_back(nodeIds.begin(), nodeIds.end());
-        return result;
+        SPDLOG_WARN("edgesMap size == 0, return one topo order, nodesize = [{}]", nodeIds.size());
+        return {{nodeIds.begin(), nodeIds.end()}};
     }
 
+    std::vector<std::vector<NodeUniqueId>> result;
     std::unordered_map<NodeUniqueId, int> degrees;
     // init all node's degree to 0
     for (const auto& [nodeUid, _] : nodesMap)
@@ -107,7 +105,7 @@ inline std::vector<std::vector<NodeUniqueId>> TopologicalSort(
     // sum up all node's degree
     for (const auto& [_, edge] : edgesMap)
     {
-        if (!degrees.count(edge.GetDestinationNodeUid()))
+        if (!degrees.contains(edge.GetDestinationNodeUid()))
         {
             SPDLOG_ERROR("error dstnodeuid [{}]", edge.GetDestinationNodeUid());
         }

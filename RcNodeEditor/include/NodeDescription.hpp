@@ -8,6 +8,7 @@ namespace SimpleNodeEditor
 {
 
 using YamlNodeType = int32_t;
+// node template
 struct NodeDescription
 {
     std::string              m_nodeName;
