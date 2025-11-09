@@ -198,11 +198,13 @@ public:
     PipelineParser();
     std::vector<YamlNode> ParseNodes();
     std::vector<YamlEdge> ParseEdges();
+    const std::string& GetPipelineName();
 
     [[nodiscard]] virtual bool LoadFile(const std::string& filePath);
     virtual void Clear() override;
 
 private:
+    std::string m_pipelineName;
     YAML::Node m_nodeListNode;
     YAML::Node m_edgeListNode;
 };

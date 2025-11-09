@@ -7,6 +7,7 @@
 #include <set>
 #include "Helpers.h"
 #include "YamlParser.hpp"
+#include "YamlEmitter.hpp"
 
 struct ImNodesStyle;
 
@@ -105,6 +106,8 @@ private:
     ImNodesStyle& m_nodeStyle;
 
     PipelineParser m_pipeLineParser;
+    PipelineEmitter m_pipelineEimtter;
+    
 };
 } // namespace SimpleNodeEditor
 

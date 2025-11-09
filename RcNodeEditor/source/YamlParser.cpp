@@ -157,7 +157,16 @@ std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()
     return ret;
 }
 
-PipelineParser::PipelineParser() {}
+PipelineParser::PipelineParser()
+: m_pipelineName()
+, m_nodeListNode()
+, m_edgeListNode()
+{}
+
+const std::string& PipelineParser::GetPipelineName()
+{
+    return m_pipelineName;
+}
 
 bool PipelineParser::LoadFile(const std::string& filePath)
 {
@@ -174,6 +183,17 @@ bool PipelineParser::LoadFile(const std::string& filePath)
         SPDLOG_ERROR("load file[{}] failed", filePath);
         ret = false;
     }
+
+    if (ret && m_rootNode["pipelinename"] && m_rootNode["pipelinename"].IsScalar())
+    {
+        m_pipelineName = m_rootNode["pipelinename"].as<std::string>();
+    }
+    else
+    {
+        SPDLOG_ERROR("file {} has no valid pipelinename sequence, check it", filePath);
+        ret = false;
+    }
+
 
     if (ret && m_rootNode["NodeList"] && m_rootNode["NodeList"].IsSequence())
     {
@@ -260,6 +280,7 @@ std::vector<YamlEdge> PipelineParser::ParseEdges()
 
 void PipelineParser::Clear()
 {
+    m_pipelineName = {};
     m_edgeListNode = YAML::Node();
     m_nodeListNode = YAML::Node();
     YamlParser::Clear();

@@ -1518,8 +1518,10 @@ void NodeEditor::HandleEdgeInfoEditing()
 
 void NodeEditor::SaveToFile()
 {
-
-    SPDLOG_INFO("SaveToFile not implemented");
+    m_pipelineEimtter.EmitPipeline(m_pipeLineParser.GetPipelineName(), m_nodes, m_nodesPruned, m_edges, m_edgesPruned);
+    SPDLOG_INFO("pipeline emitter dump str: ");
+    SPDLOG_INFO("\n{}", m_pipelineEimtter.GetEmitter().c_str());
+    // SPDLOG_INFO("SaveToFile not implemented");
 }
 
 void NodeEditor::HandleOtherUserInputs()
