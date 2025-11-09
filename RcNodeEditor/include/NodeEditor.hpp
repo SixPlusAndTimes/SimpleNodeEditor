@@ -26,6 +26,8 @@ public:
 
 private:
     void         DrawMenu();
+    void         MenuStyle();
+    void         MenuFile();
     void         HandleAddNodes();
     NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc);
     NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNde);

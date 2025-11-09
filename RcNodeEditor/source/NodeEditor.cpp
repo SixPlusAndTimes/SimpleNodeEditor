@@ -6,6 +6,12 @@
 #include <unordered_set>
 #include <set>
 #include <algorithm>
+#include <numeric>
+// Windows headers should come after STL to avoid macro conflicts
+#define NOMINMAX  // Prevent Windows from defining min/max macros
+#include <Windows.h>
+#include <commdlg.h>
+#include <fstream>
 
 namespace SimpleNodeEditor
 {
@@ -59,6 +65,7 @@ void NodeEditor::ClearCurrentPipeLine()
     m_nodeUidGenerator.Clear();
     m_edgeUidGenerator.Clear();
     m_pipeLineParser.Clear();
+    m_pipelineEimtter.Clear();
 }
 
 void NodeEditor::HandleFileDrop(const std::string& filePath)
@@ -331,7 +338,7 @@ void NodeEditor::NodeEditorInitialize()
     io.LinkDetachWithModifierClick.Modifier = &ImGui::GetIO().KeyCtrl;
 }
 
-void MenuStyle()
+void NodeEditor::MenuStyle()
 {
 
     if (ImGui::BeginMenu("Style"))
@@ -356,7 +363,7 @@ void MenuStyle()
 
 }
 
-void MenuFile()
+void NodeEditor::MenuFile()
 {
     if (ImGui::BeginMenu("File"))
     {
@@ -1518,10 +1525,53 @@ void NodeEditor::HandleEdgeInfoEditing()
 
 void NodeEditor::SaveToFile()
 {
+    // Generate the YAML content first
     m_pipelineEimtter.EmitPipeline(m_pipeLineParser.GetPipelineName(), m_nodes, m_nodesPruned, m_edges, m_edgesPruned);
-    SPDLOG_INFO("pipeline emitter dump str: ");
-    SPDLOG_INFO("\n{}", m_pipelineEimtter.GetEmitter().c_str());
-    // SPDLOG_INFO("SaveToFile not implemented");
+    SPDLOG_INFO(m_pipelineEimtter.GetEmitter().c_str());
+    
+    // Show file save dialog
+    char szFile[MAX_PATH] = { 0 };
+    OPENFILENAMEA ofn = { 0 };
+    ofn.lStructSize = sizeof(OPENFILENAMEA);
+    ofn.hwndOwner = nullptr;
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = sizeof(szFile);
+    ofn.lpstrFilter = "YAML Files (*.yaml)\0*.yaml\0All Files (*.*)\0*.*\0";
+    ofn.nFilterIndex = 1;
+    ofn.lpstrTitle = "Save Pipeline As";
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
+    ofn.lpstrDefExt = "yaml";
+
+    if (GetSaveFileNameA(&ofn))
+    {
+        try 
+        {
+            std::ofstream outFile(szFile);
+            if (outFile.is_open())
+            {
+                outFile << m_pipelineEimtter.GetEmitter().c_str();
+                outFile.close();
+                SPDLOG_INFO("Successfully saved pipeline to: {}", szFile);
+            }
+            else
+            {
+                SPDLOG_ERROR("Failed to open file for writing: {}", szFile);
+            }
+        }
+        catch (const std::exception& e)
+        {
+            SPDLOG_ERROR("Error while saving file: {}", e.what());
+        }
+    }
+    else
+    {
+        // Only log error if user didn't just cancel
+        DWORD error = CommDlgExtendedError();
+        if (error != 0)
+        {
+            SPDLOG_ERROR("File save dialog error: {}", error);
+        }
+    }
 }
 
 void NodeEditor::HandleOtherUserInputs()

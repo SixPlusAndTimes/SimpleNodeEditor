@@ -10,11 +10,11 @@ class YamlEmitter
 {
 public:
     YamlEmitter();
-    explicit YamlEmitter(std::ostream& stream);
     YamlEmitter (const YamlEmitter&) = delete;
     YamlEmitter& operator=(const YamlEmitter&) = delete;
     ~YamlEmitter() = default;
     YAML::Emitter& GetEmitter();
+    void Clear();
 protected:
     void BeginMap();
     void EndMap();
@@ -26,13 +26,13 @@ protected:
     template <typename T>
     void EmitKey(const T& key)
     {
-        m_Emitter << YAML::Key << key;
+        *m_Emitter << YAML::Key << key;
     }
 
     template <typename T>
     void EmitValue(const T& value)
     {
-        m_Emitter << YAML::Value << value;
+        *m_Emitter << YAML::Value << value;
     }
 
     template <typename T>
@@ -43,7 +43,7 @@ protected:
     }
 
 private:
-        YAML::Emitter m_Emitter;
+    std::unique_ptr<YAML::Emitter> m_Emitter;
 
 };
 
