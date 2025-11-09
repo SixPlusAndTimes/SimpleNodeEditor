@@ -59,7 +59,7 @@ struct YamlNode
     }
     std::string                          m_nodeName;
     NodeYamlId                           m_nodeYamlId;
-    bool                                 m_isSrcNode;
+    int                                  m_isSrcNode;
     YamlNodeType                         m_nodeYamlType;
     std::vector<YamlPropertyDescription> m_Properties;
     std::vector<YamlPruningRule>         m_PruningRules;

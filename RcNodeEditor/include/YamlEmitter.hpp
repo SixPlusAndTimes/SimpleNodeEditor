@@ -5,7 +5,7 @@
 
 namespace SimpleNodeEditor
 {
-    
+
 class YamlEmitter
 {
 public:
@@ -64,6 +64,7 @@ private:
     void EmitNodeList(const std::unordered_map<NodeUniqueId, Node>& nodesMap, const std::unordered_map<NodeUniqueId, Node>& prunedNodesMap);
     void EmitYamlNode(const YamlNode& yamlNode);
     void EmitLinkList(const std::unordered_map<EdgeUniqueId, Edge>& edgesMap, const std::unordered_map<EdgeUniqueId, Edge>& prunedEdgesMap);
+    void EmitYamlEdge(const YamlPort& srcPort, const std::vector<YamlPort>& dstPortVec);
 };
 
 } // namespace SimpleNodeEditor

@@ -10,14 +10,27 @@
     YAML::Emitter& operator <<(YAML::Emitter& out, const std::vector<SimpleNodeEditor::YamlPruningRule>& pruningRules)
     {
         out << YAML::BeginSeq;        
-        out << YAML:: BeginMap;
+        out << YAML::BeginMap;
         out << YAML::Newline;
         for (const auto& pruneRule : pruningRules)
         {
             out << pruneRule;
         }
-        out << YAML:: EndMap;
+        out << YAML::EndMap;
         out << YAML::EndSeq;        
+        return out;
+    }
+
+    YAML::Emitter& operator <<(YAML::Emitter& out, const SimpleNodeEditor::YamlPort& port)
+    {
+        out << YAML::Key << "NodeName" << YAML::Value << port.m_nodeName;
+        out << YAML::Key << "NodeId" << YAML::Value << port.m_nodeYamlId;
+        out << YAML::Key << "PortName" << YAML::Value << port.m_portName;
+        out << YAML::Key << "PortId" << YAML::Value << port.m_portYamlId;
+        if (!port.m_PruningRules.empty())
+        {
+            out << YAML::Key << "PruneRule" << YAML::Value << port.m_PruningRules;
+        }
         return out;
     }
 
@@ -111,6 +124,7 @@ void PipelineEmitter::EmitPipeline(const std::string& pipelineName, const std::u
     EmitKeyValue("pipelinename", pipelineName);
 
     EmitNodeList(nodesMap, prunedNodesMap);
+    EmitLinkList(egesMap, prunedEdgesMap);
 
     EndMap();
     EndSequence();
@@ -131,32 +145,102 @@ void PipelineEmitter::EmitNodeList(const std::unordered_map<NodeUniqueId, Node>&
     for (const auto& [_, node] : nodesMap)
     {
         BeginMap();
+        GetEmitter() << YAML::Newline;
         EmitYamlNode(node.GetYamlNode());
         EndMap();
-        GetEmitter() << YAML::Newline;
     }
     
     // Emit pruned nodes
     for (const auto& [_, nodePruned] : prunedNodesMap)
     {
         BeginMap();
+        GetEmitter() << YAML::Newline;
         EmitYamlNode(nodePruned.GetYamlNode());
         EndMap();
-        GetEmitter() << YAML::Newline;
     }
     
     EndSequence();
 }
 
+// Define equality operator for YamlPort
+bool operator==(const YamlPort& lhs, const YamlPort& rhs) {
+    return lhs.m_nodeName == rhs.m_nodeName &&
+           lhs.m_nodeYamlId == rhs.m_nodeYamlId &&
+           lhs.m_portName == rhs.m_portName &&
+           lhs.m_portYamlId == rhs.m_portYamlId;
+}
 
+struct YamlPortHash {
+    size_t operator()(const YamlPort& port) const {
+        // Combine hashes of relevant fields
+        size_t h1 = std::hash<std::string>()(port.m_nodeName);
+        size_t h2 = std::hash<int>()(port.m_nodeYamlId);
+        size_t h3 = std::hash<std::string>()(port.m_portName);
+        size_t h4 = std::hash<int>()(port.m_portYamlId);
+        return h1 ^ (h2 << 8) ^ (h3 << 16) ^ (h4 << 32);
+    }
+};
+
+std::unordered_map<YamlPort, std::vector<YamlPort>, YamlPortHash> GroupEdges(const std::unordered_map<EdgeUniqueId, Edge>& edgesMap, 
+                                                                const std::unordered_map<EdgeUniqueId, Edge>& prunedEdgesMap)
+{
+    std::unordered_map<YamlPort, std::vector<YamlPort>, YamlPortHash> result;
+    auto collect = [](const std::unordered_map<EdgeUniqueId, Edge>& edges, std::unordered_map<YamlPort, std::vector<YamlPort>, YamlPortHash>& resContainer)
+    {
+        for (const auto&[_, edge] : edges)
+        {
+            const auto& srcPort = edge.GetYamlEdge().m_yamlSrcPort; 
+            const auto& dstPort = edge.GetYamlEdge().m_yamlDstPort; 
+            if (resContainer.contains(edge.GetYamlEdge().m_yamlSrcPort))
+            {
+                resContainer.at(srcPort).push_back(dstPort);
+            }
+            else
+            {
+                resContainer.emplace(srcPort, std::vector<YamlPort>{dstPort});
+            }
+        }
+    };
+    collect(edgesMap, result);
+    collect(prunedEdgesMap, result);
+    return result;
+
+}
+
+void PipelineEmitter::EmitYamlEdge(const YamlPort& srcPort, const std::vector<YamlPort>& dstPortVec)
+{
+    BeginMap();
+    GetEmitter() << YAML::Newline;
+    // Emit source port
+    EmitKey("SrcPort"); BeginValue();
+    BeginMap();
+    GetEmitter() << srcPort;
+    EndMap();
+    
+    // Emit destination ports
+    EmitKey("DstPort"); BeginValue();
+    BeginSequence();
+    for (const auto& dstPort : dstPortVec) {
+        BeginMap();
+        GetEmitter() << YAML::Newline;
+        GetEmitter() << dstPort;
+        EndMap();
+    }
+    EndSequence();
+    
+    EndMap();
+}
 
 void PipelineEmitter::EmitLinkList(const std::unordered_map<EdgeUniqueId, Edge>& edgesMap, const std::unordered_map<EdgeUniqueId, Edge>& prunedEdgesMap)
 {
+
+    auto collecedEdges = GroupEdges(edgesMap, prunedEdgesMap);
     EmitKey("LinkList"); BeginValue();
-    BeginSequence();
-        for (const auto& edge : edgesMap)
+    BeginSequence();  // Single sequence for all nodes
+        for (const auto& [srcPort, dstPortVec] : collecedEdges)
         {
-            EmitYamlEdge(edge.second.GetYamlEdge());
+            EmitYamlEdge(srcPort, dstPortVec);
+            
         }
     EndSequence();
 }
