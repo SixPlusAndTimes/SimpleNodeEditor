@@ -453,11 +453,8 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const Yaml
 
 void NodeEditor::HandleAddNodes()
 {
-    const bool open_popup = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
-                            ImNodes::IsEditorHovered() && ImGui::IsKeyReleased(ImGuiKey_A);
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.f, 8.f));
-    if (!ImGui::IsAnyItemHovered() && open_popup)
+    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)  && ImGui::IsKeyReleased(ImGuiKey_A))
     {
         ImGui::OpenPopup("add node");
     }
@@ -534,7 +531,6 @@ void NodeEditor::HandleAddNodes()
 
         ImGui::EndPopup();
     }
-    ImGui::PopStyleVar();
 }
 
 void NodeEditor::ShowNodes()
@@ -1614,10 +1610,7 @@ void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
     ImNodes::GetIO().EmulateThreeButtonMouse.Modifier = &ImGui::GetIO().KeyAlt;
 
     DrawMenu();
-
     ImNodes::BeginNodeEditor();
-
-    HandleAddNodes();
 
     ShowNodes();
     // only afer calling ImNodes::EndNode in the ShowNodes() function can we get the rect of nodeUi,
@@ -1636,12 +1629,13 @@ void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
 
     ImNodes::EndNodeEditor();
 
-    if( ImNodes::IsEditorHovered() && ImGui::GetIO().MouseWheel != 0 )
+    if( ImNodes::IsEditorHovered() && ImGui::GetIO().MouseWheel != 0 && !ImGui::IsPopupOpen("add node", ImGuiPopupFlags_AnyPopup) )
     {
         float zoom = ImNodes::EditorContextGetZoom() + ImGui::GetIO().MouseWheel * 0.1f;
         ImNodes::EditorContextSetZoom( zoom, ImGui::GetMousePos() );
     }
 
+    HandleAddNodes();
     HandleAddEdges();
 
     HandleDeletingEdges();
