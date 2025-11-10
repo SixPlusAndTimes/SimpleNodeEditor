@@ -401,6 +401,10 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc)
 {
     YamlNode newYamlNode;
     newYamlNode.m_nodeYamlId = m_yamlNodeUidGenerator.AllocUniqueID();
+    newYamlNode.m_nodeYamlType = nodeDesc.m_yamlNodeType;
+    newYamlNode.m_isSrcNode = 0;
+    newYamlNode.m_nodeName = nodeDesc.m_nodeName;
+    
     return AddNewNodes(nodeDesc, newYamlNode);
 }
 
