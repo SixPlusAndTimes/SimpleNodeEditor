@@ -454,7 +454,7 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const Yaml
 void NodeEditor::HandleAddNodes()
 {
 
-    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)  && ImGui::IsKeyReleased(ImGuiKey_A))
+    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_NoPopupHierarchy)  && ImGui::IsKeyReleased(ImGuiKey_A))
     {
         ImGui::OpenPopup("add node");
     }
