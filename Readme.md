@@ -50,6 +50,9 @@ If you want intall it at another dir, just modify the default intallation path i
 - zoom in out 功能
 - 手动toposort的功能，添加用户输入处理的逻辑？ 按下 S 键， 重新toposort?
 - file drop 功能
-- 截屏功能?
 - node 如果即将被裁剪，需要检查它的edge是否也被裁剪掉了，如果不是不进行prue rule的切换，而是发出提醒需要填写相应的prune rule
     - 那么首先得完成属性的显示和编辑功能
+    - 修改逻辑，将node 和 相连edge的prune rule自动设置为相同
+- 在node\edge Editor中添加prune rule后不会自动刷新和添加显到prune rule Editor中 ......
+- pipeline name 编辑和保存
+- 截屏功能?

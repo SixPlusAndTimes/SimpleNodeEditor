@@ -35,6 +35,7 @@ NodeEditor::NodeEditor()
       m_currentPruninngRule(),
       m_nodesPruned(),
       m_edgesPruned(),
+      m_currentPipeLineName(),
       m_nodeStyle(ImNodes::GetStyle()),
       m_pipeLineParser()
 {
@@ -132,6 +133,7 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
         }
 
         m_needTopoSort = true;
+        m_currentPipeLineName = m_pipeLineParser.GetPipelineName();
     }
     else
     {
@@ -1525,8 +1527,9 @@ void NodeEditor::HandleEdgeInfoEditing()
 
 void NodeEditor::SaveToFile()
 {
-    // Generate the YAML content first
-    m_pipelineEimtter.EmitPipeline(m_pipeLineParser.GetPipelineName(), m_nodes, m_nodesPruned, m_edges, m_edgesPruned);
+
+    const std::string pipelineNameToEmit = m_currentPipeLineName.empty() ? m_pipeLineParser.GetPipelineName() : m_currentPipeLineName;
+    m_pipelineEimtter.EmitPipeline(pipelineNameToEmit, m_nodes, m_nodesPruned, m_edges, m_edgesPruned);
     SPDLOG_INFO(m_pipelineEimtter.GetEmitter().c_str());
     
     // Show file save dialog
@@ -1572,6 +1575,48 @@ void NodeEditor::SaveToFile()
             SPDLOG_ERROR("File save dialog error: {}", error);
         }
     }
+}
+
+void NodeEditor::ShowPipelineName()
+{
+    // Reserve a small footer area inside the editor content and draw the pipeline
+    // name input there. Using a child region ensures the layout reserves space and
+    // the widgets are not clipped or lost when the window isn't clicked.
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    const ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
+    const ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
+    const float contentWidth = contentMax.x - contentMin.x;
+
+    const float textH = ImGui::GetTextLineHeight();
+    const float footerH = textH + style.FramePadding.y * 2.0f;
+
+    // Move cursor to where the footer should start (relative to window)
+    ImGui::SetCursorPosY(contentMax.y - footerH);
+
+    // Begin a child that acts as a footer bar so it always has reserved space
+    ImGui::BeginChild("PipelineFooter", ImVec2(contentWidth, footerH));
+
+    // Prepare buffer and draw input
+    char buf[256] = {0};
+    if (!m_currentPipeLineName.empty())
+        strncpy(buf, m_currentPipeLineName.c_str(), sizeof(buf) - 1);
+
+    ImGui::PushItemWidth(260.0f);
+    ImGui::TextUnformatted("Pipeline:");
+    ImGui::SameLine();
+    if (ImGui::InputText("##pipeline_name", buf, sizeof(buf)))
+    {
+        m_currentPipeLineName = std::string(buf);
+    }
+    else
+    {
+        // keep buffer synced
+        m_currentPipeLineName = std::string(buf);
+    }
+    ImGui::PopItemWidth();
+
+    ImGui::EndChild();
 }
 
 void NodeEditor::HandleOtherUserInputs()
@@ -1635,6 +1680,7 @@ void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
         ImNodes::EditorContextSetZoom( zoom, ImGui::GetMousePos() );
     }
 
+    ShowPipelineName();
     HandleAddNodes();
     HandleAddEdges();
 

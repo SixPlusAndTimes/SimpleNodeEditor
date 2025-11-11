@@ -35,6 +35,7 @@ private:
     void         ShowNodes();
     void         ShowEdges();
     void         HandleAddEdges();
+    void         ShowPipelineName();
 
     void FillYamlEdgePort(YamlPort& yamlPort, const Port& port);
 
@@ -104,6 +105,8 @@ private:
 
     std::unordered_map<EdgeUniqueId, Edge>
         m_edgesPruned; // store edges that will be rendered on canvas
+
+    std::string m_currentPipeLineName;
 
     ImNodesStyle& m_nodeStyle;
 
