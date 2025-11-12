@@ -1621,17 +1621,20 @@ void NodeEditor::ShowPipelineName()
 
 void NodeEditor::HandleOtherUserInputs()
 {
-    ImGuiIO& io = ImGui::GetIO();
-    // handle saving to file, i.e serialize the pipeline to a yaml
-    if (ImGui::IsKeyPressed(ImGuiKey_S) && io.KeyCtrl)
+    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_NoPopupHierarchy) )
     {
-        SaveToFile();
-    }
+        ImGuiIO& io = ImGui::GetIO();
+        // ctrl + S : handle saving to file, i.e serialize the pipeline to a yaml
+        if (ImGui::IsKeyPressed(ImGuiKey_S) && io.KeyCtrl)
+        {
+            SaveToFile();
+        }
 
-    // handle toposort
-    if (ImGui::IsKeyReleased(ImGuiKey_S) && !io.KeyCtrl)
-    {
-        m_needTopoSort = true;
+        // S : toposort
+        if ( ImGui::IsKeyReleased(ImGuiKey_S) && !io.KeyCtrl)
+        {
+            m_needTopoSort = true;
+        }
     }
 
     // handle node editing
@@ -1639,7 +1642,6 @@ void NodeEditor::HandleOtherUserInputs()
 
     // handle edge editing
     HandleEdgeInfoEditing();
-
 }
 
 void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
@@ -1672,6 +1674,7 @@ void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
 
     ImNodes::MiniMap(0.2f, m_minimap_location);
 
+    ShowPipelineName();
     ImNodes::EndNodeEditor();
 
     if( ImNodes::IsEditorHovered() && ImGui::GetIO().MouseWheel != 0 && !ImGui::IsPopupOpen("add node", ImGuiPopupFlags_AnyPopup) )
@@ -1680,7 +1683,6 @@ void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
         ImNodes::EditorContextSetZoom( zoom, ImGui::GetMousePos() );
     }
 
-    ShowPipelineName();
     HandleAddNodes();
     HandleAddEdges();
 
