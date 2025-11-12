@@ -456,7 +456,7 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const Yaml
 void NodeEditor::HandleAddNodes()
 {
 
-    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_NoPopupHierarchy)  && ImGui::IsKeyReleased(ImGuiKey_A))
+    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_NoPopupHierarchy) && ImNodes::IsEditorHovered() && ImGui::IsKeyReleased(ImGuiKey_A))
     {
         ImGui::OpenPopup("add node");
     }
@@ -1579,9 +1579,6 @@ void NodeEditor::SaveToFile()
 
 void NodeEditor::ShowPipelineName()
 {
-    // Reserve a small footer area inside the editor content and draw the pipeline
-    // name input there. Using a child region ensures the layout reserves space and
-    // the widgets are not clipped or lost when the window isn't clicked.
     ImGuiStyle& style = ImGui::GetStyle();
 
     const ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
@@ -1591,13 +1588,10 @@ void NodeEditor::ShowPipelineName()
     const float textH = ImGui::GetTextLineHeight();
     const float footerH = textH + style.FramePadding.y * 2.0f;
 
-    // Move cursor to where the footer should start (relative to window)
     ImGui::SetCursorPosY(contentMax.y - footerH);
+    auto windFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoMove;
+    ImGui::BeginChild("PipelineFooter", ImVec2(contentWidth, footerH), 0, windFlags);
 
-    // Begin a child that acts as a footer bar so it always has reserved space
-    ImGui::BeginChild("PipelineFooter", ImVec2(contentWidth, footerH));
-
-    // Prepare buffer and draw input
     char buf[256] = {0};
     if (!m_currentPipeLineName.empty())
         strncpy(buf, m_currentPipeLineName.c_str(), sizeof(buf) - 1);
@@ -1609,11 +1603,7 @@ void NodeEditor::ShowPipelineName()
     {
         m_currentPipeLineName = std::string(buf);
     }
-    else
-    {
-        // keep buffer synced
-        m_currentPipeLineName = std::string(buf);
-    }
+
     ImGui::PopItemWidth();
 
     ImGui::EndChild();
@@ -1621,7 +1611,7 @@ void NodeEditor::ShowPipelineName()
 
 void NodeEditor::HandleOtherUserInputs()
 {
-    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_NoPopupHierarchy) )
+    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_NoPopupHierarchy | ImGuiFocusedFlags_RootAndChildWindows) && ImNodes::IsEditorHovered())
     {
         ImGuiIO& io = ImGui::GetIO();
         // ctrl + S : handle saving to file, i.e serialize the pipeline to a yaml
@@ -1674,7 +1664,6 @@ void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
 
     ImNodes::MiniMap(0.2f, m_minimap_location);
 
-    ShowPipelineName();
     ImNodes::EndNodeEditor();
 
     if( ImNodes::IsEditorHovered() && ImGui::GetIO().MouseWheel != 0 && !ImGui::IsPopupOpen("add node", ImGuiPopupFlags_AnyPopup) )
@@ -1683,6 +1672,7 @@ void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
         ImNodes::EditorContextSetZoom( zoom, ImGui::GetMousePos() );
     }
 
+    ShowPipelineName();
     HandleAddNodes();
     HandleAddEdges();
 
