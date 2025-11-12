@@ -73,6 +73,7 @@ private:
     void HandleOtherUserInputs();
     void HandleNodeInfoEditing();
     void HandleEdgeInfoEditing();
+    void HandleZooming();
 
 private:
     std::unordered_map<NodeUniqueId, Node> m_nodes; // store nodes that will be rendered on canvas

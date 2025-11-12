@@ -1,15 +1,16 @@
 #include "YamlEmitter.hpp"
 
-YAML::Emitter& operator <<(YAML::Emitter& out, const SimpleNodeEditor::YamlPruningRule& pruningRule)
+YAML::Emitter& operator<<(YAML::Emitter& out, const SimpleNodeEditor::YamlPruningRule& pruningRule)
 {
     out << YAML::Key << "group" << YAML::Value << pruningRule.m_Group;
     out << YAML::Key << "type" << YAML::Value << pruningRule.m_Type;
     return out;
 }
 
-YAML::Emitter& operator <<(YAML::Emitter& out, const std::vector<SimpleNodeEditor::YamlPruningRule>& pruningRules)
+YAML::Emitter& operator<<(YAML::Emitter&                                        out,
+                          const std::vector<SimpleNodeEditor::YamlPruningRule>& pruningRules)
 {
-    out << YAML::BeginSeq;        
+    out << YAML::BeginSeq;
     out << YAML::BeginMap;
     out << YAML::Newline;
     for (const auto& pruneRule : pruningRules)
@@ -17,11 +18,11 @@ YAML::Emitter& operator <<(YAML::Emitter& out, const std::vector<SimpleNodeEdito
         out << pruneRule;
     }
     out << YAML::EndMap;
-    out << YAML::EndSeq;        
+    out << YAML::EndSeq;
     return out;
 }
 
-YAML::Emitter& operator <<(YAML::Emitter& out, const SimpleNodeEditor::YamlPort& port)
+YAML::Emitter& operator<<(YAML::Emitter& out, const SimpleNodeEditor::YamlPort& port)
 {
     out << YAML::Key << "NodeName" << YAML::Value << port.m_nodeName;
     out << YAML::Key << "NodeId" << YAML::Value << port.m_nodeYamlId;
@@ -34,14 +35,15 @@ YAML::Emitter& operator <<(YAML::Emitter& out, const SimpleNodeEditor::YamlPort&
     return out;
 }
 
-YAML::Emitter& operator << (YAML::Emitter& out, const SimpleNodeEditor::YamlNode& yamlnode) {
+YAML::Emitter& operator<<(YAML::Emitter& out, const SimpleNodeEditor::YamlNode& yamlnode)
+{
     out << YAML::Key << "NodeName" << YAML::Value << yamlnode.m_nodeName;
     out << YAML::Key << "NodeId" << YAML::Value << yamlnode.m_nodeYamlId;
     out << YAML::Key << "IsSrcNode" << YAML::Value << yamlnode.m_isSrcNode;
     out << YAML::Key << "NodeType" << YAML::Value << yamlnode.m_nodeYamlType;
     if (!yamlnode.m_Properties.empty())
     {
-        // TODO 
+        // TODO
     }
 
     if (!yamlnode.m_PruningRules.empty())
@@ -53,10 +55,7 @@ YAML::Emitter& operator << (YAML::Emitter& out, const SimpleNodeEditor::YamlNode
 
 namespace SimpleNodeEditor
 {
-YamlEmitter::YamlEmitter() 
-: m_Emitter(std::make_unique<YAML::Emitter>())
-{
-}
+YamlEmitter::YamlEmitter() : m_Emitter(std::make_unique<YAML::Emitter>()) {}
 
 void YamlEmitter::BeginMap()
 {
@@ -93,18 +92,17 @@ void YamlEmitter::Clear()
     m_Emitter = std::make_unique<YAML::Emitter>();
 }
 
-PipelineEmitter::PipelineEmitter() : YamlEmitter() 
-{
+PipelineEmitter::PipelineEmitter() : YamlEmitter() {}
 
-}
-
-void PipelineEmitter::EmitPipeline(const std::string& pipelineName, const std::unordered_map<NodeUniqueId, Node>& nodesMap, 
-                                    const std::unordered_map<NodeUniqueId, Node>& prunedNodesMap,
-                                    const std::unordered_map<EdgeUniqueId, Edge>& egesMap,
-                                    const std::unordered_map<NodeUniqueId, Edge>& prunedEdgesMap)
+void PipelineEmitter::EmitPipeline(const std::string&                            pipelineName,
+                                   const std::unordered_map<NodeUniqueId, Node>& nodesMap,
+                                   const std::unordered_map<NodeUniqueId, Node>& prunedNodesMap,
+                                   const std::unordered_map<EdgeUniqueId, Edge>& egesMap,
+                                   const std::unordered_map<NodeUniqueId, Edge>& prunedEdgesMap)
 {
     BeginMap();
-    EmitKey("Pipeline"); BeginValue();
+    EmitKey("Pipeline");
+    BeginValue();
     BeginSequence();
     BeginMap();
     GetEmitter() << YAML::Newline;
@@ -123,11 +121,13 @@ void PipelineEmitter::EmitYamlNode(const YamlNode& yamlNode)
     GetEmitter() << yamlNode;
 }
 
-void PipelineEmitter::EmitNodeList(const std::unordered_map<NodeUniqueId, Node>& nodesMap, const std::unordered_map<NodeUniqueId, Node>& prunedNodesMap)
+void PipelineEmitter::EmitNodeList(const std::unordered_map<NodeUniqueId, Node>& nodesMap,
+                                   const std::unordered_map<NodeUniqueId, Node>& prunedNodesMap)
 {
-    EmitKey("NodeList"); BeginValue();
+    EmitKey("NodeList");
+    BeginValue();
     BeginSequence();  // Single sequence for all nodes
-    
+
     // Emit regular nodes
     for (const auto& [_, node] : nodesMap)
     {
@@ -136,7 +136,7 @@ void PipelineEmitter::EmitNodeList(const std::unordered_map<NodeUniqueId, Node>&
         EmitYamlNode(node.GetYamlNode());
         EndMap();
     }
-    
+
     // Emit pruned nodes
     for (const auto& [_, nodePruned] : prunedNodesMap)
     {
@@ -145,20 +145,21 @@ void PipelineEmitter::EmitNodeList(const std::unordered_map<NodeUniqueId, Node>&
         EmitYamlNode(nodePruned.GetYamlNode());
         EndMap();
     }
-    
+
     EndSequence();
 }
 
 // Define equality operator for YamlPort
-bool operator==(const YamlPort& lhs, const YamlPort& rhs) {
-    return lhs.m_nodeName == rhs.m_nodeName &&
-           lhs.m_nodeYamlId == rhs.m_nodeYamlId &&
-           lhs.m_portName == rhs.m_portName &&
-           lhs.m_portYamlId == rhs.m_portYamlId;
+bool operator==(const YamlPort& lhs, const YamlPort& rhs)
+{
+    return lhs.m_nodeName == rhs.m_nodeName && lhs.m_nodeYamlId == rhs.m_nodeYamlId &&
+           lhs.m_portName == rhs.m_portName && lhs.m_portYamlId == rhs.m_portYamlId;
 }
 
-struct YamlPortHash {
-    size_t operator()(const YamlPort& port) const {
+struct YamlPortHash
+{
+    size_t operator()(const YamlPort& port) const
+    {
         // Combine hashes of relevant fields
         size_t h1 = std::hash<std::string>()(port.m_nodeName);
         size_t h2 = std::hash<int>()(port.m_nodeYamlId);
@@ -168,16 +169,19 @@ struct YamlPortHash {
     }
 };
 
-std::unordered_map<YamlPort, std::vector<YamlPort>, YamlPortHash> GroupEdges(const std::unordered_map<EdgeUniqueId, Edge>& edgesMap, 
-                                                                const std::unordered_map<EdgeUniqueId, Edge>& prunedEdgesMap)
+std::unordered_map<YamlPort, std::vector<YamlPort>, YamlPortHash> GroupEdges(
+    const std::unordered_map<EdgeUniqueId, Edge>& edgesMap,
+    const std::unordered_map<EdgeUniqueId, Edge>& prunedEdgesMap)
 {
     std::unordered_map<YamlPort, std::vector<YamlPort>, YamlPortHash> result;
-    auto collect = [](const std::unordered_map<EdgeUniqueId, Edge>& edges, std::unordered_map<YamlPort, std::vector<YamlPort>, YamlPortHash>& resContainer)
+    auto                                                              collect =
+        [](const std::unordered_map<EdgeUniqueId, Edge>&                      edges,
+           std::unordered_map<YamlPort, std::vector<YamlPort>, YamlPortHash>& resContainer)
     {
-        for (const auto&[_, edge] : edges)
+        for (const auto& [_, edge] : edges)
         {
-            const auto& srcPort = edge.GetYamlEdge().m_yamlSrcPort; 
-            const auto& dstPort = edge.GetYamlEdge().m_yamlDstPort; 
+            const auto& srcPort = edge.GetYamlEdge().m_yamlSrcPort;
+            const auto& dstPort = edge.GetYamlEdge().m_yamlDstPort;
             if (resContainer.contains(edge.GetYamlEdge().m_yamlSrcPort))
             {
                 resContainer.at(srcPort).push_back(dstPort);
@@ -191,7 +195,6 @@ std::unordered_map<YamlPort, std::vector<YamlPort>, YamlPortHash> GroupEdges(con
     collect(edgesMap, result);
     collect(prunedEdgesMap, result);
     return result;
-
 }
 
 void PipelineEmitter::EmitYamlEdge(const YamlPort& srcPort, const std::vector<YamlPort>& dstPortVec)
@@ -199,38 +202,40 @@ void PipelineEmitter::EmitYamlEdge(const YamlPort& srcPort, const std::vector<Ya
     BeginMap();
     GetEmitter() << YAML::Newline;
     // Emit source port
-    EmitKey("SrcPort"); BeginValue();
+    EmitKey("SrcPort");
+    BeginValue();
     BeginMap();
     GetEmitter() << srcPort;
     EndMap();
-    
+
     // Emit destination ports
-    EmitKey("DstPort"); BeginValue();
+    EmitKey("DstPort");
+    BeginValue();
     BeginSequence();
-    for (const auto& dstPort : dstPortVec) {
+    for (const auto& dstPort : dstPortVec)
+    {
         BeginMap();
         GetEmitter() << YAML::Newline;
         GetEmitter() << dstPort;
         EndMap();
     }
     EndSequence();
-    
+
     EndMap();
 }
 
-void PipelineEmitter::EmitLinkList(const std::unordered_map<EdgeUniqueId, Edge>& edgesMap, const std::unordered_map<EdgeUniqueId, Edge>& prunedEdgesMap)
+void PipelineEmitter::EmitLinkList(const std::unordered_map<EdgeUniqueId, Edge>& edgesMap,
+                                   const std::unordered_map<EdgeUniqueId, Edge>& prunedEdgesMap)
 {
-
     auto collecedEdges = GroupEdges(edgesMap, prunedEdgesMap);
-    EmitKey("LinkList"); BeginValue();
+    EmitKey("LinkList");
+    BeginValue();
     BeginSequence();
-        for (const auto& [srcPort, dstPortVec] : collecedEdges)
-        {
-            EmitYamlEdge(srcPort, dstPortVec);
-            
-        }
+    for (const auto& [srcPort, dstPortVec] : collecedEdges)
+    {
+        EmitYamlEdge(srcPort, dstPortVec);
+    }
     EndSequence();
 }
-
 
 } // namespace SimpleNodeEditor

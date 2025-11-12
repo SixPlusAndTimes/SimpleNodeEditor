@@ -21,13 +21,12 @@ bool YamlParser::LoadFile(const std::string& filePath)
             SPDLOG_ERROR("no valid rootNode, check the file [{}]", filePath);
             return false;
         }
-    } 
+    }
     else
     {
         SPDLOG_ERROR("[{}] is not a regular file", filePath);
         return false;
     }
-
 }
 
 void YamlParser::Clear()
@@ -35,7 +34,6 @@ void YamlParser::Clear()
     m_rootNode = YAML::Node();
     m_filePath = {};
 }
-
 
 ConfigParser::ConfigParser(const std::string& filePath)
 {
@@ -157,11 +155,7 @@ std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()
     return ret;
 }
 
-PipelineParser::PipelineParser()
-: m_pipelineName()
-, m_nodeListNode()
-, m_edgeListNode()
-{}
+PipelineParser::PipelineParser() : m_pipelineName(), m_nodeListNode(), m_edgeListNode() {}
 
 const std::string& PipelineParser::GetPipelineName()
 {
@@ -193,7 +187,6 @@ bool PipelineParser::LoadFile(const std::string& filePath)
         SPDLOG_ERROR("file {} has no valid pipelinename sequence, check it", filePath);
         ret = false;
     }
-
 
     if (ret && m_rootNode["NodeList"] && m_rootNode["NodeList"].IsSequence())
     {
