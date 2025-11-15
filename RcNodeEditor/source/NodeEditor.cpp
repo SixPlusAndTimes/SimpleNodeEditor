@@ -1242,6 +1242,7 @@ void NodeEditor::HandleNodeInfoEditing()
     static NodeUniqueId nodeUidToBePoped{-1};
     static YamlNode     popUpYamlNode{};
     NodeUniqueId        selectedNode{-1};
+    // handle userinteractions to prepare for popup
     if (ImNodes::IsNodeHovered(&selectedNode) && ImGui::IsMouseDoubleClicked(0))
     {
         assert(selectedNode != -1);
@@ -1258,6 +1259,7 @@ void NodeEditor::HandleNodeInfoEditing()
         }
     }
 
+    // begin popopup
     ImGuiIO& io                    = ImGui::GetIO();
     ImVec2   mainWindowDisplaySize = io.DisplaySize;
     ImGui::SetNextWindowSize(ImVec2{mainWindowDisplaySize.x / 4, mainWindowDisplaySize.y / 4});
@@ -1282,7 +1284,7 @@ void NodeEditor::HandleNodeInfoEditing()
             ImGui::InputText(prop_label.c_str(), &popUpYamlNode.m_Properties[i].m_propertyValue);
         }
 
-        // Editable pruning rules for this node
+        // Editable pruning rules
         ImGui::Separator();
         ImGui::TextUnformatted("Pruning Rules:");
         int remove_node_prune_idx = -1;
@@ -1315,7 +1317,7 @@ void NodeEditor::HandleNodeInfoEditing()
         }
 
         ImGui::Separator();
-        // Save or cancel
+        // Save edited finfo or cancel to close popup
         {
             const float availW  = ImGui::GetContentRegionAvail().x;
             ImGuiStyle& style   = ImGui::GetStyle();
@@ -1331,10 +1333,11 @@ void NodeEditor::HandleNodeInfoEditing()
             }
             ImGui::SameLine();
             ImGui::SetNextItemShortcut(ImGuiKey_Escape);
-            if (ImGui::Button("Cancel", ImVec2(btnW, 0)))
+            if (ImGui::Button("CancelNodeInfo", ImVec2(btnW, 0)))
             {
                 ImGui::CloseCurrentPopup();
             }
+
         }
         ImGui::EndPopup();
     }
@@ -1342,163 +1345,59 @@ void NodeEditor::HandleNodeInfoEditing()
 
 void NodeEditor::HandleEdgeInfoEditing()
 {
-    EdgeUniqueId        selectedEdge                             = -1;
-    static EdgeUniqueId edgeUidToBePoped                         = -1;
-    static char         edge_src_node_name[NODE_NAME_MAX_LENGTH] = {};
-    static int          edge_src_node_id                         = -1;
-    static char         edge_src_port_name[NODE_NAME_MAX_LENGTH] = {};
-    static int          edge_src_port_id                         = -1;
-    static char         edge_dst_node_name[NODE_NAME_MAX_LENGTH] = {};
-    static int          edge_dst_node_id                         = -1;
-    static char         edge_dst_port_name[NODE_NAME_MAX_LENGTH] = {};
-    static int          edge_dst_port_id                         = -1;
+    static EdgeUniqueId edgeUidToBePoped{-1};
+    static YamlEdge     popUpYamlEdge{};
+    EdgeUniqueId        selectedEdge{-1};
 
-    // pruning rules for dst port (editable in the edge popup)
-    static char edge_dst_prune_group[EDGE_MAX_PRUNE_RULES][RRUNE_RULE_NAME_MAX_LENGTH] = {};
-    static char edge_dst_prune_type[EDGE_MAX_PRUNE_RULES][RRUNE_RULE_NAME_MAX_LENGTH]  = {};
-    static int  edge_dst_prune_count                                                   = 0;
+    // handle user interaction to prepare for the popup
     if (ImNodes::IsLinkHovered(&selectedEdge) && ImGui::IsMouseDoubleClicked(0))
     {
         assert(selectedEdge != -1);
         SPDLOG_INFO("Edge with EdgeUid[{}] has been double clicked", selectedEdge);
         edgeUidToBePoped = selectedEdge;
-        // Initialize edge popup buffers from the edge's current YAML data
         if (m_edges.contains(selectedEdge))
         {
-            YamlEdge& ye = m_edges.at(selectedEdge).GetYamlEdge();
-            // src
-            strncpy(edge_src_node_name, ye.m_yamlSrcPort.m_nodeName.c_str(),
-                    sizeof(edge_src_node_name) - 1);
-            edge_src_node_id = static_cast<int>(ye.m_yamlSrcPort.m_nodeYamlId);
-            strncpy(edge_src_port_name, ye.m_yamlSrcPort.m_portName.c_str(),
-                    sizeof(edge_src_port_name) - 1);
-            edge_src_port_id = static_cast<int>(ye.m_yamlSrcPort.m_portYamlId);
-            // dst
-            strncpy(edge_dst_node_name, ye.m_yamlDstPort.m_nodeName.c_str(),
-                    sizeof(edge_dst_node_name) - 1);
-            edge_dst_node_id = static_cast<int>(ye.m_yamlDstPort.m_nodeYamlId);
-            strncpy(edge_dst_port_name, ye.m_yamlDstPort.m_portName.c_str(),
-                    sizeof(edge_dst_port_name) - 1);
-            edge_dst_port_id = static_cast<int>(ye.m_yamlDstPort.m_portYamlId);
-            // dst pruning rules init
-            edge_dst_prune_count = (int)std::min<size_t>(ye.m_yamlDstPort.m_PruningRules.size(),
-                                                         (size_t)EDGE_MAX_PRUNE_RULES);
-            for (int pi = 0; pi < edge_dst_prune_count; ++pi)
-            {
-                const YamlPruningRule& pr = ye.m_yamlDstPort.m_PruningRules[pi];
-                strncpy(edge_dst_prune_group[pi], pr.m_Group.c_str(),
-                        sizeof(edge_dst_prune_group[pi]) - 1);
-                strncpy(edge_dst_prune_type[pi], pr.m_Type.c_str(),
-                        sizeof(edge_dst_prune_type[pi]) - 1);
-            }
-
-            ImGui::OpenPopup("Edge Info Editor");
+            popUpYamlEdge = m_edges.at(selectedEdge).GetYamlEdge();
             ImGui::SetNextWindowPos(ImGui::GetMousePos());
+            ImGui::OpenPopup("Edge Info Editor");
         }
     }
 
-    // Edge editor popup modal
-    if (ImGui::BeginPopupModal("Edge Info Editor", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    ImGuiIO& io                    = ImGui::GetIO();
+    ImVec2   mainWindowDisplaySize = io.DisplaySize;
+    ImGui::SetNextWindowSize(ImVec2{mainWindowDisplaySize.x / 4, mainWindowDisplaySize.y / 4});
+
+    if (ImGui::BeginPopupModal("Edge Info Editor", nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_HorizontalScrollbar))
     {
         ImGui::Text("Edge UID: %d", edgeUidToBePoped);
         ImGui::Separator();
 
-        // Source Port (read-only) - display in a 2-column table: Label | Value
+        // Source Port (read-only)
         ImGui::TextUnformatted("Source Port:");
-        // enforce fixed column widths: label column fixed, value column takes remaining space
-        {
-            const float     availW    = ImGui::GetContentRegionAvail().x;
-            const float     labelColW = 100.0f; // px for "Label" column
-            const float     valueColW = std::max(80.0f, availW - labelColW - 8.0f);
-            ImGuiTableFlags tableFlags =
-                ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingStretchSame;
-            if (ImGui::BeginTable("edge_src_table", 2, tableFlags))
-            {
-                ImGui::TableSetupColumn("label", ImGuiTableColumnFlags_WidthFixed, labelColW);
-                ImGui::TableSetupColumn("value", ImGuiTableColumnFlags_WidthFixed, valueColW);
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("NodeId");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("%d", edge_src_node_id);
-
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("NodeName");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(edge_src_node_name);
-
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("PortId");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("%d", edge_src_port_id);
-
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("PortName");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(edge_src_port_name);
-
-                ImGui::EndTable();
-            }
-        }
+        ImGui::Text("NodeId: %d", popUpYamlEdge.m_yamlSrcPort.m_nodeYamlId);
+        ImGui::TextUnformatted((std::string("NodeName: ") + popUpYamlEdge.m_yamlSrcPort.m_nodeName).c_str());
+        ImGui::Text("PortId: %d", popUpYamlEdge.m_yamlSrcPort.m_portYamlId);
+        ImGui::TextUnformatted((std::string("PortName: ") + popUpYamlEdge.m_yamlSrcPort.m_portName).c_str());
 
         ImGui::Separator();
 
         // Destination Port (read-only)
         ImGui::TextUnformatted("Destination Port:");
-        // enforce fixed column widths for destination table as well
-        const float     availW    = ImGui::GetContentRegionAvail().x;
-        const float     labelColW = 100.0f;
-        const float     valueColW = std::max(80.0f, availW - labelColW - 8.0f);
-        ImGuiTableFlags tableFlags =
-            ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedFit;
-        if (ImGui::BeginTable("edge_dst_table", 2, tableFlags))
-        {
-            ImGui::TableSetupColumn("label", ImGuiTableColumnFlags_WidthFixed, labelColW);
-            ImGui::TableSetupColumn("value", ImGuiTableColumnFlags_WidthFixed, valueColW);
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-            ImGui::TextUnformatted("NodeId");
-            ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%d", edge_dst_node_id);
-
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-            ImGui::TextUnformatted("NodeName");
-            ImGui::TableSetColumnIndex(1);
-            ImGui::TextUnformatted(edge_dst_node_name);
-
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-            ImGui::TextUnformatted("PortId");
-            ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%d", edge_dst_port_id);
-
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-            ImGui::TextUnformatted("PortName");
-            ImGui::TableSetColumnIndex(1);
-            ImGui::TextUnformatted(edge_dst_port_name);
-
-            ImGui::EndTable();
-        }
+        ImGui::Text("NodeId: %d", popUpYamlEdge.m_yamlDstPort.m_nodeYamlId);
+        ImGui::TextUnformatted((std::string("NodeName: ") + popUpYamlEdge.m_yamlDstPort.m_nodeName).c_str());
+        ImGui::Text("PortId: %d", popUpYamlEdge.m_yamlDstPort.m_portYamlId);
+        ImGui::TextUnformatted((std::string("PortName: ") + popUpYamlEdge.m_yamlDstPort.m_portName).c_str());
 
         ImGui::Separator();
         ImGui::TextUnformatted("Destination Port Pruning Rules:");
-        // allow removing one rule per-frame (deferred index)
+
         int remove_prune_idx = -1;
-        for (int i = 0; i < edge_dst_prune_count; ++i)
+        for (int i = 0; i < (int)popUpYamlEdge.m_yamlDstPort.m_PruningRules.size(); ++i)
         {
-            // unique labels
-            std::string grp_label = std::string("Group ##dst_prune_grp_") + std::to_string(i);
-            std::string typ_label = std::string("Type  ##dst_prune_typ_") + std::to_string(i);
-            ImGui::InputText(grp_label.c_str(), edge_dst_prune_group[i],
-                             sizeof(edge_dst_prune_group[i]));
+            ImGui::Text(popUpYamlEdge.m_yamlDstPort.m_PruningRules[i].m_Group.c_str());
             ImGui::SameLine();
-            ImGui::InputText(typ_label.c_str(), edge_dst_prune_type[i],
-                             sizeof(edge_dst_prune_type[i]));
+            ImGui::Text(popUpYamlEdge.m_yamlDstPort.m_PruningRules[i].m_Type.c_str());
             ImGui::SameLine();
             if (ImGui::SmallButton((std::string("Remove") + std::to_string(i)).c_str()))
             {
@@ -1507,26 +1406,17 @@ void NodeEditor::HandleEdgeInfoEditing()
         }
         if (remove_prune_idx != -1)
         {
-            for (int j = remove_prune_idx; j + 1 < edge_dst_prune_count; ++j)
-            {
-                strncpy(edge_dst_prune_group[j], edge_dst_prune_group[j + 1],
-                        sizeof(edge_dst_prune_group[j]) - 1);
-                strncpy(edge_dst_prune_type[j], edge_dst_prune_type[j + 1],
-                        sizeof(edge_dst_prune_type[j]) - 1);
-            }
-            // clear last
-            edge_dst_prune_group[edge_dst_prune_count - 1][0] = '\0';
-            edge_dst_prune_type[edge_dst_prune_count - 1][0]  = '\0';
-            edge_dst_prune_count -= 1;
+            popUpYamlEdge.m_yamlDstPort.m_PruningRules.erase(
+                popUpYamlEdge.m_yamlDstPort.m_PruningRules.begin() + remove_prune_idx);
         }
+
         ImGui::Spacing();
-        if (edge_dst_prune_count < EDGE_MAX_PRUNE_RULES)
+
+        if (popUpYamlEdge.m_yamlDstPort.m_PruningRules.size() < EDGE_MAX_PRUNE_RULES)
         {
-            if (ImGui::Button("Add Prune Rule"))
+            if (ImGui::SmallButton("New"))
             {
-                edge_dst_prune_group[edge_dst_prune_count][0] = '\0';
-                edge_dst_prune_type[edge_dst_prune_count][0]  = '\0';
-                edge_dst_prune_count += 1;
+                SPDLOG_ERROR("New Pruning Rule is not implemented!");
             }
         }
 
@@ -1541,27 +1431,22 @@ void NodeEditor::HandleEdgeInfoEditing()
             if (ImGui::Button("Save", ImVec2(btnW, 0)))
             {
                 // Commit edited values back into the edge's YamlEdge
-                YamlEdge& ye = m_edges.at(edgeUidToBePoped).GetYamlEdge();
-
-                // commit dst pruning rules
-                ye.m_yamlDstPort.m_PruningRules.clear();
-                for (int i = 0; i < edge_dst_prune_count; ++i)
+                if (m_edges.contains(edgeUidToBePoped))
                 {
-                    YamlPruningRule pr;
-                    pr.m_Group = std::string(edge_dst_prune_group[i]);
-                    pr.m_Type  = std::string(edge_dst_prune_type[i]);
-                    ye.m_yamlDstPort.m_PruningRules.push_back(std::move(pr));
+                    m_edges.at(edgeUidToBePoped).GetYamlEdge() = popUpYamlEdge;
                 }
-
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
+            ImGui::SetNextItemShortcut(ImGuiKey_Escape);
             if (ImGui::Button("Cancel", ImVec2(btnW, 0)))
             {
                 ImGui::CloseCurrentPopup();
             }
         }
+
         ImGui::EndPopup();
+        
     }
 }
 
