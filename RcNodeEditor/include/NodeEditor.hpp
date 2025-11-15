@@ -74,6 +74,8 @@ private:
     void HandleNodeInfoEditing();
     void HandleEdgeInfoEditing();
     void HandleZooming();
+    bool AddNewPruningRule(const std::string& newPruningGroup, const std::string& newPruningType,
+                           std::unordered_map<std::string, std::set<std::string>>& allPruningRule);
 
 private:
     std::unordered_map<NodeUniqueId, Node> m_nodes; // store nodes that will be rendered on canvas

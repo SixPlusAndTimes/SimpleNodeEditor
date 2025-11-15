@@ -68,6 +68,19 @@ struct UniqueIdGenerator
         return m_Uid++;
     }
 };
+template<typename T>
+size_t GetMatchedIndex(const std::vector<T>& inputVec, const T& comp)
+{
+    for (size_t index = 0; index < inputVec.size(); ++index)
+    {
+        if (inputVec[index] == comp) 
+        {
+            return index;
+        }
+    }
+    SPDLOG_INFO("no matched index, comp[{}]", comp);
+    return std::numeric_limits<size_t>::max();
+}
 
 inline void DumpEdge(const Edge& edge)
 {

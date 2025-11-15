@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <set>
 #include <algorithm>
+#include "imgui_stdlib.h"
 #include <numeric>
 // Windows headers should come after STL to avoid macro conflicts
 #define NOMINMAX  // Prevent Windows from defining min/max macros
@@ -1126,17 +1127,47 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
     SPDLOG_ERROR("RestorePruning done");
 }
 
+bool NodeEditor::AddNewPruningRule(const std::string& newPruningGroup, const std::string& newPruningType,
+                                   std::unordered_map<std::string, std::set<std::string>>& allPruningRule)
+{
+    if (newPruningGroup.empty() || newPruningType.empty())
+    {
+        return false;
+    }
+
+    if (allPruningRule.contains(newPruningGroup))
+    {
+        if (allPruningRule.at(newPruningGroup).contains(newPruningType))
+        {
+            SPDLOG_WARN("try to add exised pruning rule");
+            return false;
+        }
+        else
+        {
+            allPruningRule.at(newPruningGroup).insert(newPruningType);
+        }
+    }
+    else
+    {
+        allPruningRule.emplace(newPruningGroup, std::set{newPruningType});
+    }
+
+    return true;
+}
 void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
 {
-    ImVec2 pruningRuleEditorWindowSize{mainWindowDisplaySize.x / 5, mainWindowDisplaySize.y / 5};
+    ImVec2 pruningRuleEditorWindowSize{mainWindowDisplaySize.x / 4, mainWindowDisplaySize.y / 4};
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
     // ImGuiCond_Appearing must be set, otherwise the window can not be moved or resized
     ImGui::SetNextWindowPos(ImVec2(30.f, 30.f), ImGuiCond_Appearing);
     ImGui::SetNextWindowSize(pruningRuleEditorWindowSize, ImGuiCond_Appearing);
     ImGui::Begin("PruningRuleEdit", nullptr, ImGuiWindowFlags_None);
-
-    // Pruning rules UI: show each group and a combo to pick the active type.
-    ImGui::TextUnformatted("Pruning Rules");
+    static bool editing = false;
+    ImGui::TextUnformatted("Pruning Rules"); ImGui::SameLine();
+    if (ImGui::SmallButton("New"))
+    {
+        editing = true;
+    }
     ImGui::Separator();
 
     for (auto& groupPair : m_allPruningRules)
@@ -1144,27 +1175,20 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
         const std::string            group    = groupPair.first;
         const std::set<std::string>& typesSet = groupPair.second;
 
-        ImGui::TextUnformatted(group.c_str());
-        ImGui::SameLine();
-        // copy set into vector to allow indexed access in the combo
         std::vector<std::string> types(typesSet.begin(), typesSet.end());
-
-        std::string& current = m_currentPruninngRule.at(group);
-        const char*  preview = current.empty() ? "(none)" : current.c_str();
-
-        ImGui::PushID(group.c_str());
-        if (ImGui::BeginCombo("##prune_combo", preview))
+        std::string treeRootNodeName{group};
+        if (ImGui::TreeNodeEx(treeRootNodeName.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Bullet))
         {
-            for (size_t i = 0; i < types.size(); ++i)
+            for (size_t iterIndex = 0; iterIndex < types.size(); ++iterIndex)
             {
-                if (ImGui::Selectable(types[i].c_str()))
+                bool isSelected = iterIndex == GetMatchedIndex(types, m_currentPruninngRule.at(group));
+                if (ImGui::Selectable(types[iterIndex].c_str(), isSelected))
                 {
-                    if (m_currentPruninngRule[group] != types[i])
+                    if (m_currentPruninngRule[group] != types[iterIndex])
                     {
                         SPDLOG_INFO("Select a different pruning rule, change the grapgh  ...");
                         std::string originType{m_currentPruninngRule[group]};
-                        m_currentPruninngRule[group] = types[i];
-
+                        m_currentPruninngRule[group] = types[iterIndex];
                         // m_nodes and m_edges can not pass by reference, see the logic of
                         // ApplyPruningRule: erase elem of m_nodes and m_edges in the iteration, but
                         // has not handled the erased iterator properly
@@ -1180,10 +1204,33 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
                     }
                 }
             }
-            ImGui::EndCombo();
+            ImGui::TreePop();
         }
-        ImGui::PopID();
         ImGui::Separator();
+    }
+
+    static std::string newPruneGroup{};
+    static std::string newPruneType{};
+    if (editing)
+    {
+        ImGui::PushItemWidth(50.f);
+        ImGui::InputText("New Group", &newPruneGroup); ImGui::SameLine();
+        ImGui::InputText("New Type", &newPruneType); ImGui::SameLine();
+        ImGui::SetNextItemShortcut(ImGuiKey_Enter);
+        if (ImGui::Button("Done"))
+        {
+            if (AddNewPruningRule(newPruneGroup, newPruneType, m_allPruningRules))
+            {
+                if (!m_currentPruninngRule.contains(newPruneGroup))
+                {
+                    m_currentPruninngRule[newPruneGroup] = newPruneType;
+                }
+            }
+            editing = false;
+            newPruneGroup.clear();
+            newPruneType.clear();
+        }
+        ImGui::PopItemWidth();
     }
 
     ImGui::End(); // end of pruningRuleEditorWindow
