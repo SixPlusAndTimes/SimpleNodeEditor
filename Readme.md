@@ -40,11 +40,11 @@ If you want intall it at another dir, just modify the default intallation path i
 
 # TODOS
 
-[x] port口名字显示时排版美化
-[x] pipeline name 编辑和保存
-[x] Node Edge 属性的显示和编辑功能 
-[x] node Edge 的裁剪功能
-[x] zoom in out 功能
-[x] 手动toposort的功能，添加用户输入处理的逻辑？ 按下 S 键， 重新toposort
-[x] file drop 功能
-[ ] 截屏功能?
+- [x] port口名字显示时排版美化
+- [x] pipeline name 编辑和保存
+- [x] Node Edge 属性的显示和编辑功能 
+- [x] node Edge 的裁剪功能
+- [x] zoom in out 功能
+- [x] 手动toposort的功能，添加用户输入处理的逻辑？ 按下 S 键， 重新toposort
+- [x] file drop 功能
+- [ ] 截屏功能?
