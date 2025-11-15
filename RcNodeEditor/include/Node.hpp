@@ -206,7 +206,7 @@ public:
     std::vector<OutputPort>&       GetOutputPorts();
     InputPort*                     GetInputPort(PortUniqueId portUid);
     OutputPort*                    GetOutputPort(PortUniqueId portUid);
-    std::vector<EdgeUniqueId>      GetAllEdges() const;
+    std::vector<EdgeUniqueId>      GetAllEdgeUids() const;
     float                          GetNodeWidth();
 
     PortUniqueId    FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const;

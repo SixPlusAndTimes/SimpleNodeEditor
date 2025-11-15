@@ -205,7 +205,7 @@ float Node::GetNodeWidth()
     return m_nodeWidth.value();
 }
 
-std::vector<EdgeUniqueId> Node::GetAllEdges() const
+std::vector<EdgeUniqueId> Node::GetAllEdgeUids() const
 {
     std::vector<EdgeUniqueId> edges{};
 

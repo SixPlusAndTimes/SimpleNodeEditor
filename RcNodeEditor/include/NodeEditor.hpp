@@ -69,6 +69,7 @@ private:
     [[nodiscard]] bool LoadPipelineFromFile(const std::string& filePath);
     void               ClearCurrentPipeLine();
 
+    void SyncPruningRules(const Node& node);
     void SyncPruningRuleBetweenNodeAndEdge(const Node& node, Edge& edge);
     void HandleOtherUserInputs();
     void HandleNodeInfoEditing();

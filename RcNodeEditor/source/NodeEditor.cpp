@@ -177,7 +177,7 @@ bool NodeEditor::IsAllEdgesWillBePruned(NodeUniqueId                            
                                         const std::unordered_set<EdgeUniqueId>& shouldBeDeleteEdges)
 {
     const Node&                      node  = m_nodes.at(nodeUid);
-    const std::vector<EdgeUniqueId>& edges = node.GetAllEdges();
+    const std::vector<EdgeUniqueId>& edges = node.GetAllEdgeUids();
 
     bool ret = true;
     for (EdgeUniqueId edgeUid : edges)
@@ -645,8 +645,8 @@ bool NodeEditor::IsInportAlreadyHasEdge(PortUniqueId portUid)
     return false;
 }
 
-std::optional<YamlPruningRule> GetMatchedPruningRuleByGroup(
-    const YamlPruningRule& findRule, const std::vector<YamlPruningRule>& ruleContainer)
+std::optional<YamlPruningRule*> GetMatchedPruningRuleByGroup(
+    const YamlPruningRule& findRule, std::vector<YamlPruningRule>& ruleContainer)
 {
     auto iter = std::find_if(ruleContainer.begin(), ruleContainer.end(),
                              [&findRule](const YamlPruningRule& comp)
@@ -654,7 +654,7 @@ std::optional<YamlPruningRule> GetMatchedPruningRuleByGroup(
 
     if (iter != ruleContainer.end())
     {
-        return *iter;
+        return &*iter;
     }
     return std::nullopt;
 }
@@ -670,18 +670,19 @@ void NodeEditor::SyncPruningRuleBetweenNodeAndEdge(const Node& node, Edge& edge)
                                                 edge.GetYamlEdge().m_yamlDstPort.m_PruningRules);
         if (ret)
         {
-            if (ret.value().m_Type != pruningRule.m_Type)
+            if (ret.value()->m_Type != pruningRule.m_Type)
             {
-                SPDLOG_ERROR(
-                    "Pruning rules confliced, check it! nodeUid[{}] nodeName[{}] "
+                SPDLOG_WARN(
+                    "Pruning rules confliced, edge's rule will be overried! nodeUid[{}] nodeName[{}] "
                     "pruning_mGroup[{}] pruning_mType[{}];"
                     "edgeUid[{}] edgeSrcPortName[{}] edgeDstPortName[{}] pruning_mGroup[{}] "
                     "pruning_mType[{}]",
                     node.GetNodeUniqueId(), node.GetNodeTitle(), pruningRule.m_Group,
                     pruningRule.m_Type, edge.GetEdgeUniqueId(),
                     edge.GetYamlEdge().m_yamlSrcPort.m_portName,
-                    edge.GetYamlEdge().m_yamlDstPort.m_portName, ret.value().m_Group,
-                    ret.value().m_Type);
+                    edge.GetYamlEdge().m_yamlDstPort.m_portName, ret.value()->m_Group,
+                    ret.value()->m_Type);
+                ret.value()->m_Type = pruningRule.m_Type;
             }
         }
         else
@@ -1036,7 +1037,7 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
     {
         const NodeUniqueId nodeUid = it->first;
         Node&              node    = it->second;
-
+        bool               erasedOne = false;
         for (const auto& pruningRule : node.GetYamlNode().m_PruningRules)
         {
             if (pruningRule.m_Group == changedGroup && pruningRule.m_Type == newType)
@@ -1064,19 +1065,16 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
                     }
 
                     it = m_nodesPruned.erase(it);
+                    erasedOne = true;
                 }
                 else
                 {
                     SPDLOG_ERROR("Pruned Node existed in m_nodesMap with nodeuid[{}], check it!",
                                  nodeUid);
-                    ++it;
                 }
             }
-            else
-            {
-                ++it;
-            }
         }
+        if (!erasedOne) ++it;
     }
 
     // Restore pruned edges and reattach them to ports.
@@ -1237,6 +1235,14 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
     ImGui::PopStyleVar();
 }
 
+void NodeEditor::SyncPruningRules(const Node& node)
+{
+    for (EdgeUniqueId edgeUid : node.GetAllEdgeUids())
+    {
+        SyncPruningRuleBetweenNodeAndEdge(node, m_edges.at(edgeUid));
+    }
+}
+
 void NodeEditor::HandleNodeInfoEditing()
 {
     static NodeUniqueId nodeUidToBePoped{-1};
@@ -1265,16 +1271,18 @@ void NodeEditor::HandleNodeInfoEditing()
     ImGui::SetNextWindowSize(ImVec2{mainWindowDisplaySize.x / 4, mainWindowDisplaySize.y / 4});
     if (ImGui::BeginPopupModal("Node Info Editor", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_HorizontalScrollbar))
     {
+        /// show basic infos
         ImGui::Text("NodeInfoEditor");
         ImGui::Separator();
 
         ImGui::Text("NodeUid: %d", nodeUidToBePoped);
         ImGui::Text("Name: %s", popUpYamlNode.m_nodeName.c_str());
-        ImGui::Checkbox("IsSource ", reinterpret_cast<bool*>(&popUpYamlNode.m_isSrcNode));
         ImGui::Text("YamlId: %d", popUpYamlNode.m_nodeYamlId);
         ImGui::Text("YamlType: %d", popUpYamlNode.m_nodeYamlType);
+        ImGui::Checkbox("IsSource ", reinterpret_cast<bool*>(&popUpYamlNode.m_isSrcNode));
 
         ImGui::Separator();
+
         ImGui::TextUnformatted("Properties: ");
         for (size_t i = 0; i < popUpYamlNode.m_Properties.size(); ++i)
         {
@@ -1284,7 +1292,7 @@ void NodeEditor::HandleNodeInfoEditing()
             ImGui::InputText(prop_label.c_str(), &popUpYamlNode.m_Properties[i].m_propertyValue);
         }
 
-        // Editable pruning rules
+        // PruningRule Show
         ImGui::Separator();
         ImGui::TextUnformatted("Pruning Rules:");
         int remove_node_prune_idx = -1;
@@ -1294,6 +1302,7 @@ void NodeEditor::HandleNodeInfoEditing()
             ImGui::PushItemWidth(50.f);
             ImGui::TextUnformatted(iter->m_Group.c_str ()); ImGui::SameLine();
             ImGui::TextUnformatted(iter->m_Type.c_str()); ImGui::SameLine();
+            // PruningRule Delete
             if (ImGui::SmallButton((std::string("Remove").c_str())))
             {
                 shouldBeDeleted = iter;
@@ -1301,6 +1310,7 @@ void NodeEditor::HandleNodeInfoEditing()
             ImGui::PopItemWidth();
         }
 
+        // TODU: remove prunerule should also be synced to edges!
         if (shouldBeDeleted != popUpYamlNode.m_PruningRules.end())
         {
             popUpYamlNode.m_PruningRules.erase(shouldBeDeleted);
@@ -1308,11 +1318,79 @@ void NodeEditor::HandleNodeInfoEditing()
 
         ImGui::Spacing();
 
+        // pruinig rule add
         if (popUpYamlNode.m_PruningRules.size() < EDGE_MAX_PRUNE_RULES)
         {
+
             if (ImGui::SmallButton("New"))
             {
-                SPDLOG_ERROR("Not Implemented");
+                ImGui::SetNextWindowPos(ImGui::GetMousePos(), ImGuiCond_Appearing);
+                if (!m_allPruningRules.empty()) { ImGui::OpenPopup("Add Pruning Rule"); }
+            }
+
+            // Modal popup: choose a group/type from m_allPruningRules 
+            if (ImGui::BeginPopupModal("Add Pruning Rule", nullptr,
+                                       ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                std::vector<std::string_view> groups{(m_allPruningRules | std::views::keys).begin(),
+                                    (m_allPruningRules | std::views::keys).end()};
+                static int selectedGroupIndex = 0;
+                if (ImGui::BeginCombo("Group", groups[selectedGroupIndex].data()))
+                {
+                    for (size_t i = 0; i < groups.size(); ++i)
+                    {
+                        bool isSelelected = (selectedGroupIndex == i);
+                        if (ImGui::Selectable(groups[i].data(), isSelelected)) selectedGroupIndex = i;
+                        if (isSelelected) ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+
+                const auto& typeSet = m_allPruningRules.at(groups[selectedGroupIndex].data());
+                std::vector<std::string_view> types{typeSet.begin(), typeSet.end()};
+                static int selectedTypeIndex = 0;
+                // types for selected group
+                if (ImGui::BeginCombo("Type", types[selectedTypeIndex].data()))
+                {
+                    for (int i = 0; i < (int)types.size(); ++i)
+                    {
+                        bool is_sel = (selectedTypeIndex == i);
+                        if (ImGui::Selectable(types[i].data(), is_sel)) selectedTypeIndex = i;
+                        if (is_sel) ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+
+                ImGui::Separator();
+
+                if (ImGui::Button("Done") )
+                {
+                    std::string_view chosenGroup = groups.empty() ? std::string() : groups[selectedGroupIndex];
+                    std::string_view chosenType = types[selectedTypeIndex];
+
+                    if (!chosenGroup.empty() && !chosenType.empty())
+                    {
+                        // avoid duplicates
+                        bool addIt = true;
+                        for (auto& [iterGroup, iterType] : popUpYamlNode.m_PruningRules)
+                        {
+                            if (iterGroup == chosenGroup)
+                            {
+                                SPDLOG_WARN("This rule[Group[{}],Type[{}]] belongs to the same group may override the original one !", chosenGroup, chosenType);
+                                iterType = std::string(chosenType.data());
+                                addIt = false;
+                                break;
+                            }
+                        }
+                        if (addIt) popUpYamlNode.m_PruningRules.push_back({chosenGroup.data(), chosenType.data()});
+                    }
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::SameLine();
+                ImGui::SetNextItemShortcut(ImGuiKey_Escape);
+                if (ImGui::Button("Cancel")) { ImGui::CloseCurrentPopup(); }
+
+                ImGui::EndPopup();
             }
         }
 
@@ -1327,8 +1405,13 @@ void NodeEditor::HandleNodeInfoEditing()
             if (ImGui::Button("Save", ImVec2(btnW, 0)))
             {
                 // Commit edited values back into the node's YamlNode
-                YamlNode& yn      = m_nodes.at(nodeUidToBePoped).GetYamlNode();
-                yn = popUpYamlNode;
+                m_nodes.at(nodeUidToBePoped).GetYamlNode() = popUpYamlNode;
+                // sync pruning rule between node and edges
+                SyncPruningRules(m_nodes.at(nodeUidToBePoped));
+                if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))
+                {
+                    SPDLOG_INFO("ApplyPruningRuleSuccess");
+                }
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
@@ -1399,15 +1482,6 @@ void NodeEditor::HandleEdgeInfoEditing()
             ImGui::SameLine();
             ImGui::Text(popUpYamlEdge.m_yamlDstPort.m_PruningRules[i].m_Type.c_str());
             ImGui::SameLine();
-            if (ImGui::SmallButton((std::string("Remove") + std::to_string(i)).c_str()))
-            {
-                remove_prune_idx = i;
-            }
-        }
-        if (remove_prune_idx != -1)
-        {
-            popUpYamlEdge.m_yamlDstPort.m_PruningRules.erase(
-                popUpYamlEdge.m_yamlDstPort.m_PruningRules.begin() + remove_prune_idx);
         }
 
         ImGui::Spacing();
