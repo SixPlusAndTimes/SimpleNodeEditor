@@ -1082,7 +1082,7 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
     {
         const EdgeUniqueId edgeUid = it->first;
         Edge&              edge    = it->second;
-
+        bool               erasedOne = false;
         for (const auto& pruningRule : edge.GetYamlEdge().m_yamlDstPort.m_PruningRules)
         {
             if (pruningRule.m_Group == changedGroup && pruningRule.m_Type == newType)
@@ -1103,21 +1103,17 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
                     // Reattach to output port
                     PortUniqueId srcPort = restoredEdge.GetSourcePortUid();
                     m_outportPorts.at(srcPort)->PushEdge(edgeUid);
-
+                    erasedOne = true;
                     it = m_edgesPruned.erase(it);
                 }
                 else
                 {
-                    SPDLOG_ERROR("Pruned edge existed in m_edgesMap with edgeuid[{}], check it!",
+                    SPDLOG_ERROR("Pruned Node existed in m_edgesMap with edgeUid[{}], check it!",
                                  edgeUid);
-                    ++it;
                 }
             }
-            else
-            {
-                ++it;
-            }
         }
+        if (!erasedOne) ++it;
     }
 
     // we need topo sort after resotre nodes and edges
@@ -1597,22 +1593,42 @@ void NodeEditor::ShowPipelineName()
     auto windFlags =
         ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoMove;
     ImGui::BeginChild("PipelineFooter", ImVec2(contentWidth, footerH), 0, windFlags);
-
-    char buf[256] = {0};
-    if (!m_currentPipeLineName.empty())
-        strncpy(buf, m_currentPipeLineName.c_str(), sizeof(buf) - 1);
-
+    // show pipelinename
     ImGui::PushItemWidth(260.0f);
-    ImGui::TextUnformatted("PipelineName:");
-    ImGui::SameLine();
-    if (ImGui::InputText("##pipeline_name", buf, sizeof(buf)))
+    ImGui::TextUnformatted("PipelineName:"); ImGui::SameLine();
+    ImGui::TextColored(COLOR_RED, m_currentPipeLineName.c_str()); ImGui::SameLine();
+    ImGui::PopItemWidth();
+    static bool OpenPopUp = false;
+    if (ImGui::SmallButton("EditName"))
     {
-        m_currentPipeLineName = std::string(buf);
+        OpenPopUp = true;
+    }
+    ImGui::EndChild();
+
+    // begin popopup
+    if (OpenPopUp)
+    {
+        OpenPopUp = false;
+        ImGui::OpenPopup("PipelineNameChange");
+        ImGuiIO& io                    = ImGui::GetIO();
+        ImVec2   mainWindowDisplaySize = io.DisplaySize;
+        ImGui::SetNextWindowSize(ImVec2{mainWindowDisplaySize.x / 4, mainWindowDisplaySize.y / 4});
     }
 
-    ImGui::PopItemWidth();
-
-    ImGui::EndChild();
+    if (ImGui::BeginPopupModal("PipelineNameChange", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_HorizontalScrollbar))
+    {
+        static std::string newPipeLineName {};
+        ImGui::Text("PiepelineName: "); ImGui::SameLine();
+        ImGui::InputText("##pipelineNameInput", &newPipeLineName); ImGui::SameLine();
+        ImGui::SetNextItemShortcut(ImGuiKey_Enter);
+        if (ImGui::SmallButton("Done"))
+        {
+            m_currentPipeLineName = newPipeLineName;
+            newPipeLineName.clear();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
 }
 
 void NodeEditor::HandleOtherUserInputs()
