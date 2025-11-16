@@ -1157,10 +1157,12 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
     ImGui::SetNextWindowSize(pruningRuleEditorWindowSize, ImGuiCond_Appearing);
     ImGui::Begin("PruningRuleEdit", nullptr, ImGuiWindowFlags_None);
     static bool editing = false;
+    static bool firstShowInputText = false;
     ImGui::TextUnformatted("Pruning Rules"); ImGui::SameLine();
     if (ImGui::SmallButton("New"))
     {
         editing = true;
+        firstShowInputText = true;
     }
     ImGui::Separator();
 
@@ -1208,6 +1210,7 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
     if (editing)
     {
         ImGui::PushItemWidth(50.f);
+        if (firstShowInputText) { ImGui::SetKeyboardFocusHere(); firstShowInputText = false; }
         ImGui::InputText("New Group", &newPruneGroup); ImGui::SameLine();
         ImGui::InputText("New Type", &newPruneType); ImGui::SameLine();
         ImGui::SetNextItemShortcut(ImGuiKey_Enter);
@@ -1598,27 +1601,20 @@ void NodeEditor::ShowPipelineName()
     ImGui::TextUnformatted("PipelineName:"); ImGui::SameLine();
     ImGui::TextColored(COLOR_RED, m_currentPipeLineName.c_str()); ImGui::SameLine();
     ImGui::PopItemWidth();
-    static bool OpenPopUp = false;
     if (ImGui::SmallButton("EditName"))
     {
-        OpenPopUp = true;
-    }
-    ImGui::EndChild();
-
-    // begin popopup
-    if (OpenPopUp)
-    {
-        OpenPopUp = false;
         ImGui::OpenPopup("PipelineNameChange");
-        ImGuiIO& io                    = ImGui::GetIO();
-        ImVec2   mainWindowDisplaySize = io.DisplaySize;
+        ImVec2   mainWindowDisplaySize = ImGui::GetIO().DisplaySize;
         ImGui::SetNextWindowSize(ImVec2{mainWindowDisplaySize.x / 4, mainWindowDisplaySize.y / 4});
     }
-
-    if (ImGui::BeginPopupModal("PipelineNameChange", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_HorizontalScrollbar))
+    if (ImGui::BeginPopupModal("PipelineNameChange", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         static std::string newPipeLineName {};
         ImGui::Text("PiepelineName: "); ImGui::SameLine();
+        if (ImGui::IsWindowAppearing())
+        {
+            ImGui::SetKeyboardFocusHere();
+        }
         ImGui::InputText("##pipelineNameInput", &newPipeLineName); ImGui::SameLine();
         ImGui::SetNextItemShortcut(ImGuiKey_Enter);
         if (ImGui::SmallButton("Done"))
@@ -1629,6 +1625,7 @@ void NodeEditor::ShowPipelineName()
         }
         ImGui::EndPopup();
     }
+    ImGui::EndChild();
 }
 
 void NodeEditor::HandleOtherUserInputs()
