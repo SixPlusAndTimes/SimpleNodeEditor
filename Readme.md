@@ -48,3 +48,5 @@ If you want intall it at another dir, just modify the default intallation path i
 - [x] 手动toposort的功能，添加用户输入处理的逻辑？ 按下 S 键， 重新toposort
 - [x] file drop 功能
 - [ ] 截屏功能?
+- [ ] 可能的bug ： Edge已经被裁掉，此时它连接的Node添加了一个新的PruningRule，Edge无法同步新的pruningrule
+- [ ] 重复代码太多了

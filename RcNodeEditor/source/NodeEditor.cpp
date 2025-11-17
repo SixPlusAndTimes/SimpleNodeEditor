@@ -1026,7 +1026,7 @@ void NodeEditor::RearrangeNodesLayout(
 void NodeEditor::RestorePruning(const std::string& changedGroup, const std::string& originType,
                                 const std::string& newType)
 {
-    SPDLOG_ERROR("RestorePruning Begin");
+    SPDLOG_INFO("RestorePruning Begin");
 
     assert(originType != newType);
 
@@ -1118,7 +1118,7 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
 
     // we need topo sort after resotre nodes and edges
     m_needTopoSort = true;
-    SPDLOG_ERROR("RestorePruning done");
+    SPDLOG_INFO("RestorePruning done");
 }
 
 bool NodeEditor::AddNewPruningRule(const std::string& newPruningGroup, const std::string& newPruningType,
@@ -1317,80 +1317,74 @@ void NodeEditor::HandleNodeInfoEditing()
 
         ImGui::Spacing();
 
-        // pruinig rule add
-        if (popUpYamlNode.m_PruningRules.size() < EDGE_MAX_PRUNE_RULES)
+        if (ImGui::SmallButton("New"))
         {
+            ImGui::SetNextWindowPos(ImGui::GetMousePos(), ImGuiCond_Appearing);
+            if (!m_allPruningRules.empty()) { ImGui::OpenPopup("AddNodePruningRule"); }
+        }
 
-            if (ImGui::SmallButton("New"))
+        // Modal popup: choose a group/type from m_allPruningRules 
+        if (ImGui::BeginPopupModal("AddNodePruningRule", nullptr,
+                                    ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            std::vector<std::string_view> groups{(m_allPruningRules | std::views::keys).begin(),
+                                (m_allPruningRules | std::views::keys).end()};
+            static int selectedGroupIndex = 0;
+            if (ImGui::BeginCombo("Group", groups[selectedGroupIndex].data()))
             {
-                ImGui::SetNextWindowPos(ImGui::GetMousePos(), ImGuiCond_Appearing);
-                if (!m_allPruningRules.empty()) { ImGui::OpenPopup("Add Pruning Rule"); }
+                for (size_t i = 0; i < groups.size(); ++i)
+                {
+                    bool isSelelected = (selectedGroupIndex == i);
+                    if (ImGui::Selectable(groups[i].data(), isSelelected)) selectedGroupIndex = i;
+                    if (isSelelected) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
             }
 
-            // Modal popup: choose a group/type from m_allPruningRules 
-            if (ImGui::BeginPopupModal("Add Pruning Rule", nullptr,
-                                       ImGuiWindowFlags_AlwaysAutoResize))
+            const auto& typeSet = m_allPruningRules.at(groups[selectedGroupIndex].data());
+            std::vector<std::string_view> types{typeSet.begin(), typeSet.end()};
+            static int selectedTypeIndex = 0;
+            // types for selected group
+            if (ImGui::BeginCombo("Type", types[selectedTypeIndex].data()))
             {
-                std::vector<std::string_view> groups{(m_allPruningRules | std::views::keys).begin(),
-                                    (m_allPruningRules | std::views::keys).end()};
-                static int selectedGroupIndex = 0;
-                if (ImGui::BeginCombo("Group", groups[selectedGroupIndex].data()))
+                for (int i = 0; i < (int)types.size(); ++i)
                 {
-                    for (size_t i = 0; i < groups.size(); ++i)
-                    {
-                        bool isSelelected = (selectedGroupIndex == i);
-                        if (ImGui::Selectable(groups[i].data(), isSelelected)) selectedGroupIndex = i;
-                        if (isSelelected) ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
+                    bool is_sel = (selectedTypeIndex == i);
+                    if (ImGui::Selectable(types[i].data(), is_sel)) selectedTypeIndex = i;
+                    if (is_sel) ImGui::SetItemDefaultFocus();
                 }
+                ImGui::EndCombo();
+            }
 
-                const auto& typeSet = m_allPruningRules.at(groups[selectedGroupIndex].data());
-                std::vector<std::string_view> types{typeSet.begin(), typeSet.end()};
-                static int selectedTypeIndex = 0;
-                // types for selected group
-                if (ImGui::BeginCombo("Type", types[selectedTypeIndex].data()))
+            ImGui::Separator();
+
+            if (ImGui::Button("Done") )
+            {
+                std::string_view chosenGroup = groups.empty() ? std::string() : groups[selectedGroupIndex];
+                std::string_view chosenType = types[selectedTypeIndex];
+
+                if (!chosenGroup.empty() && !chosenType.empty())
                 {
-                    for (int i = 0; i < (int)types.size(); ++i)
+                    // avoid duplicates
+                    bool addIt = true;
+                    for (auto& [iterGroup, iterType] : popUpYamlNode.m_PruningRules)
                     {
-                        bool is_sel = (selectedTypeIndex == i);
-                        if (ImGui::Selectable(types[i].data(), is_sel)) selectedTypeIndex = i;
-                        if (is_sel) ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
-                }
-
-                ImGui::Separator();
-
-                if (ImGui::Button("Done") )
-                {
-                    std::string_view chosenGroup = groups.empty() ? std::string() : groups[selectedGroupIndex];
-                    std::string_view chosenType = types[selectedTypeIndex];
-
-                    if (!chosenGroup.empty() && !chosenType.empty())
-                    {
-                        // avoid duplicates
-                        bool addIt = true;
-                        for (auto& [iterGroup, iterType] : popUpYamlNode.m_PruningRules)
+                        if (iterGroup == chosenGroup)
                         {
-                            if (iterGroup == chosenGroup)
-                            {
-                                SPDLOG_WARN("This rule[Group[{}],Type[{}]] belongs to the same group may override the original one !", chosenGroup, chosenType);
-                                iterType = std::string(chosenType.data());
-                                addIt = false;
-                                break;
-                            }
+                            SPDLOG_WARN("This rule[Group[{}],Type[{}]] belongs to the same group may override the original one !", chosenGroup, chosenType);
+                            addIt = false;
+                            break;
                         }
-                        if (addIt) popUpYamlNode.m_PruningRules.push_back({chosenGroup.data(), chosenType.data()});
                     }
-                    ImGui::CloseCurrentPopup();
+                    if (addIt) popUpYamlNode.m_PruningRules.push_back({chosenGroup.data(), chosenType.data()});
                 }
-                ImGui::SameLine();
-                ImGui::SetNextItemShortcut(ImGuiKey_Escape);
-                if (ImGui::Button("Cancel")) { ImGui::CloseCurrentPopup(); }
-
-                ImGui::EndPopup();
+                ImGui::CloseCurrentPopup();
             }
+            ImGui::SameLine();
+            ImGui::SetNextItemShortcut(ImGuiKey_Escape);
+            if (ImGui::Button("Cancel")) { ImGui::CloseCurrentPopup(); }
+
+            ImGui::EndPopup();
         }
 
         ImGui::Separator();
@@ -1423,6 +1417,23 @@ void NodeEditor::HandleNodeInfoEditing()
         }
         ImGui::EndPopup();
     }
+}
+
+void deleteMatchedGroup(std::vector<std::string_view>& groups, const std::vector<YamlPruningRule>& pruningRules)
+{
+    std::unordered_set<std::string_view> groupsToRemove;
+    for (const auto& rule : pruningRules) {
+        groupsToRemove.insert(rule.m_Group);
+    }
+
+    groups.erase(
+        std::remove_if(groups.begin(), groups.end(),
+            [&groupsToRemove](std::string_view group) {
+                // 检查当前group是否需要被剔除
+                return groupsToRemove.count(group) > 0;
+            }),
+        groups.end()
+    );
 }
 
 void NodeEditor::HandleEdgeInfoEditing()
@@ -1472,25 +1483,105 @@ void NodeEditor::HandleEdgeInfoEditing()
         ImGui::TextUnformatted((std::string("PortName: ") + popUpYamlEdge.m_yamlDstPort.m_portName).c_str());
 
         ImGui::Separator();
-        ImGui::TextUnformatted("Destination Port Pruning Rules:");
+        ImGui::TextUnformatted("DestinationPortPruningRules:");
 
         int remove_prune_idx = -1;
-        for (int i = 0; i < (int)popUpYamlEdge.m_yamlDstPort.m_PruningRules.size(); ++i)
+        auto shouldBeDeleted = popUpYamlEdge.m_yamlDstPort.m_PruningRules.end();
+        Node& srcNode = m_nodes.at(m_edges.at(edgeUidToBePoped).GetSourceNodeUid());
+        Node& dstNode = m_nodes.at(m_edges.at(edgeUidToBePoped).GetDestinationNodeUid());
+
+        for (auto iter = popUpYamlEdge.m_yamlDstPort.m_PruningRules.begin(); iter != popUpYamlEdge.m_yamlDstPort.m_PruningRules.end(); ++iter)
         {
-            ImGui::Text(popUpYamlEdge.m_yamlDstPort.m_PruningRules[i].m_Group.c_str());
-            ImGui::SameLine();
-            ImGui::Text(popUpYamlEdge.m_yamlDstPort.m_PruningRules[i].m_Type.c_str());
-            ImGui::SameLine();
+            ImGui::PushItemWidth(50.f);
+            ImGui::TextUnformatted(iter->m_Group.c_str ()); ImGui::SameLine();
+            ImGui::TextUnformatted(iter->m_Type.c_str());
+            // PruningRule Delete
+            // onlu when the attached node does not has the pruning rule can users delete the pruning rule
+            if (!GetMatchedPruningRuleByGroup(*iter, srcNode.GetYamlNode().m_PruningRules) &&
+                !GetMatchedPruningRuleByGroup(*iter, dstNode.GetYamlNode().m_PruningRules) ) 
+            {
+                ImGui::SameLine();
+                if (ImGui::SmallButton((std::string("Remove").c_str())))
+                {
+                    shouldBeDeleted = iter;
+                }
+            }
+            ImGui::PopItemWidth();
+        }
+
+        if (shouldBeDeleted != popUpYamlEdge.m_yamlDstPort.m_PruningRules.end())
+        {
+            popUpYamlEdge.m_yamlDstPort.m_PruningRules.erase(shouldBeDeleted);
         }
 
         ImGui::Spacing();
 
-        if (popUpYamlEdge.m_yamlDstPort.m_PruningRules.size() < EDGE_MAX_PRUNE_RULES)
+        if (ImGui::SmallButton("New"))
         {
-            if (ImGui::SmallButton("New"))
+            ImGui::SetNextWindowPos(ImGui::GetMousePos(), ImGuiCond_Appearing);
+            if (!m_allPruningRules.empty()) { ImGui::OpenPopup("AddEdgePruningRule"); }
+        }
+
+                // Modal popup: choose a group/type from m_allPruningRules 
+        if (ImGui::BeginPopupModal("AddEdgePruningRule", nullptr,
+                                    ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            std::vector<std::string_view> groups{(m_allPruningRules | std::views::keys).begin(),
+                                (m_allPruningRules | std::views::keys).end()};
+            static int selectedGroupIndex = 0;
+            if (ImGui::BeginCombo("Group", groups[selectedGroupIndex].data()))
             {
-                SPDLOG_ERROR("New Pruning Rule is not implemented!");
+                for (size_t i = 0; i < groups.size(); ++i)
+                {
+                    bool isSelelected = (selectedGroupIndex == i);
+                    if (ImGui::Selectable(groups[i].data(), isSelelected)) selectedGroupIndex = i;
+                    if (isSelelected) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
             }
+
+            const auto& typeSet = m_allPruningRules.at(groups[selectedGroupIndex].data());
+            std::vector<std::string_view> types{typeSet.begin(), typeSet.end()};
+            static int selectedTypeIndex = 0;
+            // types for selected group
+            if (ImGui::BeginCombo("Type", types[selectedTypeIndex].data()))
+            {
+                for (int i = 0; i < (int)types.size(); ++i)
+                {
+                    bool is_sel = (selectedTypeIndex == i);
+                    if (ImGui::Selectable(types[i].data(), is_sel)) selectedTypeIndex = i;
+                    if (is_sel) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+
+            ImGui::Separator();
+            if (ImGui::Button("Done") )
+            {
+                std::string_view chosenGroup = groups.empty() ? std::string() : groups[selectedGroupIndex];
+                std::string_view chosenType = types[selectedTypeIndex];
+
+                if (!chosenGroup.empty() && !chosenType.empty())
+                {
+                    // avoid duplicates
+                    bool addIt = true;
+                    for (auto& [iterGroup, iterType] : popUpYamlEdge.m_yamlDstPort.m_PruningRules)
+                    {
+                        if (iterGroup == chosenGroup)
+                        {
+                            SPDLOG_WARN("This rule[Group[{}],Type[{}]] belongs to the same group may override the original one !", chosenGroup, chosenType);
+                            addIt = false;
+                            break;
+                        }
+                    }
+                    if (addIt) popUpYamlEdge.m_yamlDstPort.m_PruningRules.push_back({chosenGroup.data(), chosenType.data()});
+                }
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            ImGui::SetNextItemShortcut(ImGuiKey_Escape);
+            if (ImGui::Button("Cancel")) { ImGui::CloseCurrentPopup(); }
+            ImGui::EndPopup();
         }
 
         ImGui::Separator();
@@ -1512,10 +1603,7 @@ void NodeEditor::HandleEdgeInfoEditing()
             }
             ImGui::SameLine();
             ImGui::SetNextItemShortcut(ImGuiKey_Escape);
-            if (ImGui::Button("Cancel", ImVec2(btnW, 0)))
-            {
-                ImGui::CloseCurrentPopup();
-            }
+            if (ImGui::Button("Cancel", ImVec2(btnW, 0))) { ImGui::CloseCurrentPopup(); }
         }
 
         ImGui::EndPopup();
@@ -1648,11 +1736,7 @@ void NodeEditor::HandleOtherUserInputs()
         }
     }
 
-    // handle node editing
-    HandleNodeInfoEditing();
 
-    // handle edge editing
-    HandleEdgeInfoEditing();
 }
 
 void NodeEditor::HandleZooming()
@@ -1703,7 +1787,9 @@ void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
 
     HandleDeletingNodes();
 
-    // S : toposort; double click(left mouse button) event
+    HandleNodeInfoEditing();
+    HandleEdgeInfoEditing();
+
     HandleOtherUserInputs();
     ImGui::End(); // end of "SimpleNodeEditor"
 }
