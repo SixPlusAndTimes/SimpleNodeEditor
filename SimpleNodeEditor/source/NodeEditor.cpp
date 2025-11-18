@@ -1,6 +1,7 @@
 #include "NodeEditor.hpp"
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "imnodes_internal.h"
 #include "spdlog/spdlog.h"
 #include <cstdint>
 #include <unordered_set>
@@ -472,7 +473,7 @@ void NodeEditor::HandleAddNodes()
 
     if (ImGui::BeginPopup("add node"))
     {
-        const ImVec2 click_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
+        const ImVec2 click_pos = ImNodes::GetCurrentContext()->NodeEditorImgCtx->IO.MousePos;
 
         ImGuiComboFlags flags       = 0;
         bool            is_selected = false;
