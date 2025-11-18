@@ -7,11 +7,25 @@ Pipeline:
       NodeId : 0
       IsSrcNode: 0
       NodeType: 3
+      NodeProperty:
+      -
+        NodePropertyName: property1
+        NodePropertyValue: "1"
+      -
+        NodePropertyName: property2
+        NodePropertyValue: "2"
+      -
+        NodePropertyName: property3
+        NodePropertyValue: "3"
     - 
       NodeName: Select
       NodeId : 1
       IsSrcNode: 0
       NodeType: 2
+      NodeProperty:
+      -
+        NodePropertyName: property1
+        NodePropertyValue: "1"
     - 
       NodeName: ADD
       NodeId : 2

@@ -17,6 +17,15 @@
 
 namespace SimpleNodeEditor
 {
+void DebugDrawRect(ImRect rect)
+{
+    ImDrawList* draw_list    = ImGui::GetWindowDrawList();
+    ImU32       border_color = IM_COL32(255, 0, 0, 255);
+
+    float rounding  = 0.0f; // No corner rounding
+    float thickness = 1.0f; // Border thickness
+    draw_list->AddRect(rect.Min, rect.Max, border_color, rounding, 0, thickness);
+}
 
 // TODO : map with (nodetype,nodedescription) maybe more reasonable
 static std::unordered_map<std::string, NodeDescription>  s_nodeDescriptionsNameDesMap;
@@ -333,15 +342,6 @@ void NodeEditor::CollectPruningRules(std::vector<YamlNode> yamlNodes,
     }
 }
 
-void DebugDrawRect(ImRect rect)
-{
-    ImDrawList* draw_list    = ImGui::GetWindowDrawList();
-    ImU32       border_color = IM_COL32(255, 0, 0, 255);
-
-    float rounding  = 0.0f; // No corner rounding
-    float thickness = 1.0f; // Border thickness
-    draw_list->AddRect(rect.Min, rect.Max, border_color, rounding, 0, thickness);
-}
 
 void NodeEditor::NodeEditorInitialize()
 {
@@ -1276,7 +1276,8 @@ void NodeEditor::HandleNodeInfoEditing()
         ImGui::Separator();
 
         ImGui::Text("NodeUid: %d", nodeUidToBePoped);
-        ImGui::Text("Name: %s", popUpYamlNode.m_nodeName.c_str());
+        ImGui::Text("NodeName: "); ImGui::SameLine();
+        ImGui::InputText("##NodeName", &popUpYamlNode.m_nodeName);
         ImGui::Text("YamlId: %d", popUpYamlNode.m_nodeYamlId);
         ImGui::Text("YamlType: %d", popUpYamlNode.m_nodeYamlType);
         ImGui::Checkbox("IsSource ", reinterpret_cast<bool*>(&popUpYamlNode.m_isSrcNode));
@@ -1284,12 +1285,32 @@ void NodeEditor::HandleNodeInfoEditing()
         ImGui::Separator();
 
         ImGui::TextUnformatted("Properties: ");
-        for (size_t i = 0; i < popUpYamlNode.m_Properties.size(); ++i)
+        if (ImGui::BeginTable("PropertiesTable", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders))
         {
-            const std::string prop_label = std::string("##prop_val_") + std::to_string(i);
-            ImGui::TextUnformatted(popUpYamlNode.m_Properties[i].m_propertyName.c_str());
-            ImGui::SameLine();
-            ImGui::InputText(prop_label.c_str(), &popUpYamlNode.m_Properties[i].m_propertyValue);
+            ImGui::TableSetupColumn("Id", ImGuiTableColumnFlags_WidthFixed, 40.0f);
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableHeadersRow();
+
+            for (size_t i = 0; i < popUpYamlNode.m_Properties.size(); ++i)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                const std::string prop_id_label = std::string("##prop_id_") + std::to_string(i);
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                ImGui::InputInt(prop_id_label.c_str(), &popUpYamlNode.m_Properties[i].m_propertyId);
+
+                ImGui::TableSetColumnIndex(1);
+                const std::string prop_name_label = std::string("##prop_name_") + std::to_string(i);
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                ImGui::InputText(prop_name_label.c_str(), &popUpYamlNode.m_Properties[i].m_propertyName, ImGuiInputTextFlags_CharsNoBlank);
+
+                ImGui::TableSetColumnIndex(2);
+                const std::string prop_value_label = std::string("##prop_val_") + std::to_string(i);
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                ImGui::InputText(prop_value_label.c_str(), &popUpYamlNode.m_Properties[i].m_propertyValue);
+            }
+            ImGui::EndTable();
         }
 
         // PruningRule Show
@@ -1400,6 +1421,7 @@ void NodeEditor::HandleNodeInfoEditing()
             {
                 // Commit edited values back into the node's YamlNode
                 m_nodes.at(nodeUidToBePoped).GetYamlNode() = popUpYamlNode;
+                m_nodes.at(nodeUidToBePoped).SetNodeTitle(popUpYamlNode.m_nodeName + "_" + std::to_string(popUpYamlNode.m_nodeYamlId));
                 // sync pruning rule between node and edges
                 SyncPruningRules(m_nodes.at(nodeUidToBePoped));
                 if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))

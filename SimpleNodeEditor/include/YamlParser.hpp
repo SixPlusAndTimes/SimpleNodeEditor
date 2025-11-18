@@ -13,6 +13,34 @@ inline bool isInvalidKey(const Node& node, const std::string& key)
     return node[key] ? true : false;
 }
 template <>
+struct convert<SimpleNodeEditor::YamlNodeProperty>
+{
+    static YAML::Node encode(const SimpleNodeEditor::YamlNodeProperty& rhs)
+    {
+        YAML::Node node;
+        node.force_insert("NodePropertyName", rhs.m_propertyName);
+        node.force_insert("NodePropertyId", rhs.m_propertyId);
+        node.force_insert("NodePropertyValue", rhs.m_propertyValue);
+        return node;
+    }
+
+    static bool decode(const Node& node, SimpleNodeEditor::YamlNodeProperty& rhs)
+    {
+        if (!node.IsMap())
+        {
+            return false;
+        }
+
+        rhs.m_propertyName = node["NodePropertyName"].as<std::string>();
+        rhs.m_propertyValue  = node["NodePropertyValue"].as<std::string>();
+        // rhs.m_propertyId  = node["NodePropertyId"].as<int32_t>();
+        SPDLOG_INFO("decode yamlnodeproperty success, propertyName = [{}], propertyValue[{}] ", rhs.m_propertyName,
+                    rhs.m_propertyValue);
+        return true;
+    }
+};
+
+template <>
 struct convert<SimpleNodeEditor::YamlPruningRule>
 {
     static YAML::Node encode(const SimpleNodeEditor::YamlPruningRule& rhs)
@@ -80,7 +108,21 @@ struct convert<SimpleNodeEditor::YamlNode>
         }
         else
         {
-            SPDLOG_ERROR("invalide key {}", pruneRuleKey);
+            SPDLOG_ERROR("invalide nodePruneRule key {}", pruneRuleKey);
+        }
+
+        std::string nodePropertyKey = "NodeProperty";
+        if (isInvalidKey(node, nodePropertyKey))
+        {
+            for (YAML::const_iterator iter = node[nodePropertyKey].begin();
+                 iter != node[nodePropertyKey].end(); ++iter)
+            {
+                rhs.m_Properties.push_back(iter->as<SimpleNodeEditor::YamlNodeProperty>());
+            }
+        }
+        else
+        {
+            SPDLOG_ERROR("invalide nodeproperty key {}", nodePropertyKey);
         }
         SPDLOG_INFO(
             "decode yamlnode success, nodename = [{}], nodeYamlId[{}], issourcenode[{}], "

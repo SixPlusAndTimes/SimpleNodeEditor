@@ -168,7 +168,7 @@ Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode,
       m_outputPorts(),
       m_yamlNode(yamlNode),
       m_nodeStyle(nodeStyle),
-      m_nodeTitle(nodeDes.m_nodeName + std::to_string(m_yamlNode.m_nodeYamlId))
+      m_nodeTitle(m_yamlNode.m_nodeName + std::to_string(m_yamlNode.m_nodeYamlId))
 {
     SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid,
                 m_yamlNode.m_nodeYamlId, m_nodeTitle);
