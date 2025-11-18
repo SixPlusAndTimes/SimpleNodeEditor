@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.26)
 
 # NOTE : It works on my windows environment, do not knwo whether it also works on other platform
-set (project_name RcNodeEditor)
+set (project_name SimpleNodeEditor)
 project(${project_name})
 
 # official doc suggest that we should compile imgui's source code with ourown projects 
@@ -12,8 +12,8 @@ set (imgui_inc_path "./3rdParts/imgui/include")
 set (imnode_src_path "./3rdParts/imnode/source")
 set (imnode_inc_path "./3rdParts/imnode/include")
 # our own project's sources and includes
-set (our_own_src_path "./RcNodeEditor/source")
-set (our_own_inc_path "./RcNodeEditor/include")
+set (our_own_src_path "./SimpleNodeEditor/source")
+set (our_own_inc_path "./SimpleNodeEditor/include")
 
 aux_source_directory(${imgui_src_path} project_srcfiles)
 aux_source_directory(${imnode_src_path} project_srcfiles)
@@ -63,7 +63,7 @@ endif()
 # copy resource to bindir
 add_custom_command (
     TARGET ${project_name} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/RcNodeEditor/resource $<TARGET_FILE_DIR:${project_name}>/resource
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/SimpleNodeEditor/resource $<TARGET_FILE_DIR:${project_name}>/resource
     COMMAND_EXPAND_LISTS
 )
 message("cmakebindir = ${CMAKE_CURRENT_BINARY_DIR}")
