@@ -200,7 +200,6 @@ public:
     InputPort*                     GetInputPort(PortUniqueId portUid);
     OutputPort*                    GetOutputPort(PortUniqueId portUid);
     std::vector<EdgeUniqueId>      GetAllEdgeUids() const;
-    float                          GetNodeWidth();
 
     PortUniqueId    FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const;
     PortUniqueId    FindPortUidAmongInports(YamlPort::PortYamlId portYamlId) const;
@@ -210,8 +209,6 @@ public:
     const YamlNode& GetYamlNode() const;
 
 private:
-    void CalcNodeWidth();
-
     // imnode lib need nodeuid to differentiate between nodes
     NodeUniqueId m_nodeUid; // used for imnode to draw UI
     NodeType     m_nodeType;

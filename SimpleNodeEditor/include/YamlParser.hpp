@@ -8,7 +8,7 @@
 namespace YAML
 {
 
-inline bool isInvalidKey(const Node& node, const std::string& key)
+inline bool isValidKey(const Node& node, const std::string& key)
 {
     return node[key] ? true : false;
 }
@@ -26,17 +26,22 @@ struct convert<SimpleNodeEditor::YamlNodeProperty>
 
     static bool decode(const Node& node, SimpleNodeEditor::YamlNodeProperty& rhs)
     {
-        if (!node.IsMap())
-        {
-            return false;
+        bool ret = true;
+        if (!node.IsMap()) {
+            SPDLOG_INFO("decode yamlnodeproperty fail not a sequence");
+            ret = false;
         }
 
-        rhs.m_propertyName = node["NodePropertyName"].as<std::string>();
-        rhs.m_propertyValue  = node["NodePropertyValue"].as<std::string>();
-        // rhs.m_propertyId  = node["NodePropertyId"].as<int32_t>();
-        SPDLOG_INFO("decode yamlnodeproperty success, propertyName = [{}], propertyValue[{}] ", rhs.m_propertyName,
+        if (isValidKey(node, "NodePropertyName") && isValidKey(node, "NodePropertyValue"))
+        {
+            rhs.m_propertyName = node["NodePropertyName"].as<std::string>();
+            rhs.m_propertyValue  = node["NodePropertyValue"].as<std::string>();
+        }
+        rhs.m_propertyId  = 0; // hard code here
+
+        SPDLOG_INFO("decode yamlnodeproperty done, propertyName = [{}], propertyValue[{}] ", rhs.m_propertyName,
                     rhs.m_propertyValue);
-        return true;
+        return ret;
     }
 };
 
@@ -53,16 +58,25 @@ struct convert<SimpleNodeEditor::YamlPruningRule>
 
     static bool decode(const Node& node, SimpleNodeEditor::YamlPruningRule& rhs)
     {
+        bool ret = true;
         if (!node.IsMap())
         {
-            return false;
+            ret = false;
         }
 
-        rhs.m_Group = node["group"].as<std::string>();
-        rhs.m_Type  = node["type"].as<std::string>();
-        SPDLOG_INFO("decode yamlpruningrule success, group = [{}], type[{}] ", rhs.m_Group,
+        if (isValidKey(node, "group") && isValidKey(node, "type"))
+        {
+            rhs.m_Group = node["group"].as<std::string>();
+            rhs.m_Type  = node["type"].as<std::string>();
+        }
+        else
+        {
+            SPDLOG_WARN("invalid key when parsing PruningRule");
+        }
+
+        SPDLOG_INFO("decode yamlpruningrule done, group = [{}], type[{}] ", rhs.m_Group,
                     rhs.m_Type);
-        return true;
+        return ret;
     }
 };
 
@@ -87,18 +101,29 @@ struct convert<SimpleNodeEditor::YamlNode>
 
     static bool decode(const Node& node, SimpleNodeEditor::YamlNode& rhs)
     {
+        bool ret = true;
         if (!node.IsMap())
         {
-            return false;
+            ret = false;
         }
 
-        rhs.m_nodeName     = node["NodeName"].as<std::string>();
-        rhs.m_nodeYamlId   = node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>();
-        rhs.m_isSrcNode    = node["IsSrcNode"].as<int>();
-        rhs.m_nodeYamlType = node["NodeType"].as<SimpleNodeEditor::YamlNodeType>();
+        if (isValidKey(node, "NodeName") && isValidKey(node, "NodeId") && isValidKey(node, "IsSrcNode") && isValidKey(node, "NodeType"))
+        {
+            rhs.m_nodeName     = node["NodeName"].as<std::string>();
+            rhs.m_nodeYamlId   = node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>();
+            rhs.m_isSrcNode    = node["IsSrcNode"].as<int>();
+            rhs.m_nodeYamlType = node["NodeType"].as<SimpleNodeEditor::YamlNodeType>();
+        }
+        else
+        {
+            ret = false;
+            SPDLOG_ERROR("invalid required key when parsing YamlNode, check it! "
+                         "isValidKey(node, \"NodeName\")[{}] isValidKey(node, \"NodeId\")[{}] isValidKey(node, \"IsSrcNode\")[{}] isValidKey(node, \"NodeType\")[{}]",
+                         isValidKey(node, "NodeName"), isValidKey(node, "NodeId"), isValidKey(node, "IsSrcNode"), isValidKey(node, "NodeType"));
+        }
 
         std::string pruneRuleKey = "PruneRule";
-        if (isInvalidKey(node, pruneRuleKey))
+        if (isValidKey(node, pruneRuleKey))
         {
             for (YAML::const_iterator iter = node[pruneRuleKey].begin();
                  iter != node[pruneRuleKey].end(); ++iter)
@@ -108,11 +133,11 @@ struct convert<SimpleNodeEditor::YamlNode>
         }
         else
         {
-            SPDLOG_ERROR("invalide nodePruneRule key {}", pruneRuleKey);
+            SPDLOG_WARN("invalide nodePruneRule key {}", pruneRuleKey);
         }
 
         std::string nodePropertyKey = "NodeProperty";
-        if (isInvalidKey(node, nodePropertyKey))
+        if (isValidKey(node, nodePropertyKey))
         {
             for (YAML::const_iterator iter = node[nodePropertyKey].begin();
                  iter != node[nodePropertyKey].end(); ++iter)
@@ -122,13 +147,15 @@ struct convert<SimpleNodeEditor::YamlNode>
         }
         else
         {
-            SPDLOG_ERROR("invalide nodeproperty key {}", nodePropertyKey);
+            SPDLOG_WARN("invalide nodeproperty key {}", nodePropertyKey);
         }
+
         SPDLOG_INFO(
-            "decode yamlnode success, nodename = [{}], nodeYamlId[{}], issourcenode[{}], "
+            "decode yamlnode done, nodename = [{}], nodeYamlId[{}], issourcenode[{}], "
             "yamlNodeType[{}]",
             rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_isSrcNode, rhs.m_nodeYamlType);
-        return true;
+
+        return ret;
     }
 };
 
@@ -153,17 +180,29 @@ struct convert<SimpleNodeEditor::YamlPort>
 
     static bool decode(const Node& node, SimpleNodeEditor::YamlPort& rhs)
     {
+        bool ret = true;
         if (!node.IsMap())
         {
-            return false;
+            ret = false;
         }
-        if(isInvalidKey(node, "NodeName")) rhs.m_nodeName = node["NodeName"].as<std::string>();
-        if(isInvalidKey(node, "NodeId")) rhs.m_nodeYamlId = node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>();
-        if(isInvalidKey(node, "PortName")) rhs.m_portName = node["PortName"].as<std::string>();
-        if(isInvalidKey(node, "PortId")) rhs.m_portYamlId = node["PortId"].as<SimpleNodeEditor::YamlPort::PortYamlId>();
+        if (isValidKey(node, "NodeName") && isValidKey(node, "NodeId") && isValidKey(node, "PortName") && isValidKey(node, "PortId"))
+        {
+
+            rhs.m_nodeName = node["NodeName"].as<std::string>();
+            rhs.m_nodeYamlId = node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>();
+            rhs.m_portName = node["PortName"].as<std::string>();
+            rhs.m_portYamlId = node["PortId"].as<SimpleNodeEditor::YamlPort::PortYamlId>();
+        }
+        else
+        {
+            ret = false;
+            SPDLOG_ERROR("invalid required key when parsing YamlPort, check it! "
+                         "isValidKey(node, \"NodeName\")[{}] isValidKey(node, \"NodeId\")[{}] isValidKey(node, \"PortName\")[{}] isValidKey(node, \"PortId\")[{}]",
+                         isValidKey(node, "NodeName"), isValidKey(node, "NodeId"), isValidKey(node, "PortName"), isValidKey(node, "PortId"));
+        }
 
         std::string pruneRuleKey = "PruneRule";
-        if (isInvalidKey(node, pruneRuleKey))
+        if (isValidKey(node, pruneRuleKey))
         {
             for (YAML::const_iterator iter = node[pruneRuleKey].begin();
                     iter != node[pruneRuleKey].end(); ++iter)
@@ -173,13 +212,13 @@ struct convert<SimpleNodeEditor::YamlPort>
         }
         else
         {
-            SPDLOG_ERROR(
+            SPDLOG_WARN(
                 "invalide key[{}], when parsing ports, nodeName[{}], nodeyamlId[{}], "
                 "portName[{}], portYamlId[{}]",
                 pruneRuleKey, rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_portName,
                 rhs.m_portYamlId);
         }
-        return true;
+        return ret;
     }
 };
 

@@ -1287,8 +1287,8 @@ void NodeEditor::HandleNodeInfoEditing()
         ImGui::TextUnformatted("Properties: ");
         if (ImGui::BeginTable("PropertiesTable", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders))
         {
-            ImGui::TableSetupColumn("Id", ImGuiTableColumnFlags_WidthFixed, 40.0f);
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Id", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableHeadersRow();
 
@@ -1296,14 +1296,15 @@ void NodeEditor::HandleNodeInfoEditing()
             {
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
+                const std::string prop_name_label = std::string("##prop_name_") + std::to_string(i);
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                ImGui::InputText(prop_name_label.c_str(), &popUpYamlNode.m_Properties[i].m_propertyName, ImGuiInputTextFlags_CharsNoBlank);
+
+                ImGui::TableSetColumnIndex(1);
                 const std::string prop_id_label = std::string("##prop_id_") + std::to_string(i);
                 ImGui::SetNextItemWidth(-FLT_MIN);
                 ImGui::InputInt(prop_id_label.c_str(), &popUpYamlNode.m_Properties[i].m_propertyId);
 
-                ImGui::TableSetColumnIndex(1);
-                const std::string prop_name_label = std::string("##prop_name_") + std::to_string(i);
-                ImGui::SetNextItemWidth(-FLT_MIN);
-                ImGui::InputText(prop_name_label.c_str(), &popUpYamlNode.m_Properties[i].m_propertyName, ImGuiInputTextFlags_CharsNoBlank);
 
                 ImGui::TableSetColumnIndex(2);
                 const std::string prop_value_label = std::string("##prop_val_") + std::to_string(i);
