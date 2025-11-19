@@ -1271,19 +1271,19 @@ void NodeEditor::HandleNodeInfoEditing()
     ImGui::SetNextWindowSize(ImVec2{mainWindowDisplaySize.x / 4, mainWindowDisplaySize.y / 4});
     if (ImGui::BeginPopupModal("Node Info Editor", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_HorizontalScrollbar))
     {
-        /// show basic infos
+        // show basic node info
         ImGui::Text("NodeInfoEditor");
         ImGui::Separator();
-
+        ImGui::Text("BasicInfos:");
         ImGui::Text("NodeUid: %d", nodeUidToBePoped);
         ImGui::Text("NodeName: "); ImGui::SameLine();
         ImGui::InputText("##NodeName", &popUpYamlNode.m_nodeName);
         ImGui::Text("YamlId: %d", popUpYamlNode.m_nodeYamlId);
         ImGui::Text("YamlType: %d", popUpYamlNode.m_nodeYamlType);
         ImGui::Checkbox("IsSource ", reinterpret_cast<bool*>(&popUpYamlNode.m_isSrcNode));
-
         ImGui::Separator();
 
+        // node property show
         ImGui::TextUnformatted("Properties: ");
         if (ImGui::BeginTable("PropertiesTable", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders))
         {
@@ -1313,6 +1313,35 @@ void NodeEditor::HandleNodeInfoEditing()
             }
             ImGui::EndTable();
         }
+        // add node property
+        if (ImGui::SmallButton("AddProperty"))
+        {
+            ImGui::SetNextWindowPos(ImGui::GetMousePos(), ImGuiCond_Appearing);
+            ImGui::OpenPopup("AddNodeProperty");
+        }
+
+        if (ImGui::BeginPopupModal("AddNodeProperty", nullptr,
+                                    ImGuiWindowFlags_AlwaysAutoResize))
+        {   
+            ImGui::PushItemWidth(70.f);
+            YamlNodeProperty newProperty;
+            ImGui::InputText("propertyName", &newProperty.m_propertyName); ImGui::SameLine();
+            ImGui::InputInt("propertyId", &newProperty.m_propertyId); ImGui::SameLine();
+            ImGui::InputText("propertyValue", &newProperty.m_propertyValue); ImGui::SameLine();
+            ImGui::PopItemWidth();
+
+            ImGui::PushItemWidth(50.f);
+            if (ImGui::Button("Done") )
+            {
+                popUpYamlNode.m_Properties.push_back(std::move(newProperty));
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            ImGui::SetNextItemShortcut(ImGuiKey_Escape);
+            if (ImGui::Button("Cancel")) { ImGui::CloseCurrentPopup(); }
+            ImGui::PopItemWidth();
+            ImGui::EndPopup();
+        }
 
         // PruningRule Show
         ImGui::Separator();
@@ -1332,7 +1361,6 @@ void NodeEditor::HandleNodeInfoEditing()
             ImGui::PopItemWidth();
         }
 
-        // TODU: remove prunerule should also be synced to edges!
         if (shouldBeDeleted != popUpYamlNode.m_PruningRules.end())
         {
             popUpYamlNode.m_PruningRules.erase(shouldBeDeleted);
@@ -1340,10 +1368,12 @@ void NodeEditor::HandleNodeInfoEditing()
 
         ImGui::Spacing();
 
-        if (ImGui::SmallButton("New"))
+        // add new pruning rule
+        if (ImGui::SmallButton("AddPruningRule"))
         {
             ImGui::SetNextWindowPos(ImGui::GetMousePos(), ImGuiCond_Appearing);
             if (!m_allPruningRules.empty()) { ImGui::OpenPopup("AddNodePruningRule"); }
+            else {SPDLOG_ERROR("Please Add global pruning rule please");}
         }
 
         // Modal popup: choose a group/type from m_allPruningRules 
@@ -1411,7 +1441,7 @@ void NodeEditor::HandleNodeInfoEditing()
         }
 
         ImGui::Separator();
-        // Save edited finfo or cancel to close popup
+        // Save node info or cancel to close popup
         {
             const float availW  = ImGui::GetContentRegionAvail().x;
             ImGuiStyle& style   = ImGui::GetStyle();
