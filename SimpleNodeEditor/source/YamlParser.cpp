@@ -188,7 +188,7 @@ bool PipelineParser::LoadFile(const std::string& filePath)
         ret = false;
     }
 
-    if (ret && m_rootNode["NodeList"] && m_rootNode["NodeList"].IsSequence())
+    if (ret && m_rootNode["NodeList"] && m_rootNode["NodeList"].IsSequence() && m_rootNode["NodeList"].size() != 0)
     {
         m_nodeListNode = m_rootNode["NodeList"];
     }
@@ -198,7 +198,7 @@ bool PipelineParser::LoadFile(const std::string& filePath)
         ret = false;
     }
 
-    if (ret && m_rootNode["LinkList"] && m_rootNode["LinkList"].IsSequence())
+    if (ret && m_rootNode["LinkList"] && m_rootNode["LinkList"].IsSequence() && m_rootNode["LinkList"].size() != 0)
     {
         m_edgeListNode = m_rootNode["LinkList"];
     }
