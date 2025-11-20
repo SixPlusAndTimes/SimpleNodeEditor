@@ -460,25 +460,27 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const Yaml
     return ret;
 }
 
-void NodeEditor::HandleAddNodes()
+std::optional<std::pair<std::string_view, ImVec2>> ComboFilterCombination(const std::string& popupName, const std::vector<std::string_view>& selectList)
 {
+    std::optional<std::pair<std::string_view, ImVec2>> ret = std::nullopt;
+
     if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows |
                                ImGuiFocusedFlags_NoPopupHierarchy) &&
-        ImNodes::IsEditorHovered() && ImGui::IsKeyReleased(ImGuiKey_A))
+        ImNodes::IsEditorHovered() && ImGui::IsKeyReleased(ImGuiKey_A)) // Imnode related
     {
-        ImGui::OpenPopup("add node");
+        ImGui::OpenPopup(popupName.c_str());
     }
 
-    static std::string previewSelected = s_nodeDescriptionsNameDesMap.begin()->first;
+    static std::string_view previewSelected = *selectList.begin();
 
-    if (ImGui::BeginPopup("add node"))
+    if (ImGui::BeginPopup(popupName.c_str()))
     {
-        const ImVec2 click_pos = ImNodes::GetCurrentContext()->NodeEditorImgCtx->IO.MousePos;
+        const ImVec2 click_pos = ImNodes::GetCurrentContext()->NodeEditorImgCtx->IO.MousePos; // Imnode related
 
         ImGuiComboFlags flags       = 0;
         bool            is_selected = false;
 
-        if (ImGui::BeginCombo("add node now", previewSelected.c_str(), flags))
+        if (ImGui::BeginCombo("##addnode", previewSelected.data(), flags))
         {
             static ImGuiTextFilter filter;
             if (ImGui::IsWindowAppearing())
@@ -488,17 +490,15 @@ void NodeEditor::HandleAddNodes()
             }
             filter.Draw("##Filter", -FLT_MIN);
 
-            ImGui::SetKeyboardFocusHere(-1);
-
-            for (auto& [nodeName, nodeDesc] : s_nodeDescriptionsNameDesMap)
+            for (auto& selectName : selectList)
             {
-                if (filter.PassFilter(nodeName.c_str()))
+                if (filter.PassFilter(selectName.data()))
                 {
-                    ImGui::Selectable(nodeName.c_str());
+                    ImGui::Selectable(selectName.data());
                     if (ImGui::IsItemActive() && ImGui::IsItemClicked())
                     {
-                        SPDLOG_INFO("User has selected {}, will be added in canvas", nodeName);
-                        previewSelected = nodeName;
+                        SPDLOG_INFO("User has selected {}, will be added in canvas", selectName);
+                        previewSelected = selectName;
                         is_selected     = true;
                         ImGui::CloseCurrentPopup(); // close Combo right now
                     }
@@ -510,36 +510,25 @@ void NodeEditor::HandleAddNodes()
         if (is_selected)
         {
             ImGui::CloseCurrentPopup(); // close popup right now
-
-            NodeDescription selectedNodeDescription =
-                s_nodeDescriptionsNameDesMap.at(previewSelected);
-
-            NodeUniqueId newNodeUId = AddNewNodes(selectedNodeDescription);
-
-            ImNodes::SetNodeScreenSpacePos(newNodeUId, click_pos);
-
-            // Add logs to understand the 3 types of coordinates
-
-            // imnode internal datastructure : ImNodeData::Origin , store the coordinates in grid
-            // space. The value of this coodinate may be negative or posive, and changed with editor
-            // panning events.
-            ImVec2 newNodeGridSpace = ImNodes::GetNodeGridSpacePos(newNodeUId);
-
-            // defined by app window. the value of this coordinate is definately positive.
-            ImVec2 newNodeScreenSpace = ImNodes::GetNodeScreenSpacePos(newNodeUId);
-
-            // just like a viewport coordination? the value of this coordinate is definetely
-            // positive .
-            ImVec2 newNodeEditorSpace = ImNodes::GetNodeEditorSpacePos(newNodeUId);
-
-            SPDLOG_INFO(
-                "add new node, nodeuid = {}, girdspace = [{},{}], screenspace = [{},{}], "
-                "editorspace = [{}, {}]",
-                newNodeUId, newNodeGridSpace.x, newNodeGridSpace.y, newNodeScreenSpace.x,
-                newNodeScreenSpace.y, newNodeEditorSpace.x, newNodeEditorSpace.y);
+            ret = std::optional(std::make_pair(previewSelected, click_pos));
         }
-
         ImGui::EndPopup();
+    }
+    return ret;
+}
+
+void NodeEditor::HandleAddNodes()
+{
+    const auto& keyViews{std::views::keys(s_nodeDescriptionsNameDesMap)};
+    auto ret = ComboFilterCombination("add node", {keyViews.begin(), keyViews.end()});
+    if (ret)
+    {
+        NodeDescription selectedNodeDescription =
+            s_nodeDescriptionsNameDesMap.at(ret.value().first.data());
+
+        NodeUniqueId newNodeUId = AddNewNodes(selectedNodeDescription);
+
+        ImNodes::SetNodeScreenSpacePos(newNodeUId, ret.value().second);
     }
 }
 

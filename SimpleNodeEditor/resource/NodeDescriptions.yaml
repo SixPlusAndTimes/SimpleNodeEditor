@@ -60,3 +60,68 @@ NodeDescriptions:
       - outputport1
       - outputport2
       - outputport3
+  - 
+    NodeName: iii
+    NodeType: 5
+    InputPorts:
+      - inputport0
+      - inputport1
+      - inputport2
+      - inputport3
+    OutputPorts:
+      - outputport0
+      - outputport1
+      - outputport2
+      - outputport3
+  - 
+    NodeName: uuu
+    NodeType: 5
+    InputPorts:
+      - inputport0
+      - inputport1
+      - inputport2
+      - inputport3
+    OutputPorts:
+      - outputport0
+      - outputport1
+      - outputport2
+      - outputport3
+  - 
+    NodeName: bbb
+    NodeType: 5
+    InputPorts:
+      - inputport0
+      - inputport1
+      - inputport2
+      - inputport3
+    OutputPorts:
+      - outputport0
+      - outputport1
+      - outputport2
+      - outputport3
+  - 
+    NodeName: qqq
+    NodeType: 5
+    InputPorts:
+      - inputport0
+      - inputport1
+      - inputport2
+      - inputport3
+    OutputPorts:
+      - outputport0
+      - outputport1
+      - outputport2
+      - outputport3
+  - 
+    NodeName: www
+    NodeType: 5
+    InputPorts:
+      - inputport0
+      - inputport1
+      - inputport2
+      - inputport3
+    OutputPorts:
+      - outputport0
+      - outputport1
+      - outputport2
+      - outputport3
