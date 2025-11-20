@@ -1738,9 +1738,10 @@ void NodeEditor::ShowPipelineName()
         ImVec2   mainWindowDisplaySize = ImGui::GetIO().DisplaySize;
         ImGui::SetNextWindowSize(ImVec2{mainWindowDisplaySize.x / 4, mainWindowDisplaySize.y / 4});
     }
+
+    static std::string newPipeLineName {m_currentPipeLineName};
     if (ImGui::BeginPopupModal("PipelineNameChange", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        static std::string newPipeLineName {};
         ImGui::Text("PiepelineName: "); ImGui::SameLine();
         if (ImGui::IsWindowAppearing())
         {
@@ -1751,7 +1752,6 @@ void NodeEditor::ShowPipelineName()
         if (ImGui::SmallButton("Done"))
         {
             m_currentPipeLineName = newPipeLineName;
-            newPipeLineName.clear();
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
