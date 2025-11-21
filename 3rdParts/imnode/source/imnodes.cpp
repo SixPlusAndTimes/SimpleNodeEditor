@@ -1436,7 +1436,7 @@ TriangleOffsets CalculateTriangleOffsets(const float side_length)
     return offset;
 }
 
-void DrawPinShape(const ImVec2& pin_pos, const ImPinData& pin, const ImU32 pin_color)
+void DrawPinShape(const ImVec2& pin_pos, const ImPinData& pin, const ImU32 pin_color, bool is_hoverd)
 {
     static const int CIRCLE_NUM_SEGMENTS = 8;
 
@@ -1512,6 +1512,15 @@ void DrawPinShape(const ImVec2& pin_pos, const ImPinData& pin, const ImU32 pin_c
         IM_ASSERT(!"Invalid PinShape value!");
         break;
     }
+
+    std::string test{"test"};
+    if (is_hoverd && pin.CusDrawData.IsValid)
+    {
+     GImNodes->CanvasDrawList->AddText(pin.Pos + pin.CusDrawData.DrawPos, 
+                                        pin.CusDrawData.Color,
+                                        pin.CusDrawData.Text.c_str(),
+                                        pin.CusDrawData.Text.c_str() + pin.CusDrawData.Text.size());
+    }
 }
 
 void DrawPin(ImNodesEditorContext& editor, const int pin_idx)
@@ -1523,12 +1532,13 @@ void DrawPin(ImNodesEditorContext& editor, const int pin_idx)
 
     ImU32 pin_color = pin.ColorStyle.Background;
 
-    if (GImNodes->HoveredPinIdx == pin_idx)
+    bool is_hovered = false;
+    if (is_hovered = (GImNodes->HoveredPinIdx == pin_idx))
     {
         pin_color = pin.ColorStyle.Hovered;
     }
 
-    DrawPinShape(pin.Pos, pin, pin_color);
+    DrawPinShape(pin.Pos, pin, pin_color, is_hovered);
 }
 
 void DrawNode(ImNodesEditorContext& editor, const int node_idx)
@@ -1671,7 +1681,8 @@ void BeginPinAttribute(
     const int                  id,
     const ImNodesAttributeType type,
     const ImNodesPinShape      shape,
-    const int                  node_idx)
+    const int                  node_idx,
+    const CustumiszedDrawData& cusDrawData)
 {
     // Make sure to call BeginNode() before calling
     // BeginAttribute()
@@ -1695,6 +1706,7 @@ void BeginPinAttribute(
     pin.Flags = GImNodes->CurrentAttributeFlags;
     pin.ColorStyle.Background = GImNodes->Style.Colors[ImNodesCol_Pin];
     pin.ColorStyle.Hovered = GImNodes->Style.Colors[ImNodesCol_PinHovered];
+    pin.CusDrawData = cusDrawData;
 }
 
 void EndPinAttribute()
@@ -2696,16 +2708,16 @@ void EndNodeTitleBar()
     ImGui::SetCursorPos(GridSpaceToEditorSpace(editor, GetNodeContentOrigin(node)));
 }
 
-void BeginInputAttribute(const int id, const ImNodesPinShape shape)
+void BeginInputAttribute(const int id, const CustumiszedDrawData& cusDrawData, const ImNodesPinShape shape)
 {
-    BeginPinAttribute(id, ImNodesAttributeType_Input, shape, GImNodes->CurrentNodeIdx);
+    BeginPinAttribute(id, ImNodesAttributeType_Input, shape, GImNodes->CurrentNodeIdx, cusDrawData);
 }
 
 void EndInputAttribute() { EndPinAttribute(); }
 
-void BeginOutputAttribute(const int id, const ImNodesPinShape shape)
+void BeginOutputAttribute(const int id, const CustumiszedDrawData& cusDrawData, const ImNodesPinShape shape)
 {
-    BeginPinAttribute(id, ImNodesAttributeType_Output, shape, GImNodes->CurrentNodeIdx);
+    BeginPinAttribute(id, ImNodesAttributeType_Output, shape, GImNodes->CurrentNodeIdx, cusDrawData);
 }
 
 void EndOutputAttribute() { EndPinAttribute(); }

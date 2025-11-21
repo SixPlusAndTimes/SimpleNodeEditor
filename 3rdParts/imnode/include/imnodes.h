@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <imgui.h>
+#include <string>
 
 #ifdef IMNODES_USER_CONFIG
 #include IMNODES_USER_CONFIG
@@ -237,6 +238,15 @@ typedef void (*ImNodesMiniMapNodeHoveringCallback)(int, void*);
 #ifndef ImNodesMiniMapNodeHoveringCallbackUserData
 typedef void* ImNodesMiniMapNodeHoveringCallbackUserData;
 #endif
+struct CustumiszedDrawData
+{
+    std::string Text; // may add circle、rect later, now it is only used to draw pin_idx
+    ImVec2 DrawPos; // normally refer to relative pos
+    ImU32  Color;
+    bool   IsValid;
+    CustumiszedDrawData() : Text(), DrawPos(), Color(), IsValid(false){ }
+    CustumiszedDrawData(const std::string& text, const ImVec2& drawpos, const ImU32& color) : Text(text), DrawPos(drawpos), Color(color), IsValid(true){ }
+};
 
 namespace IMNODES_NAMESPACE
 {
@@ -322,11 +332,13 @@ void EndNodeTitleBar();
 //
 // Each attribute id must be unique.
 
+
+
 // Create an input attribute block. The pin is rendered on left side.
-void BeginInputAttribute(int id, ImNodesPinShape shape = ImNodesPinShape_CircleFilled);
+void BeginInputAttribute(int id, const CustumiszedDrawData& cusDrawData = {}, ImNodesPinShape shape = ImNodesPinShape_CircleFilled);
 void EndInputAttribute();
 // Create an output attribute block. The pin is rendered on the right side.
-void BeginOutputAttribute(int id, ImNodesPinShape shape = ImNodesPinShape_CircleFilled);
+void BeginOutputAttribute(int id, const CustumiszedDrawData& cusDrawData = {}, ImNodesPinShape shape = ImNodesPinShape_CircleFilled);
 void EndOutputAttribute();
 // Create a static attribute block. A static attribute has no pin, and therefore can't be linked to
 // anything. However, you can still use IsAttributeActive() and IsAnyAttributeActive() to check for

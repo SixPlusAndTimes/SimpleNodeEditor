@@ -56,7 +56,7 @@ If you want intall it at another dir, just modify the default intallation path i
 - [ ] 如果nodedes中没有yamlpipeline中的对应的portid，别挂死，提示错误即可 
 - [ ] 允许不显示没有Edge连接的port
 - [ ] 添加清楚pipeline的button
-- [ ] **hover 在port上能够显示portid**
+- [x] **hover 在port上能够显示portid**
 - [ ] 自定义node颜色
 - [ ] 支持多个窗口切换，分别渲染不同的pipeline
 - [x] bugs: add node popup 不能滑动到底部 

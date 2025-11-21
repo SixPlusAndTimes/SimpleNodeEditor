@@ -8,6 +8,7 @@
 
 #include <limits.h>
 
+#include <string>
 // the structure of this file:
 //
 // [SECTION] internal enums
@@ -170,7 +171,7 @@ struct ImPinData
     ImNodesPinShape      Shape;
     ImVec2               Pos; // screen-space coordinates
     int                  Flags;
-
+    CustumiszedDrawData  CusDrawData;
     struct
     {
         ImU32 Background, Hovered;
@@ -179,7 +180,7 @@ struct ImPinData
     ImPinData(const int pin_id)
         : Id(pin_id), ParentNodeIdx(), AttributeRect(), Type(ImNodesAttributeType_None),
           Shape(ImNodesPinShape_CircleFilled), Pos(), Flags(ImNodesAttributeFlags_None),
-          ColorStyle()
+          CusDrawData(), ColorStyle()
     {
     }
 };

@@ -205,7 +205,8 @@ void NodeEditor::ShowNodes()
             if (row < inCount)
             {
                 const InputPort& ip = inPorts[row];
-                ImNodes::BeginInputAttribute(ip.GetPortUniqueId());
+                CustumiszedDrawData custumiszedDrawData{std::to_string(row), ImVec2{-15.f, -10.f}, IM_COL32(255, 0, 0, 255)};
+                ImNodes::BeginInputAttribute(ip.GetPortUniqueId(), custumiszedDrawData);
                 ImGui::TextUnformatted(ip.GetPortname().data());
                 ImNodes::EndInputAttribute();
             }
@@ -227,7 +228,8 @@ void NodeEditor::ShowNodes()
                 const float textW = ImGui::CalcTextSize(name.data(), name.data() + name.size()).x;
                 const float textPosX = outColumnX + (maxOutLabelWidth - textW);
 
-                ImNodes::BeginOutputAttribute(op.GetPortUniqueId());
+                CustumiszedDrawData custumiszedDrawData{std::to_string(row), ImVec2{10.f, -10.f}, IM_COL32(255, 0, 0, 255)};
+                ImNodes::BeginOutputAttribute(op.GetPortUniqueId(), custumiszedDrawData);
                 // Position the text so its right edge aligns with the column's right edge
                 ImGui::SetCursorPosX(textPosX);
                 ImGui::TextUnformatted(op.GetPortname().data());
