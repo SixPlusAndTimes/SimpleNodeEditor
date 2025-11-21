@@ -21,62 +21,62 @@ public:
     void NodeEditorInitialize();
     void NodeEditorShow();
     void NodeEditorDestroy();
-    void HandleDeletingNodes();
     void HandleFileDrop(const std::string& filePath);
 
 private:
+    // draw ui infereface
     void         DrawMenu();
-    void         MenuStyle();
-    void         MenuFile();
+    void         ShowNodes();
+    void         ShowEdges();
+    void         ShowPipelineName();
+    void ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize);
+    void ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize);
+
+    // handle add/delete nodes
     void         HandleAddNodes();
     NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc);
     NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNde);
+    void HandleDeletingNodes();
     void         DeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid);
-    void         ShowNodes();
-    void         ShowEdges();
+
+    // handle add/delete edges
     void         HandleAddEdges();
-    void         ShowPipelineName();
-
-    void FillYamlEdgePort(YamlPort& yamlPort, const Port& port);
-
     void AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid, const YamlEdge& yamlEdge = {},
                     bool avoidMultipleInputLinks = true);
+    [[nodiscard]] bool IsInportAlreadyHasEdge(PortUniqueId portUid);
+    void FillYamlEdgePort(YamlPort& yamlPort, const Port& port);
     void HandleDeletingEdges();
     void DeleteEdge(EdgeUniqueId edgeUid, bool shouldUnregisterUid);
     void DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid);
-    [[nodiscard]] bool IsInportAlreadyHasEdge(PortUniqueId portUid);
     void               DeleteEdgeUidFromPort(EdgeUniqueId edgeUid);
-
-    void SaveState();
-    void SaveToFile();
+    // handle nodes layout afer toposorted
     void RearrangeNodesLayout(const std::vector<std::vector<NodeUniqueId>>& topologicalOrder,
                               const std::unordered_map<NodeUniqueId, Node>& nodesMap);
+    // pruning rule related
     void CollectPruningRules(std::vector<YamlNode> yamlNodes, std::vector<YamlEdge> yamlEdges);
 
     bool IsAllEdgesWillBePruned(NodeUniqueId nodeUid, const std::unordered_set<EdgeUniqueId>& shouldBeDeleteEdges);
 
+    bool AddNewPruningRule(const std::string& newPruningGroup, const std::string& newPruningType,
+                           std::unordered_map<std::string, std::set<std::string>>& allPruningRule);
     [[nodiscard]] bool ApplyPruningRule(const std::unordered_map<std::string, std::string>& currentPruningRule,
                                   std::unordered_map<NodeUniqueId, Node>       nodesMap,
                                   std::unordered_map<EdgeUniqueId, Edge>       edgesMap);
     void RestorePruning(const std::string& group, const std::string& orignType,
                         const std::string& newType);
-
-    void ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize);
-    void ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize);
-
     [[nodiscard]] bool IsAllEdgesHasBeenPruned(NodeUniqueId nodeUid);
-
-    [[nodiscard]] bool LoadPipelineFromFile(const std::string& filePath);
-    void               ClearCurrentPipeLine();
-
     void SyncPruningRules(const Node& node);
     void SyncPruningRuleBetweenNodeAndEdge(const Node& node, Edge& edge);
-    void HandleOtherUserInputs();
+
+    // handle user interactions
     void HandleNodeInfoEditing();
     void HandleEdgeInfoEditing();
     void HandleZooming();
-    bool AddNewPruningRule(const std::string& newPruningGroup, const std::string& newPruningType,
-                           std::unordered_map<std::string, std::set<std::string>>& allPruningRule);
+    void HandleOtherUserInputs();
+
+    void SaveToFile();
+    [[nodiscard]] bool LoadPipelineFromFile(const std::string& filePath);
+    void               ClearCurrentPipeLine();
 
 private:
     std::unordered_map<NodeUniqueId, Node> m_nodes; // store nodes that will be rendered on canvas
