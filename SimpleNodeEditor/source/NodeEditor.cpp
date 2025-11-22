@@ -2,12 +2,12 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imnodes_internal.h"
-#include "spdlog/spdlog.h"
 #include <cstdint>
 #include <unordered_set>
 #include <set>
 #include <algorithm>
 #include "imgui_stdlib.h"
+#include "Log.hpp"
 #include <numeric>
 // Windows headers should come after STL to avoid macro conflicts
 #define NOMINMAX  // Prevent Windows from defining min/max macros
@@ -93,11 +93,11 @@ void NodeEditor::HandleFileDrop(const std::string& filePath)
     ClearCurrentPipeLine();
     if (LoadPipelineFromFile(filePath))
     {
-        SPDLOG_INFO("LoadPipeLineFromFile Success, filePath[{}]", filePath);
+        SNELOG_INFO("LoadPipeLineFromFile Success, filePath[{}]", filePath);
     }
     else
     {
-        SPDLOG_ERROR("LoadPipeLineFromFile failed, filePath[{}]", filePath);
+        SNELOG_ERROR("LoadPipeLineFromFile failed, filePath[{}]", filePath);
     }
 }
 
@@ -130,16 +130,16 @@ void MenuFile()
     {
         if (ImGui::MenuItem("Open", nullptr, false, true))
         {
-            SPDLOG_INFO("Open Not Implemented!");
+            SNELOG_INFO("Open Not Implemented!");
         }
         ImGui::Separator();
         if (ImGui::MenuItem("Save", "Ctrl + d", false, true))
         {
-            SPDLOG_INFO("Save Not Implemented!");
+            SNELOG_INFO("Save Not Implemented!");
         }
         if (ImGui::MenuItem("Save As...", nullptr, false, true))
         {
-            SPDLOG_INFO("Save as Not Implemented!");
+            SNELOG_INFO("Save as Not Implemented!");
         }
 
         ImGui::EndMenu();
@@ -379,7 +379,7 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
                 {
                     if (m_currentPruninngRule[group] != types[iterIndex])
                     {
-                        SPDLOG_INFO("Select a different pruning rule, change the grapgh  ...");
+                        SNELOG_INFO("Select a different pruning rule, change the grapgh  ...");
                         std::string originType{m_currentPruninngRule[group]};
                         m_currentPruninngRule[group] = types[iterIndex];
                         // m_nodes and m_edges can not pass by reference, see the logic of
@@ -468,7 +468,7 @@ std::optional<std::pair<std::string_view, ImVec2>> ComboFilterCombination(const 
                     ImGui::Selectable(selectName.data());
                     if (ImGui::IsItemActive() && ImGui::IsItemClicked())
                     {
-                        SPDLOG_INFO("User has selected {}, will be added in canvas", selectName);
+                        SNELOG_INFO("User has selected {}, will be added in canvas", selectName);
                         previewSelected = selectName;
                         is_selected     = true;
                         ImGui::CloseCurrentPopup(); // close Combo right now
@@ -552,7 +552,7 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const Yaml
 
     if (!m_nodes.insert({newNode.GetNodeUniqueId(), std::move(newNode)}).second)
     {
-        SPDLOG_ERROR("m_nodes insert new node fail! check it!");
+        SNELOG_ERROR("m_nodes insert new node fail! check it!");
         return -1;
     }
     return ret;
@@ -578,7 +578,7 @@ void NodeEditor::DeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid)
 {
     if (m_nodes.count(nodeUid) == 0)
     {
-        SPDLOG_ERROR("deleting a nonexisting node, check it! nodeUid = {}", nodeUid);
+        SNELOG_ERROR("deleting a nonexisting node, check it! nodeUid = {}", nodeUid);
         return;
     }
     // before we erase the node, we need delete the linked edge first
@@ -628,7 +628,7 @@ void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
     // avoid multiple edges linking to the same inport
     if (avoidMultipleInputLinks && IsInportAlreadyHasEdge(dstPortUid))
     {
-        SPDLOG_WARN("inport port can not have multiple edges, inportUid[{}] portName[{}]",
+        SNELOG_WARN("inport port can not have multiple edges, inportUid[{}] portName[{}]",
                     dstPortUid, m_inportPorts.at(dstPortUid)->GetPortname());
         return;
     }
@@ -649,7 +649,7 @@ void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
     }
     else
     {
-        SPDLOG_ERROR(
+        SNELOG_ERROR(
             "not find input port or the pointer is nullptr when handling new edges, check it! "
             "dstPortUid is{}",
             dstPortUid);
@@ -669,7 +669,7 @@ void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
     }
     else
     {
-        SPDLOG_ERROR(
+        SNELOG_ERROR(
             "not find output port or the pointer is nullptr when handling new edges, check it! "
             "srcPortUid is {}",
             srcPortUid);
@@ -687,13 +687,13 @@ bool NodeEditor::IsInportAlreadyHasEdge(PortUniqueId portUid)
         InputPort* inport = iter->second;
         if (inport->GetEdgeUid() != -1)
         {
-            SPDLOG_INFO("inportportid = {}, edgeUid = {}", portUid, inport->GetEdgeUid());
+            SNELOG_INFO("inportportid = {}, edgeUid = {}", portUid, inport->GetEdgeUid());
             return true;
         }
     }
     else
     {
-        SPDLOG_ERROR("can not find inport, portid = {}, checkit!", portUid);
+        SNELOG_ERROR("can not find inport, portid = {}, checkit!", portUid);
     }
     return false;
 }
@@ -724,7 +724,7 @@ void NodeEditor::HandleDeletingEdges()
             }
             else
             {
-                SPDLOG_ERROR("cannot find edge in m_edges, edgeUid = {}, check it!", edgeUid);
+                SNELOG_ERROR("cannot find edge in m_edges, edgeUid = {}, check it!", edgeUid);
             }
         }
     }
@@ -740,10 +740,10 @@ void NodeEditor::HandleDeletingEdges()
         }
         else
         {
-            SPDLOG_ERROR("cannot find edge in m_edges, detachedEdgeUId = {}, check it!",
+            SNELOG_ERROR("cannot find edge in m_edges, detachedEdgeUId = {}, check it!",
                          detachedEdgeUId);
         }
-        SPDLOG_INFO("dropped link id{}", detachedEdgeUId);
+        SNELOG_INFO("dropped link id{}", detachedEdgeUId);
     }
 
     // what about this situations, is it usefull ?
@@ -756,10 +756,10 @@ void NodeEditor::HandleDeletingEdges()
     //     }
     //     else
     //     {
-    //         SPDLOG_ERROR("cannot find edge in m_edges, dropedEdgeUId = {}, check it!",
+    //         SNELOG_ERROR("cannot find edge in m_edges, dropedEdgeUId = {}, check it!",
     //         dropedEdgeUId);
     //     }
-    //     SPDLOG_INFO("dropped link id{}", dropedEdgeUId);
+    //     SNELOG_INFO("dropped link id{}", dropedEdgeUId);
     // }
 }
 
@@ -767,7 +767,7 @@ void NodeEditor::DeleteEdge(EdgeUniqueId edgeUid, bool shouldUnregisterUid)
 {
     if (m_edges.count(edgeUid) == 0)
     {
-        SPDLOG_WARN("try to delte a non-exist edgeUid[{}]", edgeUid);
+        SNELOG_WARN("try to delte a non-exist edgeUid[{}]", edgeUid);
         return;
     }
     DeleteEdgeUidFromPort(edgeUid);
@@ -784,7 +784,7 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid, bool shouldUnr
 {
     if (m_nodes.count(nodeUid) == 0)
     {
-        SPDLOG_ERROR("handling an nonexisting node, please check it! nodeUid = {}", nodeUid);
+        SNELOG_ERROR("handling an nonexisting node, please check it! nodeUid = {}", nodeUid);
         return;
     }
 
@@ -829,7 +829,7 @@ void NodeEditor::DeleteEdgeUidFromPort(EdgeUniqueId edgeUid)
         }
         else
         {
-            SPDLOG_ERROR("cannot find inports in m_outportPorts inportUid = {}",
+            SNELOG_ERROR("cannot find inports in m_outportPorts inportUid = {}",
                          edge.GetSourcePortUid());
         }
 
@@ -839,13 +839,13 @@ void NodeEditor::DeleteEdgeUidFromPort(EdgeUniqueId edgeUid)
         }
         else
         {
-            SPDLOG_ERROR("cannot find inports in m_inportPorts outputid = {}",
+            SNELOG_ERROR("cannot find inports in m_inportPorts outputid = {}",
                          edge.GetDestinationPortUid());
         }
     }
     else
     {
-        SPDLOG_ERROR("cannot find edge in m_edges, edgeUid = {}, check it!", edgeUid);
+        SNELOG_ERROR("cannot find edge in m_edges, edgeUid = {}, check it!", edgeUid);
     }
 }
 
@@ -872,7 +872,7 @@ void NodeEditor::RearrangeNodesLayout(
         for (NodeUniqueId nodeUid : nodeUIdVec)
         {
             columWidth = std::max(ImNodes::GetNodeRect(nodeUid).GetWidth(), columWidth);
-            SPDLOG_INFO("nodeuid[{}], nodewidth[{}]", nodeUid,
+            SNELOG_INFO("nodeuid[{}], nodewidth[{}]", nodeUid,
                         ImNodes::GetNodeRect(nodeUid).GetWidth());
             columHeight += (ImNodes::GetNodeRect(nodeUid).GetHeight() + verticalPadding);
         }
@@ -921,7 +921,7 @@ void NodeEditor::CollectPruningRules(std::vector<YamlNode> yamlNodes,
 
     if (m_allPruningRules.size() == 0)
     {
-        SPDLOG_INFO("no pruning rule in the current yamlfile"); // todo : add yamlfilename
+        SNELOG_INFO("no pruning rule in the current yamlfile"); // todo : add yamlfilename
     }
     // set defatul pruning rule
     for (const auto& [group, type] : m_allPruningRules)
@@ -930,10 +930,10 @@ void NodeEditor::CollectPruningRules(std::vector<YamlNode> yamlNodes,
         {
             if (type.size() == 1)
             {
-                SPDLOG_WARN("pruning rule, group[{}] only has one type!", group);
+                SNELOG_WARN("pruning rule, group[{}] only has one type!", group);
             }
             m_currentPruninngRule[group] = *(type.begin());
-            SPDLOG_INFO("set default pruning rule, group[{}] type[{}]", group, *(type.begin()));
+            SNELOG_INFO("set default pruning rule, group[{}] type[{}]", group, *(type.begin()));
         }
     }
 }
@@ -949,7 +949,7 @@ bool NodeEditor::IsAllEdgesWillBePruned(NodeUniqueId                            
     {
         if (!shouldBeDeleteEdges.contains(edgeUid))
         {
-            SPDLOG_ERROR("NodeUid[{}] NodeYamlId[{}], still has EdgeUid[{}] not pruned", nodeUid,
+            SNELOG_ERROR("NodeUid[{}] NodeYamlId[{}], still has EdgeUid[{}] not pruned", nodeUid,
                          m_nodes.at(nodeUid).GetYamlNode().m_nodeYamlId, edgeUid);
             ret = false;
         }
@@ -969,7 +969,7 @@ bool NodeEditor::AddNewPruningRule(const std::string& newPruningGroup, const std
     {
         if (allPruningRule.at(newPruningGroup).contains(newPruningType))
         {
-            SPDLOG_WARN("try to add exised pruning rule");
+            SNELOG_WARN("try to add exised pruning rule");
             return false;
         }
         else
@@ -1006,7 +1006,7 @@ bool NodeEditor::ApplyPruningRule(
                     auto iter = m_edges.find(edgeUid);
                     if (iter != m_edges.end())
                     {
-                        SPDLOG_INFO(
+                        SNELOG_INFO(
                             "Prune Edge with EdgeUid[{}] SrcNodeUid[{}] SrcNodeYamlId[{}] "
                             "DstNodeUid[{}] DstNodeYamlId[{}]",
                             edgeUid, edge.GetSourceNodeUid(),
@@ -1019,7 +1019,7 @@ bool NodeEditor::ApplyPruningRule(
                     }
                     else
                     {
-                        SPDLOG_ERROR("Cannot find edge in m_edges with edgeuid[{}]", edgeUid);
+                        SNELOG_ERROR("Cannot find edge in m_edges with edgeuid[{}]", edgeUid);
                         applyPruningRuleSuccess = false;
                         break;
                     }
@@ -1039,7 +1039,7 @@ bool NodeEditor::ApplyPruningRule(
                     {
                         if (IsAllEdgesWillBePruned(nodeUid, shouldBeDeleteEdges))
                         {
-                            SPDLOG_INFO("Prune Node with NodeUid[{}] NodeYamlId[{}]", nodeUid,
+                            SNELOG_INFO("Prune Node with NodeUid[{}] NodeYamlId[{}]", nodeUid,
                                         node.GetYamlNode().m_nodeYamlId);
                             // m_nodesPruned.insert(*iter);
                             // DeleteNode(nodeUid);
@@ -1047,7 +1047,7 @@ bool NodeEditor::ApplyPruningRule(
                         }
                         else
                         {
-                            SPDLOG_ERROR(
+                            SNELOG_ERROR(
                                 "Not All edges of Node({}) has been pruned, please check if all "
                                 "edges has the correspoding prune rule!!!",
                                 nodeUid);
@@ -1057,7 +1057,7 @@ bool NodeEditor::ApplyPruningRule(
                     }
                     else
                     {
-                        SPDLOG_ERROR("Cannot find node in m_nodes with nodeuid[{}]", nodeUid);
+                        SNELOG_ERROR("Cannot find node in m_nodes with nodeuid[{}]", nodeUid);
                         applyPruningRuleSuccess = false;
                         break;
                     }
@@ -1089,11 +1089,11 @@ bool NodeEditor::ApplyPruningRule(
 void NodeEditor::RestorePruning(const std::string& changedGroup, const std::string& originType,
                                 const std::string& newType)
 {
-    SPDLOG_INFO("RestorePruning Begin");
+    SNELOG_INFO("RestorePruning Begin");
 
     assert(originType != newType);
 
-    SPDLOG_INFO("Restoring prunerule, group[{}], originType[{}], newType[{}]", changedGroup,
+    SNELOG_INFO("Restoring prunerule, group[{}], originType[{}], newType[{}]", changedGroup,
                 originType, newType);
     // Restore pruned nodes first so ports exist when re-attaching edges.
     for (auto it = m_nodesPruned.begin(); it != m_nodesPruned.end();)
@@ -1108,7 +1108,7 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
                 assert(pruningRule.m_Type != originType);
                 if (m_nodes.find(nodeUid) == m_nodes.end())
                 {
-                    SPDLOG_INFO("Resotre node with nodeUid[{}], yamlNodeName[{}], yamlNodeId[{}]",
+                    SNELOG_INFO("Resotre node with nodeUid[{}], yamlNodeName[{}], yamlNodeId[{}]",
                                 nodeUid, node.GetYamlNode().m_nodeName,
                                 node.GetYamlNode().m_nodeYamlId);
 
@@ -1132,7 +1132,7 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
                 }
                 else
                 {
-                    SPDLOG_ERROR("Pruned Node existed in m_nodesMap with nodeuid[{}], check it!",
+                    SNELOG_ERROR("Pruned Node existed in m_nodesMap with nodeuid[{}], check it!",
                                  nodeUid);
                 }
             }
@@ -1153,7 +1153,7 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
                 assert(pruningRule.m_Type != originType);
                 if (m_edges.find(edgeUid) == m_edges.end())
                 {
-                    SPDLOG_INFO(
+                    SNELOG_INFO(
                         "restore edge with edgeUid[{}], yamlSrcPortName[{}], yamlDstPortName[{}]",
                         edgeUid, edge.GetYamlEdge().m_yamlSrcPort.m_portName,
                         edge.GetYamlEdge().m_yamlDstPort.m_portName);
@@ -1171,7 +1171,7 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
                 }
                 else
                 {
-                    SPDLOG_ERROR("Pruned Node existed in m_edgesMap with edgeUid[{}], check it!",
+                    SNELOG_ERROR("Pruned Node existed in m_edgesMap with edgeUid[{}], check it!",
                                  edgeUid);
                 }
             }
@@ -1181,7 +1181,7 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
 
     // we need topo sort after resotre nodes and edges
     m_needTopoSort = true;
-    SPDLOG_INFO("RestorePruning done");
+    SNELOG_INFO("RestorePruning done");
 }
 
 // resotre nodes and edges that match the currentPruningRule
@@ -1193,7 +1193,7 @@ bool NodeEditor::IsAllEdgesHasBeenPruned(NodeUniqueId nodeUid)
     {
         if (!port.HasNoEdgeLinked())
         {
-            SPDLOG_ERROR("NodeUid[{}], InPortUid[{}], still has Edge ", node.GetNodeUniqueId(),
+            SNELOG_ERROR("NodeUid[{}], InPortUid[{}], still has Edge ", node.GetNodeUniqueId(),
                          port.GetPortUniqueId());
             return false;
         }
@@ -1203,7 +1203,7 @@ bool NodeEditor::IsAllEdgesHasBeenPruned(NodeUniqueId nodeUid)
     {
         if (!port.HasNoEdgeLinked())
         {
-            SPDLOG_ERROR("NodeUid[{}], OutPortUid[{}], still has Edge ", node.GetNodeUniqueId(),
+            SNELOG_ERROR("NodeUid[{}], OutPortUid[{}], still has Edge ", node.GetNodeUniqueId(),
                          port.GetPortUniqueId());
             return false;
         }
@@ -1247,7 +1247,7 @@ void NodeEditor::SyncPruningRuleBetweenNodeAndEdge(const Node& node, Edge& edge)
         {
             if (ret.value()->m_Type != pruningRule.m_Type)
             {
-                SPDLOG_WARN(
+                SNELOG_WARN(
                     "Pruning rules confliced, edge's rule will be overried! nodeUid[{}] nodeName[{}] "
                     "pruning_mGroup[{}] pruning_mType[{}];"
                     "edgeUid[{}] edgeSrcPortName[{}] edgeDstPortName[{}] pruning_mGroup[{}] "
@@ -1268,11 +1268,6 @@ void NodeEditor::SyncPruningRuleBetweenNodeAndEdge(const Node& node, Edge& edge)
 }
 
 
-
-
-
-
-
 void NodeEditor::HandleNodeInfoEditing()
 {
     static NodeUniqueId nodeUidToBePoped{-1};
@@ -1282,7 +1277,7 @@ void NodeEditor::HandleNodeInfoEditing()
     if (ImNodes::IsNodeHovered(&selectedNode) && ImGui::IsMouseDoubleClicked(0))
     {
         assert(selectedNode != -1);
-        SPDLOG_INFO("node with nodeUid[{}] has been double clicked", selectedNode);
+        SNELOG_INFO("node with nodeUid[{}] has been double clicked", selectedNode);
 
         nodeUidToBePoped = selectedNode;
         // Initialize popup buffers from the node's current YAML data
@@ -1403,7 +1398,7 @@ void NodeEditor::HandleNodeInfoEditing()
         {
             ImGui::SetNextWindowPos(ImGui::GetMousePos(), ImGuiCond_Appearing);
             if (!m_allPruningRules.empty()) { ImGui::OpenPopup("AddNodePruningRule"); }
-            else {SPDLOG_ERROR("Please Add global pruning rule please");}
+            else {SNELOG_ERROR("Please Add global pruning rule please");}
         }
 
         // Modal popup: choose a group/type from m_allPruningRules 
@@ -1454,7 +1449,7 @@ void NodeEditor::HandleNodeInfoEditing()
                     {
                         if (iterGroup == chosenGroup)
                         {
-                            SPDLOG_WARN("This rule[Group[{}],Type[{}]] belongs to the same group may override the original one !", chosenGroup, chosenType);
+                            SNELOG_WARN("This rule[Group[{}],Type[{}]] belongs to the same group may override the original one !", chosenGroup, chosenType);
                             addIt = false;
                             break;
                         }
@@ -1487,7 +1482,7 @@ void NodeEditor::HandleNodeInfoEditing()
                 SyncPruningRules(m_nodes.at(nodeUidToBePoped));
                 if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))
                 {
-                    SPDLOG_INFO("ApplyPruningRuleSuccess");
+                    SNELOG_INFO("ApplyPruningRuleSuccess");
                 }
                 ImGui::CloseCurrentPopup();
             }
@@ -1513,7 +1508,7 @@ void NodeEditor::HandleEdgeInfoEditing()
     if (ImNodes::IsLinkHovered(&selectedEdge) && ImGui::IsMouseDoubleClicked(0))
     {
         assert(selectedEdge != -1);
-        SPDLOG_INFO("Edge with EdgeUid[{}] has been double clicked", selectedEdge);
+        SNELOG_INFO("Edge with EdgeUid[{}] has been double clicked", selectedEdge);
         edgeUidToBePoped = selectedEdge;
         if (m_edges.contains(selectedEdge))
         {
@@ -1636,7 +1631,7 @@ void NodeEditor::HandleEdgeInfoEditing()
                     {
                         if (iterGroup == chosenGroup)
                         {
-                            SPDLOG_WARN("This rule[Group[{}],Type[{}]] belongs to the same group may override the original one !", chosenGroup, chosenType);
+                            SNELOG_WARN("This rule[Group[{}],Type[{}]] belongs to the same group may override the original one !", chosenGroup, chosenType);
                             addIt = false;
                             break;
                         }
@@ -1718,7 +1713,7 @@ void NodeEditor::SaveToFile()
         m_currentPipeLineName.empty() ? m_pipeLineParser.GetPipelineName() : m_currentPipeLineName;
     m_pipelineEimtter.EmitPipeline(pipelineNameToEmit, m_nodes, m_nodesPruned, m_edges,
                                    m_edgesPruned);
-    SPDLOG_INFO(m_pipelineEimtter.GetEmitter().c_str());
+    SNELOG_INFO(m_pipelineEimtter.GetEmitter().c_str());
 
     // Show file save dialog
     char          szFile[MAX_PATH] = {0};
@@ -1747,16 +1742,16 @@ void NodeEditor::SaveToFile()
             {
                 outFile << m_pipelineEimtter.GetEmitter().c_str();
                 outFile.close();
-                SPDLOG_INFO("Successfully saved pipeline to: {}", szFile);
+                SNELOG_INFO("Successfully saved pipeline to: {}", szFile);
             }
             else
             {
-                SPDLOG_ERROR("Failed to open file for writing: {}", szFile);
+                SNELOG_ERROR("Failed to open file for writing: {}", szFile);
             }
         }
         catch (const std::exception& e)
         {
-            SPDLOG_ERROR("Error while saving file: {}", e.what());
+            SNELOG_ERROR("Error while saving file: {}", e.what());
         }
     }
     else
@@ -1765,7 +1760,7 @@ void NodeEditor::SaveToFile()
         DWORD error = CommDlgExtendedError();
         if (error != 0)
         {
-            SPDLOG_ERROR("File save dialog error: {}", error);
+            SNELOG_ERROR("File save dialog error: {}", error);
         }
     }
 }
@@ -1811,7 +1806,7 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
         {
             for (const auto& [group, type] : m_currentPruninngRule)
             {
-                SPDLOG_INFO(
+                SNELOG_INFO(
                     "currentpruning rule is : group[{}] type[{}], any node or edge that matches "
                     "the "
                     "group but not matches the type will be removed",
@@ -1820,7 +1815,7 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
         }
         else
         {
-            SPDLOG_ERROR("ApplyPruningRule Fail!!");
+            SNELOG_ERROR("ApplyPruningRule Fail!!");
         }
 
         m_needTopoSort        = true;
@@ -1828,7 +1823,7 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
     }
     else
     {
-        SPDLOG_ERROR("pipelineparser loadfile failed, filename is [{}], check it!", filePath);
+        SNELOG_ERROR("pipelineparser loadfile failed, filename is [{}], check it!", filePath);
         ret = false;
     }
     return ret;

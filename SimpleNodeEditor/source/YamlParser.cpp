@@ -1,6 +1,7 @@
 #include "spdlog/spdlog.h"
 #include "YamlParser.hpp"
 #include <filesystem>
+#include "Log.hpp"
 
 namespace SimpleNodeEditor
 {
@@ -18,13 +19,13 @@ bool YamlParser::LoadFile(const std::string& filePath)
         }
         else
         {
-            SPDLOG_ERROR("no valid rootNode, check the file [{}]", filePath);
+            SNELOG_ERROR("no valid rootNode, check the file [{}]", filePath);
             return false;
         }
     }
     else
     {
-        SPDLOG_ERROR("[{}] is not a regular file", filePath);
+        SNELOG_ERROR("[{}] is not a regular file", filePath);
         return false;
     }
 }
@@ -40,11 +41,11 @@ ConfigParser::ConfigParser(const std::string& filePath)
     // is it useful to check LoadFile here?
     if (LoadFile(filePath))
     {
-        SPDLOG_INFO("ConfigParser LoadFile success : {}", filePath);
+        SNELOG_INFO("ConfigParser LoadFile success : {}", filePath);
     }
     else
     {
-        SPDLOG_ERROR("ConfigParser failed : {}", filePath);
+        SNELOG_ERROR("ConfigParser failed : {}", filePath);
     }
 }
 
@@ -52,11 +53,11 @@ NodeDescriptionParser::NodeDescriptionParser(const std::string& filePath)
 {
     if (LoadFile(filePath))
     {
-        SPDLOG_INFO("NodeDescriptionParser LoadFile success : {}", filePath);
+        SNELOG_INFO("NodeDescriptionParser LoadFile success : {}", filePath);
     }
     else
     {
-        SPDLOG_ERROR("ConfigParser LoadFile failed : {}", filePath);
+        SNELOG_ERROR("ConfigParser LoadFile failed : {}", filePath);
     }
 }
 
@@ -67,21 +68,21 @@ std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()
     // 1. whether m_rootNode is valid
     if (!m_rootNode)
     {
-        SPDLOG_ERROR("rootNode is not invalid");
+        SNELOG_ERROR("rootNode is not invalid");
         return ret;
     }
 
     // 2. whether NodeDescriptions Node exists in the yaml file
     if (!m_rootNode["NodeDescriptions"])
     {
-        SPDLOG_ERROR("Cannot find NodeDescriptions in yaml file, check it!");
+        SNELOG_ERROR("Cannot find NodeDescriptions in yaml file, check it!");
         return ret;
     }
     // 3. whether NodeDescriptions Node is a sequence ndoe
     YAML::Node nodeDescriptions = m_rootNode["NodeDescriptions"];
     if (!nodeDescriptions.IsSequence())
     {
-        SPDLOG_ERROR("NodeDescription is not a sequence, check it!");
+        SNELOG_ERROR("NodeDescription is not a sequence, check it!");
         return ret;
     }
 
@@ -96,7 +97,7 @@ std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()
         }
         else
         {
-            SPDLOG_ERROR("Skipping node: missing or invalid NodeName");
+            SNELOG_ERROR("Skipping node: missing or invalid NodeName");
             continue;
         }
 
@@ -107,7 +108,7 @@ std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()
         }
         else
         {
-            SPDLOG_ERROR("Skipping node: missing or invalid NodeType");
+            SNELOG_ERROR("Skipping node: missing or invalid NodeType");
             continue;
         }
 
@@ -122,13 +123,13 @@ std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()
                 }
                 else
                 {
-                    SPDLOG_ERROR("Skipping invalid InputPort in node: {}", desc.m_nodeName);
+                    SNELOG_ERROR("Skipping invalid InputPort in node: {}", desc.m_nodeName);
                 }
             }
         }
         else
         {
-            SPDLOG_ERROR("Node {} has no valid InputPorts sequence", desc.m_nodeName);
+            SNELOG_ERROR("Node {} has no valid InputPorts sequence", desc.m_nodeName);
         }
         // parse OutputPorts
         if (node["OutputPorts"] && node["OutputPorts"].IsSequence())
@@ -141,13 +142,13 @@ std::vector<NodeDescription> NodeDescriptionParser::ParseNodeDescriptions()
                 }
                 else
                 {
-                    SPDLOG_ERROR("Skipping invalid OutputPort in node: {}", desc.m_nodeName);
+                    SNELOG_ERROR("Skipping invalid OutputPort in node: {}", desc.m_nodeName);
                 }
             }
         }
         else
         {
-            SPDLOG_ERROR("Node {} has no valid OutputPorts sequence", desc.m_nodeName);
+            SNELOG_ERROR("Node {} has no valid OutputPorts sequence", desc.m_nodeName);
         }
         ret.push_back(std::move(desc));
     }
@@ -174,7 +175,7 @@ bool PipelineParser::LoadFile(const std::string& filePath)
     }
     else
     {
-        SPDLOG_ERROR("load file[{}] failed", filePath);
+        SNELOG_ERROR("load file[{}] failed", filePath);
         ret = false;
     }
 
@@ -184,7 +185,7 @@ bool PipelineParser::LoadFile(const std::string& filePath)
     }
     else
     {
-        SPDLOG_ERROR("file {} has no valid pipelinename sequence, check it", filePath);
+        SNELOG_ERROR("file {} has no valid pipelinename sequence, check it", filePath);
         ret = false;
     }
 
@@ -194,7 +195,7 @@ bool PipelineParser::LoadFile(const std::string& filePath)
     }
     else
     {
-        SPDLOG_ERROR("file {} has no valid Node sequence, check it", filePath);
+        SNELOG_ERROR("file {} has no valid Node sequence, check it", filePath);
         ret = false;
     }
 
@@ -204,7 +205,7 @@ bool PipelineParser::LoadFile(const std::string& filePath)
     }
     else
     {
-        SPDLOG_ERROR("file {} has no valid List sequence, check it", filePath);
+        SNELOG_ERROR("file {} has no valid List sequence, check it", filePath);
         ret = false;
     }
 
@@ -213,7 +214,7 @@ bool PipelineParser::LoadFile(const std::string& filePath)
 
 std::vector<YamlNode> PipelineParser::ParseNodes()
 {
-    SPDLOG_INFO("start to parse node from file[{}], m_nodeListNode.size() = {}", m_filePath,
+    SNELOG_INFO("start to parse node from file[{}], m_nodeListNode.size() = {}", m_filePath,
                 m_nodeListNode.size());
     std::vector<YamlNode> result;
 
@@ -221,7 +222,7 @@ std::vector<YamlNode> PipelineParser::ParseNodes()
     {
         result.push_back(iter->as<YamlNode>());
     }
-    SPDLOG_INFO("ParseNodes Dode, collected {} nodes", result.size());
+    SNELOG_INFO("ParseNodes Dode, collected {} nodes", result.size());
     return result;
 }
 
@@ -231,10 +232,10 @@ std::vector<YamlEdge> PipelineParser::ParseEdges()
     std::vector<YamlEdge> result;
     if (!m_edgeListNode)
     {
-        SPDLOG_ERROR("m_edgeListNode is invalid!");
+        SNELOG_ERROR("m_edgeListNode is invalid!");
         return result;
     }
-    SPDLOG_INFO("start to parse edges from file[{}], m_edgeListNode.size() = {}", m_filePath,
+    SNELOG_INFO("start to parse edges from file[{}], m_edgeListNode.size() = {}", m_filePath,
                 m_edgeListNode.size());
 
     for (size_t edgeIterIdx = 0; edgeIterIdx < m_edgeListNode.size(); ++edgeIterIdx)
@@ -254,19 +255,19 @@ std::vector<YamlEdge> PipelineParser::ParseEdges()
             }
             else
             {
-                SPDLOG_ERROR("dstPortNode is invalid or dstPortNode is not sequence");
-                SPDLOG_ERROR("DstPort node YAML:\n{}", YAML::Dump(dstPortsNode));
+                SNELOG_ERROR("dstPortNode is invalid or dstPortNode is not sequence");
+                SNELOG_ERROR("DstPort node YAML:\n{}", YAML::Dump(dstPortsNode));
             }
         }
         else
         {
-            SPDLOG_ERROR("invalid node, checkinfo : isEdgeNodeValid[{}] | isEdgeNodeMap[{}]",
+            SNELOG_ERROR("invalid node, checkinfo : isEdgeNodeValid[{}] | isEdgeNodeMap[{}]",
                          m_edgeListNode[edgeIterIdx] ? true : false,
                          m_edgeListNode[edgeIterIdx].IsMap());
-            SPDLOG_ERROR("Edge node YAML:\n{}", YAML::Dump(m_edgeListNode[edgeIterIdx]));
+            SNELOG_ERROR("Edge node YAML:\n{}", YAML::Dump(m_edgeListNode[edgeIterIdx]));
         }
     }
-    SPDLOG_INFO("parseEdges Dode, collected {} edges", result.size());
+    SNELOG_INFO("parseEdges Dode, collected {} edges", result.size());
 
     return result;
 }

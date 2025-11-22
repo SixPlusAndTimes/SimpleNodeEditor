@@ -2,9 +2,7 @@
 ## notice
 **only tested on windows and wsl**
 
-**all libs built from source**
-
-**this starter project use opengl3 and sdl2 as imgui's backends， and ourown diretory uses the corresponding example from imnode*
+**all libs except opengl are built from source**
 
 ## how to build
 following commads will make debug target bydefault
@@ -13,12 +11,13 @@ following commads will make debug target bydefault
 cd ImguiCmakeStarter
 mkdir cmake_build
 cmake -S . -B .\cmake_build\
-cmake --build .\cmake_build\ 
+cmake --build .\cmake_build\ -- config Debug
+cmake --build .\cmake_build\ -- config Release
 ~~~~
 
 Default intallation path is "${CMAKE_CURRENT_SOURCE_DIR}/install", you can check it in CmakeLists.txt.  
 
-Note we should use --config Debug option here, because cmake intall command find Release target by default but if we complie the Debug one only, the following installation command step will complain
+
 
 ~~~shell
 cmake --install .\cmake_build\ --config Debug 

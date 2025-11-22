@@ -2,7 +2,7 @@
 #define HELPERS_H
 #include <vector>
 #include <unordered_map>
-#include "spdlog/spdlog.h"
+#include "Log.hpp"
 #include "Node.hpp"
 #include <type_traits> 
 #include <ranges>
@@ -34,7 +34,7 @@ public:
     bool RegisterUniqueID(UidType uid) {
         if (m_registeredUids.contains(uid))
         {
-            SPDLOG_INFO("allocator[{}] uid[{}] has already been allocated or registered", m_name, uid);
+            SNELOG_INFO("allocator[{}] uid[{}] has already been allocated or registered", m_name, uid);
         }
         return m_registeredUids.insert(uid).second;
     }
@@ -82,15 +82,15 @@ size_t GetMatchedIndex(const std::vector<T>& inputVec, const T& comp)
             return index;
         }
     }
-    SPDLOG_INFO("no matched index, comp[{}]", comp);
+    SNELOG_INFO("no matched index, comp[{}]", comp);
     return std::numeric_limits<size_t>::max();
 }
 
 inline void DumpEdge(const Edge& edge)
 {
-    SPDLOG_INFO("EdgeInfo , EdgeUid[{}]:", edge.GetEdgeUniqueId());
-    SPDLOG_INFO("\t srcNodeUid[{}] srcYamlNodeName[{}], srcYamlportName[{}]", edge.GetSourceNodeUid(), edge.GetYamlEdge().m_yamlSrcPort.m_nodeName, edge.GetYamlEdge().m_yamlSrcPort.m_portName);
-    SPDLOG_INFO("\t dstNodeUid[{}] dstYajmlNodeName[{}], dstYamlportName[{}]", edge.GetDestinationNodeUid(), edge.GetYamlEdge().m_yamlDstPort.m_nodeName, edge.GetYamlEdge().m_yamlDstPort.m_portName);
+    SNELOG_INFO("EdgeInfo , EdgeUid[{}]:", edge.GetEdgeUniqueId());
+    SNELOG_INFO("\t srcNodeUid[{}] srcYamlNodeName[{}], srcYamlportName[{}]", edge.GetSourceNodeUid(), edge.GetYamlEdge().m_yamlSrcPort.m_nodeName, edge.GetYamlEdge().m_yamlSrcPort.m_portName);
+    SNELOG_INFO("\t dstNodeUid[{}] dstYajmlNodeName[{}], dstYamlportName[{}]", edge.GetDestinationNodeUid(), edge.GetYamlEdge().m_yamlDstPort.m_nodeName, edge.GetYamlEdge().m_yamlDstPort.m_portName);
 }
 
 // must be a inline function to avoid vialation of OneDefinitionRule
@@ -100,14 +100,14 @@ inline std::vector<std::vector<NodeUniqueId>> TopologicalSort(
 {
     if (nodesMap.size() == 0 )
     {
-        SPDLOG_WARN("nodesMap size == 0");
+        SNELOG_WARN("nodesMap size == 0");
         return {};
     }
 
     if (edgesMap.size() == 0)
     {
         auto nodeIds = nodesMap | std::views::keys; 
-        SPDLOG_WARN("edgesMap size == 0, return one topo order, nodesize = [{}]", nodeIds.size());
+        SNELOG_WARN("edgesMap size == 0, return one topo order, nodesize = [{}]", nodeIds.size());
         return {{nodeIds.begin(), nodeIds.end()}};
     }
 
@@ -124,7 +124,7 @@ inline std::vector<std::vector<NodeUniqueId>> TopologicalSort(
     {
         if (!degrees.contains(edge.GetDestinationNodeUid()))
         {
-            SPDLOG_ERROR("error dstnodeuid [{}]", edge.GetDestinationNodeUid());
+            SNELOG_ERROR("error dstnodeuid [{}]", edge.GetDestinationNodeUid());
         }
         ++degrees.at(edge.GetDestinationNodeUid());
     }
@@ -167,7 +167,7 @@ inline std::vector<std::vector<NodeUniqueId>> TopologicalSort(
     {
         if (degree != 0)
         {
-            SPDLOG_ERROR("toposort done, but node[{}] has degree[{}]", nodeUid, degree);
+            SNELOG_ERROR("toposort done, but node[{}] has degree[{}]", nodeUid, degree);
             allNodeDegreeZero = false;
         }
     }

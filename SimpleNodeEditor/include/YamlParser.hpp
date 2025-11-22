@@ -4,6 +4,7 @@
 #include <yaml-cpp/yaml.h>
 #include "NodeDescription.hpp"
 #include "Node.hpp"
+#include "Log.hpp"
 
 namespace YAML
 {
@@ -28,7 +29,7 @@ struct convert<SimpleNodeEditor::YamlNodeProperty>
     {
         bool ret = true;
         if (!node.IsMap()) {
-            SPDLOG_INFO("decode yamlnodeproperty fail not a sequence");
+            SNELOG_INFO("decode yamlnodeproperty fail not a sequence");
             ret = false;
         }
 
@@ -39,7 +40,7 @@ struct convert<SimpleNodeEditor::YamlNodeProperty>
         }
         rhs.m_propertyId  = 0; // hard code here
 
-        SPDLOG_INFO("decode yamlnodeproperty done, propertyName = [{}], propertyValue[{}] ", rhs.m_propertyName,
+        SNELOG_INFO("decode yamlnodeproperty done, propertyName = [{}], propertyValue[{}] ", rhs.m_propertyName,
                     rhs.m_propertyValue);
         return ret;
     }
@@ -71,10 +72,10 @@ struct convert<SimpleNodeEditor::YamlPruningRule>
         }
         else
         {
-            SPDLOG_WARN("invalid key when parsing PruningRule");
+            SNELOG_WARN("invalid key when parsing PruningRule");
         }
 
-        SPDLOG_INFO("decode yamlpruningrule done, group = [{}], type[{}] ", rhs.m_Group,
+        SNELOG_INFO("decode yamlpruningrule done, group = [{}], type[{}] ", rhs.m_Group,
                     rhs.m_Type);
         return ret;
     }
@@ -117,7 +118,7 @@ struct convert<SimpleNodeEditor::YamlNode>
         else
         {
             ret = false;
-            SPDLOG_ERROR("invalid required key when parsing YamlNode, check it! "
+            SNELOG_ERROR("invalid required key when parsing YamlNode, check it! "
                          "isValidKey(node, \"NodeName\")[{}] isValidKey(node, \"NodeId\")[{}] isValidKey(node, \"IsSrcNode\")[{}] isValidKey(node, \"NodeType\")[{}]",
                          isValidKey(node, "NodeName"), isValidKey(node, "NodeId"), isValidKey(node, "IsSrcNode"), isValidKey(node, "NodeType"));
         }
@@ -133,7 +134,7 @@ struct convert<SimpleNodeEditor::YamlNode>
         }
         else
         {
-            SPDLOG_WARN("invalide nodePruneRule key {}", pruneRuleKey);
+            SNELOG_WARN("invalide nodePruneRule key {}", pruneRuleKey);
         }
 
         std::string nodePropertyKey = "NodeProperty";
@@ -147,10 +148,10 @@ struct convert<SimpleNodeEditor::YamlNode>
         }
         else
         {
-            SPDLOG_WARN("invalide nodeproperty key {}", nodePropertyKey);
+            SNELOG_WARN("invalide nodeproperty key {}", nodePropertyKey);
         }
 
-        SPDLOG_INFO(
+        SNELOG_INFO(
             "decode yamlnode done, nodename = [{}], nodeYamlId[{}], issourcenode[{}], "
             "yamlNodeType[{}]",
             rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_isSrcNode, rhs.m_nodeYamlType);
@@ -196,7 +197,7 @@ struct convert<SimpleNodeEditor::YamlPort>
         else
         {
             ret = false;
-            SPDLOG_ERROR("invalid required key when parsing YamlPort, check it! "
+            SNELOG_ERROR("invalid required key when parsing YamlPort, check it! "
                          "isValidKey(node, \"NodeName\")[{}] isValidKey(node, \"NodeId\")[{}] isValidKey(node, \"PortName\")[{}] isValidKey(node, \"PortId\")[{}]",
                          isValidKey(node, "NodeName"), isValidKey(node, "NodeId"), isValidKey(node, "PortName"), isValidKey(node, "PortId"));
         }
@@ -212,7 +213,7 @@ struct convert<SimpleNodeEditor::YamlPort>
         }
         else
         {
-            SPDLOG_WARN(
+            SNELOG_WARN(
                 "invalide key[{}], when parsing ports, nodeName[{}], nodeyamlId[{}], "
                 "portName[{}], portYamlId[{}]",
                 pruneRuleKey, rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_portName,
@@ -250,7 +251,7 @@ public:
     {
         if (!m_rootNode)
         {
-            SPDLOG_ERROR("rootNode is not invalid");
+            SNELOG_ERROR("rootNode is not invalid");
             return T();
         }
 
@@ -260,7 +261,7 @@ public:
         }
         else
         {
-            SPDLOG_ERROR("Configparser get error, key is {}", key);
+            SNELOG_ERROR("Configparser get error, key is {}", key);
             return T();
         }
     }

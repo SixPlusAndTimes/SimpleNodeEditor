@@ -5,46 +5,25 @@
 #include <imnodes.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
-
 #include <stdio.h>
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
-#include "spdlog/spdlog.h"
-#include "spdlog/sinks/stdout_sinks.h"
-
+#include "Common.hpp"
+#include "Log.hpp"
 #include "NodeEditor.hpp"
 #include "YamlParser.hpp"
 
-bool ConfigLogLevlel()
+bool ReConfigLogLevlel()
 {
     SimpleNodeEditor::ConfigParser configParser("./resource/config.yaml");
     const std::string&             loglevel = configParser.GetConfigValue<std::string>("loglevel");
-
-    std::cout << "loglevel: " << loglevel << std::endl;
-    spdlog::level::level_enum spdLogLevel = spdlog::level::info;
-    if (loglevel == "info")
-    {
-        spdLogLevel = spdlog::level::info;
-    }
-    else if (loglevel == "debug")
-    {
-        spdLogLevel = spdlog::level::debug;
-    }
-    else if (loglevel == "error")
-    {
-        spdLogLevel = spdlog::level::err;
-    }
-
-    spdlog::set_level(spdLogLevel);
-    // spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e][%l][%s:%#]: %v");
+    SimpleNodeEditor::Log::GetInstance().SetLogLevel(loglevel);
+    SNELOG_INFO("set LogLevel {}", loglevel);
     return true;
 }
 
 int main(int, char**)
 {
-    if (!ConfigLogLevlel())
-    {
-        SPDLOG_ERROR("ConfigLogLevel failed!");
-    }
+    SNELOG_INFO("APP start ....");
+    ReConfigLogLevlel();
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {
@@ -120,7 +99,7 @@ int main(int, char**)
                     }
                     break;
                 case SDL_DROPFILE:
-                    SPDLOG_INFO("SDL drop file path : {}", event.drop.file);
+                    SNELOG_INFO("SDL drop file path : {}", event.drop.file);
                     nodeEditor.HandleFileDrop(event.drop.file);
                     SDL_free(event.drop.file);
                     break;

@@ -1,6 +1,6 @@
 #include "Node.hpp"
 #include <algorithm>
-#include "spdlog/spdlog.h"
+#include "Log.hpp"
 #include <cmath>
 #include "imnodes.h"
 
@@ -55,14 +55,14 @@ InputPort::InputPort(PortUniqueId portUid, PortId portId, const std::string& nam
                      NodeUniqueId ownedBy, YamlPort::PortYamlId portYamlId)
     : Port(portUid, portId, name, ownedBy, portYamlId), m_linkFrom(-1)
 {
-    SPDLOG_INFO("InputPort construced with portUid = {}, portId = {}, portName = {}, linkfrom = {}",
+    SNELOG_INFO("InputPort construced with portUid = {}, portId = {}, portName = {}, linkfrom = {}",
                 portUid, portId, name, m_linkFrom);
 }
 
 void InputPort::SetEdgeUid(EdgeUniqueId edgeUid)
 {
     m_linkFrom = edgeUid;
-    SPDLOG_INFO("InputPort id = {}, setedgeuid = {}", GetPortUniqueId(), edgeUid);
+    SNELOG_INFO("InputPort id = {}, setedgeuid = {}", GetPortUniqueId(), edgeUid);
 }
 
 EdgeUniqueId InputPort::GetEdgeUid()
@@ -84,7 +84,7 @@ OutputPort::OutputPort(PortUniqueId portUid, PortId portId, const std::string& n
                        NodeUniqueId ownedBy, YamlPort::PortYamlId portYamlId)
     : Port(portUid, portId, name, ownedBy, portYamlId), m_linkTos()
 {
-    SPDLOG_INFO("OutputPort construced with portUid = {}, portId = {}, portName = {}", portUid,
+    SNELOG_INFO("OutputPort construced with portUid = {}, portId = {}, portName = {}", portUid,
                 portId, name);
 }
 
@@ -170,7 +170,7 @@ Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode,
       m_nodeStyle(nodeStyle),
       m_nodeTitle(m_yamlNode.m_nodeName + "_" + std::to_string(m_yamlNode.m_nodeYamlId))
 {
-    SPDLOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid,
+    SNELOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid,
                 m_yamlNode.m_nodeYamlId, m_nodeTitle);
 }
 
@@ -218,7 +218,7 @@ PortUniqueId Node::FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) con
     }
     else
     {
-        SPDLOG_ERROR("cannot find outportuid, by the portYamlId[{}] in the nodeUid[{}]", portYamlId,
+        SNELOG_ERROR("cannot find outportuid, by the portYamlId[{}] in the nodeUid[{}]", portYamlId,
                      m_nodeUid);
         return -1;
     }
@@ -235,7 +235,7 @@ PortUniqueId Node::FindPortUidAmongInports(YamlPort::PortYamlId portYamlId) cons
     }
     else
     {
-        SPDLOG_ERROR("cannot find inportuid, by the portYamlId[{}] in the nodeUid[{}]", portYamlId,
+        SNELOG_ERROR("cannot find inportuid, by the portYamlId[{}] in the nodeUid[{}]", portYamlId,
                      m_nodeUid);
         return -1;
     }
@@ -291,7 +291,7 @@ InputPort* Node::GetInputPort(PortUniqueId portUid)
         }
     }
 
-    SPDLOG_ERROR("Can not find portUid = {} in Nodeuid = {}, check it!", portUid, m_nodeUid);
+    SNELOG_ERROR("Can not find portUid = {} in Nodeuid = {}, check it!", portUid, m_nodeUid);
     return nullptr;
 }
 
@@ -307,7 +307,7 @@ std::vector<OutputPort>& Node::GetOutputPorts()
 
 void OutputPort::PushEdge(EdgeUniqueId edgeUid)
 {
-    SPDLOG_INFO("outport id[{}], push edge id[{}]", GetPortUniqueId(), edgeUid);
+    SNELOG_INFO("outport id[{}], push edge id[{}]", GetPortUniqueId(), edgeUid);
     m_linkTos.push_back(edgeUid);
 }
 
@@ -344,7 +344,7 @@ OutputPort* Node::GetOutputPort(PortUniqueId portUid)
     }
     else
     {
-        SPDLOG_ERROR("cannot find outport, check it! portUid = {}", portUid);
+        SNELOG_ERROR("cannot find outport, check it! portUid = {}", portUid);
         return nullptr;
     }
 }
