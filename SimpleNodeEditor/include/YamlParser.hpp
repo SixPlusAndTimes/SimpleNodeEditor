@@ -28,20 +28,21 @@ struct convert<SimpleNodeEditor::YamlNodeProperty>
     static bool decode(const Node& node, SimpleNodeEditor::YamlNodeProperty& rhs)
     {
         bool ret = true;
-        if (!node.IsMap()) {
+        if (!node.IsMap())
+        {
             SNELOG_INFO("decode yamlnodeproperty fail not a sequence");
             ret = false;
         }
 
         if (isValidKey(node, "NodePropertyName") && isValidKey(node, "NodePropertyValue"))
         {
-            rhs.m_propertyName = node["NodePropertyName"].as<std::string>();
-            rhs.m_propertyValue  = node["NodePropertyValue"].as<std::string>();
+            rhs.m_propertyName  = node["NodePropertyName"].as<std::string>();
+            rhs.m_propertyValue = node["NodePropertyValue"].as<std::string>();
         }
-        rhs.m_propertyId  = 0; // hard code here
+        rhs.m_propertyId = 0; // hard code here
 
-        SNELOG_INFO("decode yamlnodeproperty done, propertyName = [{}], propertyValue[{}] ", rhs.m_propertyName,
-                    rhs.m_propertyValue);
+        SNELOG_INFO("decode yamlnodeproperty done, propertyName = [{}], propertyValue[{}] ",
+                    rhs.m_propertyName, rhs.m_propertyValue);
         return ret;
     }
 };
@@ -108,7 +109,8 @@ struct convert<SimpleNodeEditor::YamlNode>
             ret = false;
         }
 
-        if (isValidKey(node, "NodeName") && isValidKey(node, "NodeId") && isValidKey(node, "IsSrcNode") && isValidKey(node, "NodeType"))
+        if (isValidKey(node, "NodeName") && isValidKey(node, "NodeId") &&
+            isValidKey(node, "IsSrcNode") && isValidKey(node, "NodeType"))
         {
             rhs.m_nodeName     = node["NodeName"].as<std::string>();
             rhs.m_nodeYamlId   = node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>();
@@ -118,9 +120,12 @@ struct convert<SimpleNodeEditor::YamlNode>
         else
         {
             ret = false;
-            SNELOG_ERROR("invalid required key when parsing YamlNode, check it! "
-                         "isValidKey(node, \"NodeName\")[{}] isValidKey(node, \"NodeId\")[{}] isValidKey(node, \"IsSrcNode\")[{}] isValidKey(node, \"NodeType\")[{}]",
-                         isValidKey(node, "NodeName"), isValidKey(node, "NodeId"), isValidKey(node, "IsSrcNode"), isValidKey(node, "NodeType"));
+            SNELOG_ERROR(
+                "invalid required key when parsing YamlNode, check it! "
+                "isValidKey(node, \"NodeName\")[{}] isValidKey(node, \"NodeId\")[{}] "
+                "isValidKey(node, \"IsSrcNode\")[{}] isValidKey(node, \"NodeType\")[{}]",
+                isValidKey(node, "NodeName"), isValidKey(node, "NodeId"),
+                isValidKey(node, "IsSrcNode"), isValidKey(node, "NodeType"));
         }
 
         std::string pruneRuleKey = "PruneRule";
@@ -186,27 +191,30 @@ struct convert<SimpleNodeEditor::YamlPort>
         {
             ret = false;
         }
-        if (isValidKey(node, "NodeName") && isValidKey(node, "NodeId") && isValidKey(node, "PortName") && isValidKey(node, "PortId"))
+        if (isValidKey(node, "NodeName") && isValidKey(node, "NodeId") &&
+            isValidKey(node, "PortName") && isValidKey(node, "PortId"))
         {
-
-            rhs.m_nodeName = node["NodeName"].as<std::string>();
+            rhs.m_nodeName   = node["NodeName"].as<std::string>();
             rhs.m_nodeYamlId = node["NodeId"].as<SimpleNodeEditor::YamlNode::NodeYamlId>();
-            rhs.m_portName = node["PortName"].as<std::string>();
+            rhs.m_portName   = node["PortName"].as<std::string>();
             rhs.m_portYamlId = node["PortId"].as<SimpleNodeEditor::YamlPort::PortYamlId>();
         }
         else
         {
             ret = false;
-            SNELOG_ERROR("invalid required key when parsing YamlPort, check it! "
-                         "isValidKey(node, \"NodeName\")[{}] isValidKey(node, \"NodeId\")[{}] isValidKey(node, \"PortName\")[{}] isValidKey(node, \"PortId\")[{}]",
-                         isValidKey(node, "NodeName"), isValidKey(node, "NodeId"), isValidKey(node, "PortName"), isValidKey(node, "PortId"));
+            SNELOG_ERROR(
+                "invalid required key when parsing YamlPort, check it! "
+                "isValidKey(node, \"NodeName\")[{}] isValidKey(node, \"NodeId\")[{}] "
+                "isValidKey(node, \"PortName\")[{}] isValidKey(node, \"PortId\")[{}]",
+                isValidKey(node, "NodeName"), isValidKey(node, "NodeId"),
+                isValidKey(node, "PortName"), isValidKey(node, "PortId"));
         }
 
         std::string pruneRuleKey = "PruneRule";
         if (isValidKey(node, pruneRuleKey))
         {
             for (YAML::const_iterator iter = node[pruneRuleKey].begin();
-                    iter != node[pruneRuleKey].end(); ++iter)
+                 iter != node[pruneRuleKey].end(); ++iter)
             {
                 rhs.m_PruningRules.push_back(iter->as<SimpleNodeEditor::YamlPruningRule>());
             }
@@ -216,8 +224,7 @@ struct convert<SimpleNodeEditor::YamlPort>
             SNELOG_WARN(
                 "invalide key[{}], when parsing ports, nodeName[{}], nodeyamlId[{}], "
                 "portName[{}], portYamlId[{}]",
-                pruneRuleKey, rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_portName,
-                rhs.m_portYamlId);
+                pruneRuleKey, rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_portName, rhs.m_portYamlId);
         }
         return ret;
     }
@@ -232,7 +239,7 @@ class YamlParser
 {
 public:
     [[nodiscard]] virtual bool LoadFile(const std::string& filePath);
-    virtual void Clear();
+    virtual void               Clear();
 
 protected:
     YAML::Node       m_rootNode;
@@ -280,15 +287,15 @@ public:
     PipelineParser();
     std::vector<YamlNode> ParseNodes();
     std::vector<YamlEdge> ParseEdges();
-    const std::string& GetPipelineName();
+    const std::string&    GetPipelineName();
 
     [[nodiscard]] virtual bool LoadFile(const std::string& filePath);
-    virtual void Clear() override;
+    virtual void               Clear() override;
 
 private:
     std::string m_pipelineName;
-    YAML::Node m_nodeListNode;
-    YAML::Node m_edgeListNode;
+    YAML::Node  m_nodeListNode;
+    YAML::Node  m_edgeListNode;
 };
 
 } // namespace SimpleNodeEditor

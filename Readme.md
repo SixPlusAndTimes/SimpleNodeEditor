@@ -51,7 +51,7 @@ If you want intall it at another dir, just modify the default intallation path i
 - [ ] 重复代码太多了
 - [ ] **notify 组件**
 - [x] node property 正确显示以及添加新的property
-- [ ] **log 封装**
+- [x] **log 封装**
 - [ ] 如果nodedes中没有yamlpipeline中的对应的portid，别挂死，提示错误即可 
 - [ ] 允许不显示没有Edge连接的port
 - [ ] 添加清楚pipeline的button

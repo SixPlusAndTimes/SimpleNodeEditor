@@ -16,7 +16,6 @@ struct ImNodesStyle;
 namespace SimpleNodeEditor
 {
 
-
 // used by imnodes, imnode lib need nodeuid to differentiate between
 // nodes links and ports
 using PortUniqueId = int32_t;
@@ -50,12 +49,12 @@ struct YamlNode
           m_PruningRules()
     {
     }
-    std::string                          m_nodeName;
-    NodeYamlId                           m_nodeYamlId;
-    int                                  m_isSrcNode;
-    YamlNodeType                         m_nodeYamlType;
-    std::vector<YamlNodeProperty>        m_Properties;
-    std::vector<YamlPruningRule>         m_PruningRules;
+    std::string                   m_nodeName;
+    NodeYamlId                    m_nodeYamlId;
+    int                           m_isSrcNode;
+    YamlNodeType                  m_nodeYamlType;
+    std::vector<YamlNodeProperty> m_Properties;
+    std::vector<YamlPruningRule>  m_PruningRules;
 };
 
 struct YamlPort
@@ -72,11 +71,12 @@ struct YamlPort
 // srcport info maybe redundant in different edges, check it later
 struct YamlEdge
 {
-    YamlEdge(): m_yamlSrcPort(), m_yamlDstPort(), m_isValid(false){};
-    YamlEdge(const YamlPort& srcPort, const YamlPort& dstPort, bool isValid): m_yamlSrcPort(srcPort), m_yamlDstPort(dstPort), m_isValid(isValid){};
+    YamlEdge() : m_yamlSrcPort(), m_yamlDstPort(), m_isValid(false) {};
+    YamlEdge(const YamlPort& srcPort, const YamlPort& dstPort, bool isValid)
+        : m_yamlSrcPort(srcPort), m_yamlDstPort(dstPort), m_isValid(isValid) {};
     YamlPort m_yamlSrcPort;
     YamlPort m_yamlDstPort;
-    bool    m_isValid;
+    bool     m_isValid;
 
     // TODO : add properties
 };
@@ -98,7 +98,7 @@ public:
     PortId           GetPortId() const;
     PortUniqueId     GetPortUniqueId() const;
     NodeUniqueId     OwnedByNodeUid() const; // return the uid of the node that this port belongs to
-    virtual bool         HasNoEdgeLinked() = 0; // may is a redundant method
+    virtual bool     HasNoEdgeLinked() = 0; // may is a redundant method
 
     YamlPort::PortYamlId GetPortYamlId() const;
 
@@ -135,7 +135,7 @@ public:
     void                             DeletEdge(EdgeUniqueId);
     const std::vector<EdgeUniqueId>& GetEdgeUids() const;
     void                             ClearEdges();
-    virtual bool HasNoEdgeLinked() override;
+    virtual bool                     HasNoEdgeLinked() override;
 
 private:
     std::vector<EdgeUniqueId> m_linkTos; // outports have multiple edges
@@ -158,7 +158,7 @@ public:
     NodeUniqueId    GetDestinationNodeUid() const;
     void            SetSourceNodeUid(NodeUniqueId nodeUid);
     void            SetDestinationNodeUid(NodeUniqueId nodeUid);
-    YamlEdge& GetYamlEdge();
+    YamlEdge&       GetYamlEdge();
     const YamlEdge& GetYamlEdge() const;
 
 private:
@@ -185,7 +185,8 @@ public: // type def
 
 public:
     // Node();
-    Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode, const NodeDescription& nodeDes, ImNodesStyle& nodeStyle);
+    Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode,
+         const NodeDescription& nodeDes, ImNodesStyle& nodeStyle);
     void SetNodePosition(const ImVec2& pos);
 
     void                           AddInputPort(const InputPort& inPort);
@@ -201,28 +202,27 @@ public:
     OutputPort*                    GetOutputPort(PortUniqueId portUid);
     std::vector<EdgeUniqueId>      GetAllEdgeUids() const;
 
-    PortUniqueId    FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const;
-    PortUniqueId    FindPortUidAmongInports(YamlPort::PortYamlId portYamlId) const;
+    PortUniqueId FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const;
+    PortUniqueId FindPortUidAmongInports(YamlPort::PortYamlId portYamlId) const;
 
     // yaml node related
-    YamlNode& GetYamlNode();
+    YamlNode&       GetYamlNode();
     const YamlNode& GetYamlNode() const;
 
 private:
     // imnode lib need nodeuid to differentiate between nodes
-    NodeUniqueId m_nodeUid; // used for imnode to draw UI
-    NodeType     m_nodeType;
-    std::optional<float>        m_nodeWidth;
-    ImVec2       m_nodePos;
+    NodeUniqueId            m_nodeUid; // used for imnode to draw UI
+    NodeType                m_nodeType;
+    std::optional<float>    m_nodeWidth;
+    ImVec2                  m_nodePos;
     std::vector<InputPort>  m_inputPorts;
     std::vector<OutputPort> m_outputPorts;
 
     // yaml node related
-    YamlNode             m_yamlNode;
+    YamlNode      m_yamlNode;
     ImNodesStyle& m_nodeStyle;
-        
-    std::string  m_nodeTitle; // nodetitle = nodename_in_nodedescription +  "_" + nodeid_in_yaml
 
+    std::string m_nodeTitle; // nodetitle = nodename_in_nodedescription +  "_" + nodeid_in_yaml
 };
 } // namespace SimpleNodeEditor
 

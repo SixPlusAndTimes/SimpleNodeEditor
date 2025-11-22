@@ -8,6 +8,7 @@
 #include <algorithm>
 #include "imgui_stdlib.h"
 #include "Log.hpp"
+#include "Common.hpp"
 #include <numeric>
 // Windows headers should come after STL to avoid macro conflicts
 #define NOMINMAX  // Prevent Windows from defining min/max macros
@@ -21,16 +22,15 @@ void DebugDrawRect(ImRect rect)
 {
     ImDrawList* draw_list    = ImGui::GetWindowDrawList();
     ImU32       border_color = IM_COL32(255, 0, 0, 255);
-    float rounding  = 0.0f; // No corner rounding
-    float thickness = 1.0f; // Border thickness
+    float       rounding     = 0.0f; // No corner rounding
+    float       thickness    = 1.0f; // Border thickness
     draw_list->AddRect(rect.Min, rect.Max, border_color, rounding, 0, thickness);
 }
 
 void DegbugDrawCircle(const ImVec2& center, float radius)
 {
-
-    ImU32 color = IM_COL32(255, 0, 0, 255);
-    ImDrawList* draw_list    = ImGui::GetWindowDrawList();
+    ImU32       color     = IM_COL32(255, 0, 0, 255);
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
     draw_list->AddCircleFilled(center, radius, color);
 }
 
@@ -84,9 +84,7 @@ void NodeEditor::NodeEditorShow()
     ShowPruningRuleEditWinddow(mainWindowDisplaySize);
 }
 
-
-void NodeEditor::NodeEditorDestroy()
-{ }
+void NodeEditor::NodeEditorDestroy() {}
 
 void NodeEditor::HandleFileDrop(const std::string& filePath)
 {
@@ -204,8 +202,9 @@ void NodeEditor::ShowNodes()
             // Input column (left)
             if (row < inCount)
             {
-                const InputPort& ip = inPorts[row];
-                CustumiszedDrawData custumiszedDrawData{std::to_string(row), ImVec2{-15.f, -10.f}, IM_COL32(255, 0, 0, 255)};
+                const InputPort&    ip = inPorts[row];
+                CustumiszedDrawData custumiszedDrawData{std::to_string(row), ImVec2{-15.f, -10.f},
+                                                        IM_COL32(255, 0, 0, 255)};
                 ImNodes::BeginInputAttribute(ip.GetPortUniqueId(), custumiszedDrawData);
                 ImGui::TextUnformatted(ip.GetPortname().data());
                 ImNodes::EndInputAttribute();
@@ -228,7 +227,8 @@ void NodeEditor::ShowNodes()
                 const float textW = ImGui::CalcTextSize(name.data(), name.data() + name.size()).x;
                 const float textPosX = outColumnX + (maxOutLabelWidth - textW);
 
-                CustumiszedDrawData custumiszedDrawData{std::to_string(row), ImVec2{10.f, -10.f}, IM_COL32(255, 0, 0, 255)};
+                CustumiszedDrawData custumiszedDrawData{std::to_string(row), ImVec2{10.f, -10.f},
+                                                        IM_COL32(255, 0, 0, 255)};
                 ImNodes::BeginOutputAttribute(op.GetPortUniqueId(), custumiszedDrawData);
                 // Position the text so its right edge aligns with the column's right edge
                 ImGui::SetCursorPosX(textPosX);
@@ -270,25 +270,29 @@ void NodeEditor::ShowPipelineName()
     ImGui::BeginChild("PipelineFooter", ImVec2(contentWidth, footerH), 0, windFlags);
     // show pipelinename
     ImGui::PushItemWidth(260.0f);
-    ImGui::TextUnformatted("PipelineName:"); ImGui::SameLine();
-    ImGui::TextColored(COLOR_RED, m_currentPipeLineName.c_str()); ImGui::SameLine();
+    ImGui::TextUnformatted("PipelineName:");
+    ImGui::SameLine();
+    ImGui::TextColored(COLOR_RED, m_currentPipeLineName.c_str());
+    ImGui::SameLine();
     ImGui::PopItemWidth();
     if (ImGui::SmallButton("EditName"))
     {
         ImGui::OpenPopup("PipelineNameChange");
-        ImVec2   mainWindowDisplaySize = ImGui::GetIO().DisplaySize;
+        ImVec2 mainWindowDisplaySize = ImGui::GetIO().DisplaySize;
         ImGui::SetNextWindowSize(ImVec2{mainWindowDisplaySize.x / 4, mainWindowDisplaySize.y / 4});
     }
 
-    static std::string newPipeLineName {m_currentPipeLineName};
+    static std::string newPipeLineName{m_currentPipeLineName};
     if (ImGui::BeginPopupModal("PipelineNameChange", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::Text("PiepelineName: "); ImGui::SameLine();
+        ImGui::Text("PiepelineName: ");
+        ImGui::SameLine();
         if (ImGui::IsWindowAppearing())
         {
             ImGui::SetKeyboardFocusHere();
         }
-        ImGui::InputText("##pipelineNameInput", &newPipeLineName); ImGui::SameLine();
+        ImGui::InputText("##pipelineNameInput", &newPipeLineName);
+        ImGui::SameLine();
         ImGui::SetNextItemShortcut(ImGuiKey_Enter);
         if (ImGui::SmallButton("Done"))
         {
@@ -353,12 +357,13 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
     ImGui::SetNextWindowPos(ImVec2(30.f, 30.f), ImGuiCond_Appearing);
     ImGui::SetNextWindowSize(pruningRuleEditorWindowSize, ImGuiCond_Appearing);
     ImGui::Begin("PruningRuleEdit", nullptr, ImGuiWindowFlags_None);
-    static bool editing = false;
+    static bool editing            = false;
     static bool firstShowInputText = false;
-    ImGui::TextUnformatted("Pruning Rules"); ImGui::SameLine();
+    ImGui::TextUnformatted("Pruning Rules");
+    ImGui::SameLine();
     if (ImGui::SmallButton("New"))
     {
-        editing = true;
+        editing            = true;
         firstShowInputText = true;
     }
     ImGui::Separator();
@@ -369,12 +374,14 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
         const std::set<std::string>& typesSet = groupPair.second;
 
         std::vector<std::string> types(typesSet.begin(), typesSet.end());
-        std::string treeRootNodeName{group};
-        if (ImGui::TreeNodeEx(treeRootNodeName.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Bullet))
+        std::string              treeRootNodeName{group};
+        if (ImGui::TreeNodeEx(treeRootNodeName.c_str(),
+                              ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Bullet))
         {
             for (size_t iterIndex = 0; iterIndex < types.size(); ++iterIndex)
             {
-                bool isSelected = iterIndex == GetMatchedIndex(types, m_currentPruninngRule.at(group));
+                bool isSelected =
+                    iterIndex == GetMatchedIndex(types, m_currentPruninngRule.at(group));
                 if (ImGui::Selectable(types[iterIndex].c_str(), isSelected))
                 {
                     if (m_currentPruninngRule[group] != types[iterIndex])
@@ -407,9 +414,15 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
     if (editing)
     {
         ImGui::PushItemWidth(50.f);
-        if (firstShowInputText) { ImGui::SetKeyboardFocusHere(); firstShowInputText = false; }
-        ImGui::InputText("New Group", &newPruneGroup); ImGui::SameLine();
-        ImGui::InputText("New Type", &newPruneType); ImGui::SameLine();
+        if (firstShowInputText)
+        {
+            ImGui::SetKeyboardFocusHere();
+            firstShowInputText = false;
+        }
+        ImGui::InputText("New Group", &newPruneGroup);
+        ImGui::SameLine();
+        ImGui::InputText("New Type", &newPruneType);
+        ImGui::SameLine();
         ImGui::SetNextItemShortcut(ImGuiKey_Enter);
         if (ImGui::Button("Done"))
         {
@@ -431,7 +444,8 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
     ImGui::PopStyleVar();
 }
 
-std::optional<std::pair<std::string_view, ImVec2>> ComboFilterCombination(const std::string& popupName, const std::vector<std::string_view>& selectList)
+std::optional<std::pair<std::string_view, ImVec2>> ComboFilterCombination(
+    const std::string& popupName, const std::vector<std::string_view>& selectList)
 {
     std::optional<std::pair<std::string_view, ImVec2>> ret = std::nullopt;
 
@@ -446,7 +460,8 @@ std::optional<std::pair<std::string_view, ImVec2>> ComboFilterCombination(const 
 
     if (ImGui::BeginPopup(popupName.c_str()))
     {
-        const ImVec2 click_pos = ImNodes::GetCurrentContext()->NodeEditorImgCtx->IO.MousePos; // Imnode related
+        const ImVec2 click_pos =
+            ImNodes::GetCurrentContext()->NodeEditorImgCtx->IO.MousePos; // Imnode related
 
         ImGuiComboFlags flags       = 0;
         bool            is_selected = false;
@@ -491,7 +506,7 @@ std::optional<std::pair<std::string_view, ImVec2>> ComboFilterCombination(const 
 void NodeEditor::HandleAddNodes()
 {
     const auto& keyViews{std::views::keys(s_nodeDescriptionsNameDesMap)};
-    auto ret = ComboFilterCombination("add node", {keyViews.begin(), keyViews.end()});
+    auto        ret = ComboFilterCombination("add node", {keyViews.begin(), keyViews.end()});
     if (ret)
     {
         NodeDescription selectedNodeDescription =
@@ -517,7 +532,7 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc)
 // TODO : redundant infomation here
 NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNode)
 {
-    assert(yamlNode.m_nodeYamlId != -1);
+    SNE_ASSERT(yamlNode.m_nodeYamlId != -1);
     m_yamlNodeUidGenerator.RegisterUniqueID(yamlNode.m_nodeYamlId);
 
     Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, yamlNode, nodeDesc,
@@ -808,12 +823,12 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid, bool shouldUnr
     // check that we has already deletes all edges from Node
     for (InputPort& inPort : node.GetInputPorts())
     {
-        assert(inPort.GetEdgeUid() == -1);
+        SNE_ASSERT(inPort.GetEdgeUid() == -1);
     }
 
     for (OutputPort& outPort : node.GetOutputPorts())
     {
-        assert(outPort.GetEdgeUids().size() == 0);
+        SNE_ASSERT(outPort.GetEdgeUids().size() == 0);
     }
 }
 
@@ -880,8 +895,8 @@ void NodeEditor::RearrangeNodesLayout(
         columHeights.push_back(columHeight);
     }
 
-    assert(topologicalOrder.size() == columWidths.size() &&
-           topologicalOrder.size() == columHeights.size());
+    SNE_ASSERT(topologicalOrder.size() == columWidths.size() &&
+               topologicalOrder.size() == columHeights.size());
 
     float gridSpaceX = 0.f;
     for (size_t columIndex = 0; columIndex < topologicalOrder.size(); ++columIndex)
@@ -957,8 +972,9 @@ bool NodeEditor::IsAllEdgesWillBePruned(NodeUniqueId                            
     return ret;
 }
 
-bool NodeEditor::AddNewPruningRule(const std::string& newPruningGroup, const std::string& newPruningType,
-                                   std::unordered_map<std::string, std::set<std::string>>& allPruningRule)
+bool NodeEditor::AddNewPruningRule(
+    const std::string& newPruningGroup, const std::string& newPruningType,
+    std::unordered_map<std::string, std::set<std::string>>& allPruningRule)
 {
     if (newPruningGroup.empty() || newPruningType.empty())
     {
@@ -1091,21 +1107,21 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
 {
     SNELOG_INFO("RestorePruning Begin");
 
-    assert(originType != newType);
+    SNE_ASSERT(originType != newType);
 
     SNELOG_INFO("Restoring prunerule, group[{}], originType[{}], newType[{}]", changedGroup,
                 originType, newType);
     // Restore pruned nodes first so ports exist when re-attaching edges.
     for (auto it = m_nodesPruned.begin(); it != m_nodesPruned.end();)
     {
-        const NodeUniqueId nodeUid = it->first;
-        Node&              node    = it->second;
+        const NodeUniqueId nodeUid   = it->first;
+        Node&              node      = it->second;
         bool               erasedOne = false;
         for (const auto& pruningRule : node.GetYamlNode().m_PruningRules)
         {
             if (pruningRule.m_Group == changedGroup && pruningRule.m_Type == newType)
             {
-                assert(pruningRule.m_Type != originType);
+                SNE_ASSERT(pruningRule.m_Type != originType);
                 if (m_nodes.find(nodeUid) == m_nodes.end())
                 {
                     SNELOG_INFO("Resotre node with nodeUid[{}], yamlNodeName[{}], yamlNodeId[{}]",
@@ -1127,7 +1143,7 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
                             restoredNode.GetOutputPort(outPort.GetPortUniqueId());
                     }
 
-                    it = m_nodesPruned.erase(it);
+                    it        = m_nodesPruned.erase(it);
                     erasedOne = true;
                 }
                 else
@@ -1143,14 +1159,14 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
     // Restore pruned edges and reattach them to ports.
     for (auto it = m_edgesPruned.begin(); it != m_edgesPruned.end();)
     {
-        const EdgeUniqueId edgeUid = it->first;
-        Edge&              edge    = it->second;
+        const EdgeUniqueId edgeUid   = it->first;
+        Edge&              edge      = it->second;
         bool               erasedOne = false;
         for (const auto& pruningRule : edge.GetYamlEdge().m_yamlDstPort.m_PruningRules)
         {
             if (pruningRule.m_Group == changedGroup && pruningRule.m_Type == newType)
             {
-                assert(pruningRule.m_Type != originType);
+                SNE_ASSERT(pruningRule.m_Type != originType);
                 if (m_edges.find(edgeUid) == m_edges.end())
                 {
                     SNELOG_INFO(
@@ -1167,7 +1183,7 @@ void NodeEditor::RestorePruning(const std::string& changedGroup, const std::stri
                     PortUniqueId srcPort = restoredEdge.GetSourcePortUid();
                     m_outportPorts.at(srcPort)->PushEdge(edgeUid);
                     erasedOne = true;
-                    it = m_edgesPruned.erase(it);
+                    it        = m_edgesPruned.erase(it);
                 }
                 else
                 {
@@ -1248,7 +1264,8 @@ void NodeEditor::SyncPruningRuleBetweenNodeAndEdge(const Node& node, Edge& edge)
             if (ret.value()->m_Type != pruningRule.m_Type)
             {
                 SNELOG_WARN(
-                    "Pruning rules confliced, edge's rule will be overried! nodeUid[{}] nodeName[{}] "
+                    "Pruning rules confliced, edge's rule will be overried! nodeUid[{}] "
+                    "nodeName[{}] "
                     "pruning_mGroup[{}] pruning_mType[{}];"
                     "edgeUid[{}] edgeSrcPortName[{}] edgeDstPortName[{}] pruning_mGroup[{}] "
                     "pruning_mType[{}]",
@@ -1267,7 +1284,6 @@ void NodeEditor::SyncPruningRuleBetweenNodeAndEdge(const Node& node, Edge& edge)
     }
 }
 
-
 void NodeEditor::HandleNodeInfoEditing()
 {
     static NodeUniqueId nodeUidToBePoped{-1};
@@ -1276,7 +1292,7 @@ void NodeEditor::HandleNodeInfoEditing()
     // handle userinteractions to prepare for popup
     if (ImNodes::IsNodeHovered(&selectedNode) && ImGui::IsMouseDoubleClicked(0))
     {
-        assert(selectedNode != -1);
+        SNE_ASSERT(selectedNode != -1);
         SNELOG_INFO("node with nodeUid[{}] has been double clicked", selectedNode);
 
         nodeUidToBePoped = selectedNode;
@@ -1284,7 +1300,7 @@ void NodeEditor::HandleNodeInfoEditing()
         if (m_nodes.contains(selectedNode))
         {
             const YamlNode& yn = m_nodes.at(selectedNode).GetYamlNode();
-            popUpYamlNode = yn;
+            popUpYamlNode      = yn;
             ImGui::SetNextWindowPos(ImGui::GetMousePos());
             ImGui::OpenPopup("Node Info Editor");
         }
@@ -1294,14 +1310,17 @@ void NodeEditor::HandleNodeInfoEditing()
     ImGuiIO& io                    = ImGui::GetIO();
     ImVec2   mainWindowDisplaySize = io.DisplaySize;
     ImGui::SetNextWindowSize(ImVec2{mainWindowDisplaySize.x / 4, mainWindowDisplaySize.y / 4});
-    if (ImGui::BeginPopupModal("Node Info Editor", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_HorizontalScrollbar))
+    if (ImGui::BeginPopupModal(
+            "Node Info Editor", nullptr,
+            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_HorizontalScrollbar))
     {
         // show basic node info
         ImGui::Text("NodeInfoEditor");
         ImGui::Separator();
         ImGui::Text("BasicInfos:");
         ImGui::Text("NodeUid: %d", nodeUidToBePoped);
-        ImGui::Text("NodeName: "); ImGui::SameLine();
+        ImGui::Text("NodeName: ");
+        ImGui::SameLine();
         ImGui::InputText("##NodeName", &popUpYamlNode.m_nodeName);
         ImGui::Text("YamlId: %d", popUpYamlNode.m_nodeYamlId);
         ImGui::Text("YamlType: %d", popUpYamlNode.m_nodeYamlType);
@@ -1310,7 +1329,9 @@ void NodeEditor::HandleNodeInfoEditing()
 
         // node property show
         ImGui::TextUnformatted("Properties: ");
-        if (ImGui::BeginTable("PropertiesTable", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders))
+        if (ImGui::BeginTable("PropertiesTable", 3,
+                              ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings |
+                                  ImGuiTableFlags_Borders))
         {
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("Id", ImGuiTableColumnFlags_WidthStretch);
@@ -1323,18 +1344,20 @@ void NodeEditor::HandleNodeInfoEditing()
                 ImGui::TableSetColumnIndex(0);
                 const std::string prop_name_label = std::string("##prop_name_") + std::to_string(i);
                 ImGui::SetNextItemWidth(-FLT_MIN);
-                ImGui::InputText(prop_name_label.c_str(), &popUpYamlNode.m_Properties[i].m_propertyName, ImGuiInputTextFlags_CharsNoBlank);
+                ImGui::InputText(prop_name_label.c_str(),
+                                 &popUpYamlNode.m_Properties[i].m_propertyName,
+                                 ImGuiInputTextFlags_CharsNoBlank);
 
                 ImGui::TableSetColumnIndex(1);
                 const std::string prop_id_label = std::string("##prop_id_") + std::to_string(i);
                 ImGui::SetNextItemWidth(-FLT_MIN);
                 ImGui::InputInt(prop_id_label.c_str(), &popUpYamlNode.m_Properties[i].m_propertyId);
 
-
                 ImGui::TableSetColumnIndex(2);
                 const std::string prop_value_label = std::string("##prop_val_") + std::to_string(i);
                 ImGui::SetNextItemWidth(-FLT_MIN);
-                ImGui::InputText(prop_value_label.c_str(), &popUpYamlNode.m_Properties[i].m_propertyValue);
+                ImGui::InputText(prop_value_label.c_str(),
+                                 &popUpYamlNode.m_Properties[i].m_propertyValue);
             }
             ImGui::EndTable();
         }
@@ -1345,25 +1368,30 @@ void NodeEditor::HandleNodeInfoEditing()
             ImGui::OpenPopup("AddNodeProperty");
         }
 
-        if (ImGui::BeginPopupModal("AddNodeProperty", nullptr,
-                                    ImGuiWindowFlags_AlwaysAutoResize))
-        {   
+        if (ImGui::BeginPopupModal("AddNodeProperty", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
             ImGui::PushItemWidth(70.f);
             YamlNodeProperty newProperty;
-            ImGui::InputText("propertyName", &newProperty.m_propertyName); ImGui::SameLine();
-            ImGui::InputInt("propertyId", &newProperty.m_propertyId); ImGui::SameLine();
-            ImGui::InputText("propertyValue", &newProperty.m_propertyValue); ImGui::SameLine();
+            ImGui::InputText("propertyName", &newProperty.m_propertyName);
+            ImGui::SameLine();
+            ImGui::InputInt("propertyId", &newProperty.m_propertyId);
+            ImGui::SameLine();
+            ImGui::InputText("propertyValue", &newProperty.m_propertyValue);
+            ImGui::SameLine();
             ImGui::PopItemWidth();
 
             ImGui::PushItemWidth(50.f);
-            if (ImGui::Button("Done") )
+            if (ImGui::Button("Done"))
             {
                 popUpYamlNode.m_Properties.push_back(std::move(newProperty));
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
             ImGui::SetNextItemShortcut(ImGuiKey_Escape);
-            if (ImGui::Button("Cancel")) { ImGui::CloseCurrentPopup(); }
+            if (ImGui::Button("Cancel"))
+            {
+                ImGui::CloseCurrentPopup();
+            }
             ImGui::PopItemWidth();
             ImGui::EndPopup();
         }
@@ -1371,13 +1399,16 @@ void NodeEditor::HandleNodeInfoEditing()
         // PruningRule Show
         ImGui::Separator();
         ImGui::TextUnformatted("Pruning Rules:");
-        int remove_node_prune_idx = -1;
+        int  remove_node_prune_idx = -1;
         auto shouldBeDeleted = popUpYamlNode.m_PruningRules.end(); // static or normal variable?
-        for (auto iter = popUpYamlNode.m_PruningRules.begin(); iter != popUpYamlNode.m_PruningRules.end(); ++iter)
+        for (auto iter = popUpYamlNode.m_PruningRules.begin();
+             iter != popUpYamlNode.m_PruningRules.end(); ++iter)
         {
             ImGui::PushItemWidth(50.f);
-            ImGui::TextUnformatted(iter->m_Group.c_str ()); ImGui::SameLine();
-            ImGui::TextUnformatted(iter->m_Type.c_str()); ImGui::SameLine();
+            ImGui::TextUnformatted(iter->m_Group.c_str());
+            ImGui::SameLine();
+            ImGui::TextUnformatted(iter->m_Type.c_str());
+            ImGui::SameLine();
             // PruningRule Delete
             if (ImGui::SmallButton((std::string("Remove").c_str())))
             {
@@ -1397,17 +1428,23 @@ void NodeEditor::HandleNodeInfoEditing()
         if (ImGui::SmallButton("AddPruningRule"))
         {
             ImGui::SetNextWindowPos(ImGui::GetMousePos(), ImGuiCond_Appearing);
-            if (!m_allPruningRules.empty()) { ImGui::OpenPopup("AddNodePruningRule"); }
-            else {SNELOG_ERROR("Please Add global pruning rule please");}
+            if (!m_allPruningRules.empty())
+            {
+                ImGui::OpenPopup("AddNodePruningRule");
+            }
+            else
+            {
+                SNELOG_ERROR("Please Add global pruning rule please");
+            }
         }
 
-        // Modal popup: choose a group/type from m_allPruningRules 
+        // Modal popup: choose a group/type from m_allPruningRules
         if (ImGui::BeginPopupModal("AddNodePruningRule", nullptr,
-                                    ImGuiWindowFlags_AlwaysAutoResize))
+                                   ImGuiWindowFlags_AlwaysAutoResize))
         {
             std::vector<std::string_view> groups{(m_allPruningRules | std::views::keys).begin(),
-                                (m_allPruningRules | std::views::keys).end()};
-            static int selectedGroupIndex = 0;
+                                                 (m_allPruningRules | std::views::keys).end()};
+            static int                    selectedGroupIndex = 0;
             if (ImGui::BeginCombo("Group", groups[selectedGroupIndex].data()))
             {
                 for (size_t i = 0; i < groups.size(); ++i)
@@ -1421,7 +1458,7 @@ void NodeEditor::HandleNodeInfoEditing()
 
             const auto& typeSet = m_allPruningRules.at(groups[selectedGroupIndex].data());
             std::vector<std::string_view> types{typeSet.begin(), typeSet.end()};
-            static int selectedTypeIndex = 0;
+            static int                    selectedTypeIndex = 0;
             // types for selected group
             if (ImGui::BeginCombo("Type", types[selectedTypeIndex].data()))
             {
@@ -1436,9 +1473,10 @@ void NodeEditor::HandleNodeInfoEditing()
 
             ImGui::Separator();
 
-            if (ImGui::Button("Done") )
+            if (ImGui::Button("Done"))
             {
-                std::string_view chosenGroup = groups.empty() ? std::string() : groups[selectedGroupIndex];
+                std::string_view chosenGroup =
+                    groups.empty() ? std::string() : groups[selectedGroupIndex];
                 std::string_view chosenType = types[selectedTypeIndex];
 
                 if (!chosenGroup.empty() && !chosenType.empty())
@@ -1449,18 +1487,26 @@ void NodeEditor::HandleNodeInfoEditing()
                     {
                         if (iterGroup == chosenGroup)
                         {
-                            SNELOG_WARN("This rule[Group[{}],Type[{}]] belongs to the same group may override the original one !", chosenGroup, chosenType);
+                            SNELOG_WARN(
+                                "This rule[Group[{}],Type[{}]] belongs to the same group may "
+                                "override the original one !",
+                                chosenGroup, chosenType);
                             addIt = false;
                             break;
                         }
                     }
-                    if (addIt) popUpYamlNode.m_PruningRules.push_back({chosenGroup.data(), chosenType.data()});
+                    if (addIt)
+                        popUpYamlNode.m_PruningRules.push_back(
+                            {chosenGroup.data(), chosenType.data()});
                 }
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
             ImGui::SetNextItemShortcut(ImGuiKey_Escape);
-            if (ImGui::Button("Cancel")) { ImGui::CloseCurrentPopup(); }
+            if (ImGui::Button("Cancel"))
+            {
+                ImGui::CloseCurrentPopup();
+            }
 
             ImGui::EndPopup();
         }
@@ -1477,7 +1523,9 @@ void NodeEditor::HandleNodeInfoEditing()
             {
                 // Commit edited values back into the node's YamlNode
                 m_nodes.at(nodeUidToBePoped).GetYamlNode() = popUpYamlNode;
-                m_nodes.at(nodeUidToBePoped).SetNodeTitle(popUpYamlNode.m_nodeName + "_" + std::to_string(popUpYamlNode.m_nodeYamlId));
+                m_nodes.at(nodeUidToBePoped)
+                    .SetNodeTitle(popUpYamlNode.m_nodeName + "_" +
+                                  std::to_string(popUpYamlNode.m_nodeYamlId));
                 // sync pruning rule between node and edges
                 SyncPruningRules(m_nodes.at(nodeUidToBePoped));
                 if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))
@@ -1492,7 +1540,6 @@ void NodeEditor::HandleNodeInfoEditing()
             {
                 ImGui::CloseCurrentPopup();
             }
-
         }
         ImGui::EndPopup();
     }
@@ -1507,7 +1554,7 @@ void NodeEditor::HandleEdgeInfoEditing()
     // handle user interaction to prepare for the popup
     if (ImNodes::IsLinkHovered(&selectedEdge) && ImGui::IsMouseDoubleClicked(0))
     {
-        assert(selectedEdge != -1);
+        SNE_ASSERT(selectedEdge != -1);
         SNELOG_INFO("Edge with EdgeUid[{}] has been double clicked", selectedEdge);
         edgeUidToBePoped = selectedEdge;
         if (m_edges.contains(selectedEdge))
@@ -1522,8 +1569,9 @@ void NodeEditor::HandleEdgeInfoEditing()
     ImVec2   mainWindowDisplaySize = io.DisplaySize;
     ImGui::SetNextWindowSize(ImVec2{mainWindowDisplaySize.x / 4, mainWindowDisplaySize.y / 4});
 
-    if (ImGui::BeginPopupModal("Edge Info Editor", nullptr,
-                               ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_HorizontalScrollbar))
+    if (ImGui::BeginPopupModal(
+            "Edge Info Editor", nullptr,
+            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_HorizontalScrollbar))
     {
         ImGui::Text("Edge UID: %d", edgeUidToBePoped);
         ImGui::Separator();
@@ -1531,36 +1579,43 @@ void NodeEditor::HandleEdgeInfoEditing()
         // Source Port (read-only)
         ImGui::TextUnformatted("Source Port:");
         ImGui::Text("NodeId: %d", popUpYamlEdge.m_yamlSrcPort.m_nodeYamlId);
-        ImGui::TextUnformatted((std::string("NodeName: ") + popUpYamlEdge.m_yamlSrcPort.m_nodeName).c_str());
+        ImGui::TextUnformatted(
+            (std::string("NodeName: ") + popUpYamlEdge.m_yamlSrcPort.m_nodeName).c_str());
         ImGui::Text("PortId: %d", popUpYamlEdge.m_yamlSrcPort.m_portYamlId);
-        ImGui::TextUnformatted((std::string("PortName: ") + popUpYamlEdge.m_yamlSrcPort.m_portName).c_str());
+        ImGui::TextUnformatted(
+            (std::string("PortName: ") + popUpYamlEdge.m_yamlSrcPort.m_portName).c_str());
 
         ImGui::Separator();
 
         // Destination Port (read-only)
         ImGui::TextUnformatted("Destination Port:");
         ImGui::Text("NodeId: %d", popUpYamlEdge.m_yamlDstPort.m_nodeYamlId);
-        ImGui::TextUnformatted((std::string("NodeName: ") + popUpYamlEdge.m_yamlDstPort.m_nodeName).c_str());
+        ImGui::TextUnformatted(
+            (std::string("NodeName: ") + popUpYamlEdge.m_yamlDstPort.m_nodeName).c_str());
         ImGui::Text("PortId: %d", popUpYamlEdge.m_yamlDstPort.m_portYamlId);
-        ImGui::TextUnformatted((std::string("PortName: ") + popUpYamlEdge.m_yamlDstPort.m_portName).c_str());
+        ImGui::TextUnformatted(
+            (std::string("PortName: ") + popUpYamlEdge.m_yamlDstPort.m_portName).c_str());
 
         ImGui::Separator();
         ImGui::TextUnformatted("DestinationPortPruningRules:");
 
-        int remove_prune_idx = -1;
-        auto shouldBeDeleted = popUpYamlEdge.m_yamlDstPort.m_PruningRules.end();
-        Node& srcNode = m_nodes.at(m_edges.at(edgeUidToBePoped).GetSourceNodeUid());
-        Node& dstNode = m_nodes.at(m_edges.at(edgeUidToBePoped).GetDestinationNodeUid());
+        int   remove_prune_idx = -1;
+        auto  shouldBeDeleted  = popUpYamlEdge.m_yamlDstPort.m_PruningRules.end();
+        Node& srcNode          = m_nodes.at(m_edges.at(edgeUidToBePoped).GetSourceNodeUid());
+        Node& dstNode          = m_nodes.at(m_edges.at(edgeUidToBePoped).GetDestinationNodeUid());
 
-        for (auto iter = popUpYamlEdge.m_yamlDstPort.m_PruningRules.begin(); iter != popUpYamlEdge.m_yamlDstPort.m_PruningRules.end(); ++iter)
+        for (auto iter = popUpYamlEdge.m_yamlDstPort.m_PruningRules.begin();
+             iter != popUpYamlEdge.m_yamlDstPort.m_PruningRules.end(); ++iter)
         {
             ImGui::PushItemWidth(50.f);
-            ImGui::TextUnformatted(iter->m_Group.c_str ()); ImGui::SameLine();
+            ImGui::TextUnformatted(iter->m_Group.c_str());
+            ImGui::SameLine();
             ImGui::TextUnformatted(iter->m_Type.c_str());
             // PruningRule Delete
-            // onlu when the attached node does not has the pruning rule can users delete the pruning rule
+            // onlu when the attached node does not has the pruning rule can users delete the
+            // pruning rule
             if (!GetMatchedPruningRuleByGroup(*iter, srcNode.GetYamlNode().m_PruningRules) &&
-                !GetMatchedPruningRuleByGroup(*iter, dstNode.GetYamlNode().m_PruningRules) ) 
+                !GetMatchedPruningRuleByGroup(*iter, dstNode.GetYamlNode().m_PruningRules))
             {
                 ImGui::SameLine();
                 if (ImGui::SmallButton((std::string("Remove").c_str())))
@@ -1581,16 +1636,19 @@ void NodeEditor::HandleEdgeInfoEditing()
         if (ImGui::SmallButton("New"))
         {
             ImGui::SetNextWindowPos(ImGui::GetMousePos(), ImGuiCond_Appearing);
-            if (!m_allPruningRules.empty()) { ImGui::OpenPopup("AddEdgePruningRule"); }
+            if (!m_allPruningRules.empty())
+            {
+                ImGui::OpenPopup("AddEdgePruningRule");
+            }
         }
 
-                // Modal popup: choose a group/type from m_allPruningRules 
+        // Modal popup: choose a group/type from m_allPruningRules
         if (ImGui::BeginPopupModal("AddEdgePruningRule", nullptr,
-                                    ImGuiWindowFlags_AlwaysAutoResize))
+                                   ImGuiWindowFlags_AlwaysAutoResize))
         {
             std::vector<std::string_view> groups{(m_allPruningRules | std::views::keys).begin(),
-                                (m_allPruningRules | std::views::keys).end()};
-            static int selectedGroupIndex = 0;
+                                                 (m_allPruningRules | std::views::keys).end()};
+            static int                    selectedGroupIndex = 0;
             if (ImGui::BeginCombo("Group", groups[selectedGroupIndex].data()))
             {
                 for (size_t i = 0; i < groups.size(); ++i)
@@ -1604,7 +1662,7 @@ void NodeEditor::HandleEdgeInfoEditing()
 
             const auto& typeSet = m_allPruningRules.at(groups[selectedGroupIndex].data());
             std::vector<std::string_view> types{typeSet.begin(), typeSet.end()};
-            static int selectedTypeIndex = 0;
+            static int                    selectedTypeIndex = 0;
             // types for selected group
             if (ImGui::BeginCombo("Type", types[selectedTypeIndex].data()))
             {
@@ -1618,9 +1676,10 @@ void NodeEditor::HandleEdgeInfoEditing()
             }
 
             ImGui::Separator();
-            if (ImGui::Button("Done") )
+            if (ImGui::Button("Done"))
             {
-                std::string_view chosenGroup = groups.empty() ? std::string() : groups[selectedGroupIndex];
+                std::string_view chosenGroup =
+                    groups.empty() ? std::string() : groups[selectedGroupIndex];
                 std::string_view chosenType = types[selectedTypeIndex];
 
                 if (!chosenGroup.empty() && !chosenType.empty())
@@ -1631,18 +1690,26 @@ void NodeEditor::HandleEdgeInfoEditing()
                     {
                         if (iterGroup == chosenGroup)
                         {
-                            SNELOG_WARN("This rule[Group[{}],Type[{}]] belongs to the same group may override the original one !", chosenGroup, chosenType);
+                            SNELOG_WARN(
+                                "This rule[Group[{}],Type[{}]] belongs to the same group may "
+                                "override the original one !",
+                                chosenGroup, chosenType);
                             addIt = false;
                             break;
                         }
                     }
-                    if (addIt) popUpYamlEdge.m_yamlDstPort.m_PruningRules.push_back({chosenGroup.data(), chosenType.data()});
+                    if (addIt)
+                        popUpYamlEdge.m_yamlDstPort.m_PruningRules.push_back(
+                            {chosenGroup.data(), chosenType.data()});
                 }
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
             ImGui::SetNextItemShortcut(ImGuiKey_Escape);
-            if (ImGui::Button("Cancel")) { ImGui::CloseCurrentPopup(); }
+            if (ImGui::Button("Cancel"))
+            {
+                ImGui::CloseCurrentPopup();
+            }
             ImGui::EndPopup();
         }
 
@@ -1665,11 +1732,13 @@ void NodeEditor::HandleEdgeInfoEditing()
             }
             ImGui::SameLine();
             ImGui::SetNextItemShortcut(ImGuiKey_Escape);
-            if (ImGui::Button("Cancel", ImVec2(btnW, 0))) { ImGui::CloseCurrentPopup(); }
+            if (ImGui::Button("Cancel", ImVec2(btnW, 0)))
+            {
+                ImGui::CloseCurrentPopup();
+            }
         }
 
         ImGui::EndPopup();
-        
     }
 }
 
@@ -1702,10 +1771,7 @@ void NodeEditor::HandleOtherUserInputs()
             m_needTopoSort = true;
         }
     }
-
-
 }
-
 
 void NodeEditor::SaveToFile()
 {
@@ -1765,7 +1831,6 @@ void NodeEditor::SaveToFile()
     }
 }
 
-
 bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
 {
     bool ret = true;
@@ -1798,7 +1863,7 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
                        dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId),
                        yamlEdge,
                        false /*avoidMultipleInputLinks*/); // allow multiple edges there, multiple
- // inportEdges will be pruned later
+            // inportEdges will be pruned later
         }
 
         CollectPruningRules(yamlNodes, yamlEdges);

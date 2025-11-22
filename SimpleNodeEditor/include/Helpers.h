@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include "Log.hpp"
 #include "Node.hpp"
-#include <type_traits> 
+#include <type_traits>
 #include <ranges>
 
 namespace SimpleNodeEditor
@@ -17,13 +17,20 @@ using NodeUniqueId = int32_t;
 #define ImGuiColor
 #define COLOR_RED ImVec4(1.0f, 0.f, 0.f, 1.f)
 #endif
-template <typename UidType, typename = std::enable_if_t< std::is_integral_v<UidType> && !std::is_same_v<UidType, bool> >>
-class UniqueIdAllocator {
+template <typename UidType, typename = std::enable_if_t<std::is_integral_v<UidType> &&
+                                                        !std::is_same_v<UidType, bool>>>
+class UniqueIdAllocator
+{
 public:
-    explicit UniqueIdAllocator(const std::string& name = "UnknownAllocator", UidType start = 0) : m_initial_start(start), m_nextUid(start), m_name(name){}
+    explicit UniqueIdAllocator(const std::string& name = "UnknownAllocator", UidType start = 0)
+        : m_initial_start(start), m_nextUid(start), m_name(name)
+    {
+    }
 
-    UidType AllocUniqueID() {
-        while (m_registeredUids.contains(m_nextUid)) {
+    UidType AllocUniqueID()
+    {
+        while (m_registeredUids.contains(m_nextUid))
+        {
             ++m_nextUid;
         }
         UidType allocated = m_nextUid++;
@@ -31,36 +38,42 @@ public:
         return allocated;
     }
 
-    bool RegisterUniqueID(UidType uid) {
+    bool RegisterUniqueID(UidType uid)
+    {
         if (m_registeredUids.contains(uid))
         {
-            SNELOG_INFO("allocator[{}] uid[{}] has already been allocated or registered", m_name, uid);
+            SNELOG_INFO("allocator[{}] uid[{}] has already been allocated or registered", m_name,
+                        uid);
         }
         return m_registeredUids.insert(uid).second;
     }
 
-    bool UnregisterUniqueID(UidType uid) {
+    bool UnregisterUniqueID(UidType uid)
+    {
         bool existed = m_registeredUids.erase(uid);
-        if (existed && uid < m_nextUid) {
+        if (existed && uid < m_nextUid)
+        {
             m_nextUid = uid;
         }
         return existed;
     }
 
-    bool IsRegistered(UidType uid) const {
+    bool IsRegistered(UidType uid) const
+    {
         return m_registeredUids.contains(uid);
     }
 
-    void Clear() {
+    void Clear()
+    {
         m_registeredUids.clear();
         m_nextUid = m_initial_start;
     }
 
 private:
-    const UidType m_initial_start;
-    UidType m_nextUid;
+    const UidType               m_initial_start;
+    UidType                     m_nextUid;
     std::unordered_set<UidType> m_registeredUids;
-    std::string m_name;
+    std::string                 m_name;
 };
 
 template <typename T>
@@ -72,12 +85,12 @@ struct UniqueIdGenerator
         return m_Uid++;
     }
 };
-template<typename T>
+template <typename T>
 size_t GetMatchedIndex(const std::vector<T>& inputVec, const T& comp)
 {
     for (size_t index = 0; index < inputVec.size(); ++index)
     {
-        if (inputVec[index] == comp) 
+        if (inputVec[index] == comp)
         {
             return index;
         }
@@ -89,8 +102,12 @@ size_t GetMatchedIndex(const std::vector<T>& inputVec, const T& comp)
 inline void DumpEdge(const Edge& edge)
 {
     SNELOG_INFO("EdgeInfo , EdgeUid[{}]:", edge.GetEdgeUniqueId());
-    SNELOG_INFO("\t srcNodeUid[{}] srcYamlNodeName[{}], srcYamlportName[{}]", edge.GetSourceNodeUid(), edge.GetYamlEdge().m_yamlSrcPort.m_nodeName, edge.GetYamlEdge().m_yamlSrcPort.m_portName);
-    SNELOG_INFO("\t dstNodeUid[{}] dstYajmlNodeName[{}], dstYamlportName[{}]", edge.GetDestinationNodeUid(), edge.GetYamlEdge().m_yamlDstPort.m_nodeName, edge.GetYamlEdge().m_yamlDstPort.m_portName);
+    SNELOG_INFO("\t srcNodeUid[{}] srcYamlNodeName[{}], srcYamlportName[{}]",
+                edge.GetSourceNodeUid(), edge.GetYamlEdge().m_yamlSrcPort.m_nodeName,
+                edge.GetYamlEdge().m_yamlSrcPort.m_portName);
+    SNELOG_INFO("\t dstNodeUid[{}] dstYajmlNodeName[{}], dstYamlportName[{}]",
+                edge.GetDestinationNodeUid(), edge.GetYamlEdge().m_yamlDstPort.m_nodeName,
+                edge.GetYamlEdge().m_yamlDstPort.m_portName);
 }
 
 // must be a inline function to avoid vialation of OneDefinitionRule
@@ -98,7 +115,7 @@ inline std::vector<std::vector<NodeUniqueId>> TopologicalSort(
     std::unordered_map<NodeUniqueId, Node>& nodesMap,
     std::unordered_map<EdgeUniqueId, Edge>& edgesMap)
 {
-    if (nodesMap.size() == 0 )
+    if (nodesMap.size() == 0)
     {
         SNELOG_WARN("nodesMap size == 0");
         return {};
@@ -106,13 +123,13 @@ inline std::vector<std::vector<NodeUniqueId>> TopologicalSort(
 
     if (edgesMap.size() == 0)
     {
-        auto nodeIds = nodesMap | std::views::keys; 
+        auto nodeIds = nodesMap | std::views::keys;
         SNELOG_WARN("edgesMap size == 0, return one topo order, nodesize = [{}]", nodeIds.size());
         return {{nodeIds.begin(), nodeIds.end()}};
     }
 
     std::vector<std::vector<NodeUniqueId>> result;
-    std::unordered_map<NodeUniqueId, int> degrees;
+    std::unordered_map<NodeUniqueId, int>  degrees;
     // init all node's degree to 0
     for (const auto& [nodeUid, _] : nodesMap)
     {
