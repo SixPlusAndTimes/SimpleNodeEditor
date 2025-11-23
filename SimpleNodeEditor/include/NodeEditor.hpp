@@ -43,8 +43,6 @@ private:
     void HandleAddEdges();
     void AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid, const YamlEdge& yamlEdge = {},
                     bool avoidMultipleInputLinks = true);
-    [[nodiscard]] bool IsInportAlreadyHasEdge(PortUniqueId portUid);
-    void               FillYamlEdgePort(YamlPort& yamlPort, const Port& port);
     void               HandleDeletingEdges();
     void               DeleteEdge(EdgeUniqueId edgeUid, bool shouldUnregisterUid);
     void               DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid);
@@ -81,8 +79,10 @@ private:
     void               ClearCurrentPipeLine();
 
 private:
+    // maybe map is better than unorderedmap, 
+    // because so many insert/delete operations contributing to growing memory space of hashmap 
+    // which may never shrink to a suiatable volume
     std::unordered_map<NodeUniqueId, Node> m_nodes; // store nodes that will be rendered on canvas
-
     std::unordered_map<EdgeUniqueId, Edge> m_edges; // store edges that will be rendered on canvas
 
     std::unordered_map<PortUniqueId, InputPort*>
@@ -93,31 +93,34 @@ private:
     UniqueIdAllocator<NodeUniqueId> m_nodeUidGenerator;
     UniqueIdAllocator<PortUniqueId> m_portUidGenerator;
     UniqueIdAllocator<EdgeUniqueId> m_edgeUidGenerator;
-
     UniqueIdAllocator<YamlNode::NodeYamlId> m_yamlNodeUidGenerator;
 
     ImNodesMiniMapLocation m_minimap_location;
 
+    // should held by nodeeditor?
     std::vector<NodeDescription> m_nodeDescriptions;
 
     bool m_needTopoSort;
+    // TODO : may hold the latest toposort res
 
+    // all pruning rule that colleceted from exsiting yamlfile or added by user
     std::unordered_map<std::string, std::set<std::string>> m_allPruningRules;
-    // key : group, value : type
+    // the current prunging value that applied to the the nodes and edges
+    // all pruned nodes or edges are stored in m_nodesPruned and m_edgesPruned
     std::unordered_map<std::string, std::string> m_currentPruninngRule;
-
     std::unordered_map<NodeUniqueId, Node>
-        m_nodesPruned; // store nodes that will be rendered on canvas
-
+        m_nodesPruned; // store nodes that will not be rendered on canvas
     std::unordered_map<EdgeUniqueId, Edge>
-        m_edgesPruned; // store edges that will be rendered on canvas
+        m_edgesPruned; // store edges that will not be rendered on canvas
 
     std::string m_currentPipeLineName;
 
     ImNodesStyle& m_nodeStyle;
 
-    PipelineParser  m_pipeLineParser;
+    // serilizer and deserializer
+    // should held by nodeeditor instance?
     PipelineEmitter m_pipelineEimtter;
+    PipelineParser  m_pipeLineParser;
 };
 } // namespace SimpleNodeEditor
 

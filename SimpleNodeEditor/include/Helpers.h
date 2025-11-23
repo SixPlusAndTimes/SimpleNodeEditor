@@ -2,10 +2,11 @@
 #define HELPERS_H
 #include <vector>
 #include <unordered_map>
-#include "Log.hpp"
-#include "Node.hpp"
 #include <type_traits>
 #include <ranges>
+#include "Log.hpp"
+#include "Node.hpp"
+#include "Common.hpp"
 
 namespace SimpleNodeEditor
 {
@@ -13,10 +14,7 @@ using PortUniqueId = int32_t;
 using EdgeUniqueId = int32_t;
 using NodeUniqueId = int32_t;
 
-#ifndef ImGuiColor
-#define ImGuiColor
-#define COLOR_RED ImVec4(1.0f, 0.f, 0.f, 1.f)
-#endif
+
 template <typename UidType, typename = std::enable_if_t<std::is_integral_v<UidType> &&
                                                         !std::is_same_v<UidType, bool>>>
 class UniqueIdAllocator
@@ -188,7 +186,7 @@ inline std::vector<std::vector<NodeUniqueId>> TopologicalSort(
             allNodeDegreeZero = false;
         }
     }
-    assert(allNodeDegreeZero);
+    SNE_ASSERT(allNodeDegreeZero, "Not All NodeDegrees are zero, checkit");
 
     return result;
 }

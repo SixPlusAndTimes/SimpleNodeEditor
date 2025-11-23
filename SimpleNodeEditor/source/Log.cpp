@@ -17,6 +17,9 @@ Log::Log()
 
     m_spdLogger = std::make_shared<spdlog::logger>("SNELogger", begin(logSinks), end(logSinks));
     spdlog::register_logger(m_spdLogger);
+
+    // enable backtrace
+    spdlog::enable_backtrace(10); 
 }
 
 void Log::SetLogLevel(const std::string& logLevelStr)

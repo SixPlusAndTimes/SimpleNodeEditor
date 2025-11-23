@@ -204,7 +204,7 @@ void NodeEditor::ShowNodes()
             {
                 const InputPort&    ip = inPorts[row];
                 CustumiszedDrawData custumiszedDrawData{std::to_string(row), ImVec2{-15.f, -10.f},
-                                                        IM_COL32(255, 0, 0, 255)};
+                                                        COLOR_RED_U32};
                 ImNodes::BeginInputAttribute(ip.GetPortUniqueId(), custumiszedDrawData);
                 ImGui::TextUnformatted(ip.GetPortname().data());
                 ImNodes::EndInputAttribute();
@@ -281,7 +281,7 @@ void NodeEditor::ShowPipelineName()
         ImVec2 mainWindowDisplaySize = ImGui::GetIO().DisplaySize;
         ImGui::SetNextWindowSize(ImVec2{mainWindowDisplaySize.x / 4, mainWindowDisplaySize.y / 4});
     }
-
+    // pipeline name edit
     static std::string newPipeLineName{m_currentPipeLineName};
     if (ImGui::BeginPopupModal("PipelineNameChange", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
@@ -637,11 +637,39 @@ void NodeEditor::HandleAddEdges()
     }
 }
 
+bool IsInportAlreadyHasEdge(PortUniqueId portUid, std::unordered_map<PortUniqueId, InputPort*>& inports)
+{
+    auto iter = inports.find(portUid);
+    if (iter != inports.end())
+    {
+        InputPort* inport = iter->second;
+        if (inport->GetEdgeUid() != -1)
+        {
+            SNELOG_INFO("inportportid = {}, edgeUid = {}", portUid, inport->GetEdgeUid());
+            return true;
+        }
+    }
+    else
+    {
+        SNELOG_ERROR("can not find inport, portid = {}, checkit!", portUid);
+    }
+    return false;
+}
+
+void FillYamlEdgePort(YamlPort& yamlPort, const Port& port, std::unordered_map<NodeUniqueId, Node>& nodes)
+{
+    const Node& node      = nodes.at(port.OwnedByNodeUid());
+    yamlPort.m_nodeName   = node.GetNodeTitle();
+    yamlPort.m_nodeYamlId = node.GetYamlNode().m_nodeYamlId;
+    yamlPort.m_portName   = port.GetPortname();
+    yamlPort.m_portYamlId = port.GetPortYamlId();
+}
+
 void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
                             const YamlEdge& yamlEdge, bool avoidMultipleInputLinks)
 {
     // avoid multiple edges linking to the same inport
-    if (avoidMultipleInputLinks && IsInportAlreadyHasEdge(dstPortUid))
+    if (avoidMultipleInputLinks && IsInportAlreadyHasEdge(dstPortUid, m_inportPorts))
     {
         SNELOG_WARN("inport port can not have multiple edges, inportUid[{}] portName[{}]",
                     dstPortUid, m_inportPorts.at(dstPortUid)->GetPortname());
@@ -658,7 +686,7 @@ void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
         newEdge.SetDestinationNodeUid(inputPort.OwnedByNodeUid());
         if (!yamlEdge.m_isValid)
         {
-            FillYamlEdgePort(newEdge.GetYamlEdge().m_yamlDstPort, inputPort);
+            FillYamlEdgePort(newEdge.GetYamlEdge().m_yamlDstPort, inputPort, m_nodes);
         }
         SyncPruningRuleBetweenNodeAndEdge(m_nodes.at(inputPort.OwnedByNodeUid()), newEdge);
     }
@@ -678,7 +706,7 @@ void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
         newEdge.SetSourceNodeUid(outpurPort.OwnedByNodeUid());
         if (!yamlEdge.m_isValid)
         {
-            FillYamlEdgePort(newEdge.GetYamlEdge().m_yamlSrcPort, outpurPort);
+            FillYamlEdgePort(newEdge.GetYamlEdge().m_yamlSrcPort, outpurPort, m_nodes);
         }
         SyncPruningRuleBetweenNodeAndEdge(m_nodes.at(outpurPort.OwnedByNodeUid()), newEdge);
     }
@@ -694,33 +722,6 @@ void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
     m_edges.emplace(newEdge.GetEdgeUniqueId(), (newEdge));
 }
 
-bool NodeEditor::IsInportAlreadyHasEdge(PortUniqueId portUid)
-{
-    auto iter = m_inportPorts.find(portUid);
-    if (iter != m_inportPorts.end())
-    {
-        InputPort* inport = iter->second;
-        if (inport->GetEdgeUid() != -1)
-        {
-            SNELOG_INFO("inportportid = {}, edgeUid = {}", portUid, inport->GetEdgeUid());
-            return true;
-        }
-    }
-    else
-    {
-        SNELOG_ERROR("can not find inport, portid = {}, checkit!", portUid);
-    }
-    return false;
-}
-
-void NodeEditor::FillYamlEdgePort(YamlPort& yamlPort, const Port& port)
-{
-    const Node& node      = m_nodes.at(port.OwnedByNodeUid());
-    yamlPort.m_nodeName   = node.GetNodeTitle();
-    yamlPort.m_nodeYamlId = node.GetYamlNode().m_nodeYamlId;
-    yamlPort.m_portName   = port.GetPortname();
-    yamlPort.m_portYamlId = port.GetPortYamlId();
-}
 
 void NodeEditor::HandleDeletingEdges()
 {
