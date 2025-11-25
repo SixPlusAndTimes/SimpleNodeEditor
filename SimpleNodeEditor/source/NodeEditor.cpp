@@ -2,13 +2,14 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imnodes_internal.h"
+#include "imgui_stdlib.h"
+#include "Log.hpp"
+#include "Common.hpp"
+#include "Notify.hpp"
 #include <cstdint>
 #include <unordered_set>
 #include <set>
 #include <algorithm>
-#include "imgui_stdlib.h"
-#include "Log.hpp"
-#include "Common.hpp"
 #include <numeric>
 // Windows headers should come after STL to avoid macro conflicts
 #define NOMINMAX  // Prevent Windows from defining min/max macros
@@ -47,7 +48,7 @@ NodeEditor::NodeEditor()
       m_portUidGenerator("portUidAllocator"),
       m_edgeUidGenerator("edgeUidAllocator"),
       m_yamlNodeUidGenerator("yamlNodeUidAllocator"),
-      m_minimap_location(ImNodesMiniMapLocation_BottomRight),
+      m_minimap_location(ImNodesMiniMapLocation_TopRight),
       m_needTopoSort(false),
       m_allPruningRules(),
       m_currentPruninngRule(),
@@ -66,7 +67,6 @@ NodeEditor::NodeEditor()
         s_nodeDescriptionsTypeDesMap.emplace(nodeD.m_yamlNodeType, nodeD);
         s_nodeDescriptionsNameDesMap.emplace(nodeD.m_nodeName, nodeD);
     }
-    // ImNodes::GetStyle().Flags |= ImNodesStyleFlags_GridSnapping;
 }
 
 void NodeEditor::NodeEditorInitialize()
@@ -82,6 +82,7 @@ void NodeEditor::NodeEditorShow()
 
     ShowGrapghEditWindow(mainWindowDisplaySize);
     ShowPruningRuleEditWinddow(mainWindowDisplaySize);
+    Notifier::Draw();
 }
 
 void NodeEditor::NodeEditorDestroy() {}
@@ -570,6 +571,8 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const Yaml
         SNELOG_ERROR("m_nodes insert new node fail! check it!");
         return -1;
     }
+    Notifier::Add(Message(Message::Type::WARNING,"", "Test NewNode Added"));
+    Notifier::Add(Message(Message::Type::ERR, "", "Test NewNode Added"));
     return ret;
 }
 

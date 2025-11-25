@@ -1,9 +1,9 @@
 #ifndef NODEEDITOR_H
 #define NODEEDITOR_H
 #include "Node.hpp"
+#include <unordered_set>
 #include "imnodes.h"
 #include "NodeDescription.hpp"
-#include <unordered_set>
 #include <set>
 #include "Helpers.h"
 #include "YamlParser.hpp"
