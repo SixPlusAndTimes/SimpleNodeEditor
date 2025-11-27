@@ -957,24 +957,6 @@ void NodeEditor::CollectPruningRules(std::vector<YamlNode> yamlNodes,
     }
 }
 
-bool NodeEditor::IsAllEdgesWillBePruned(NodeUniqueId                            nodeUid,
-                                        const std::unordered_set<EdgeUniqueId>& shouldBeDeleteEdges)
-{
-    const Node&                      node  = m_nodes.at(nodeUid);
-    const std::vector<EdgeUniqueId>& edges = node.GetAllEdgeUids();
-
-    bool ret = true;
-    for (EdgeUniqueId edgeUid : edges)
-    {
-        if (!shouldBeDeleteEdges.contains(edgeUid))
-        {
-            SNELOG_ERROR("NodeUid[{}] NodeYamlId[{}], still has EdgeUid[{}] not pruned", nodeUid,
-                         m_nodes.at(nodeUid).GetYamlNode().m_nodeYamlId, edgeUid);
-            ret = false;
-        }
-    }
-    return ret;
-}
 
 bool NodeEditor::AddNewPruningRule(
     const std::string& newPruningGroup, const std::string& newPruningType,
@@ -1003,6 +985,24 @@ bool NodeEditor::AddNewPruningRule(
     }
 
     return true;
+}
+
+bool IsAllEdgesWillBePruned(const Node& node,
+                                        const std::unordered_set<EdgeUniqueId>& shouldBeDeleteEdges)
+{
+    const std::vector<EdgeUniqueId>& edges = node.GetAllEdgeUids();
+
+    bool ret = true;
+    for (EdgeUniqueId edgeUid : edges)
+    {
+        if (!shouldBeDeleteEdges.contains(edgeUid))
+        {
+            SNELOG_ERROR("NodeUid[{}] NodeYamlId[{}], still has EdgeUid[{}] not pruned", node.GetNodeUniqueId(),
+                         node.GetYamlNode().m_nodeYamlId, edgeUid);
+            ret = false;
+        }
+    }
+    return ret;
 }
 
 bool NodeEditor::ApplyPruningRule(
@@ -1057,7 +1057,7 @@ bool NodeEditor::ApplyPruningRule(
                     auto iter = m_nodes.find(nodeUid);
                     if (iter != m_nodes.end())
                     {
-                        if (IsAllEdgesWillBePruned(nodeUid, shouldBeDeleteEdges))
+                        if (IsAllEdgesWillBePruned(iter->second, shouldBeDeleteEdges))
                         {
                             SNELOG_INFO("Prune Node with NodeUid[{}] NodeYamlId[{}]", nodeUid,
                                         node.GetYamlNode().m_nodeYamlId);

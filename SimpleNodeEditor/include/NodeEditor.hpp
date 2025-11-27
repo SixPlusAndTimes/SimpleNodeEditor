@@ -53,9 +53,6 @@ private:
     // pruning rule related
     void CollectPruningRules(std::vector<YamlNode> yamlNodes, std::vector<YamlEdge> yamlEdges);
 
-    bool IsAllEdgesWillBePruned(NodeUniqueId                            nodeUid,
-                                const std::unordered_set<EdgeUniqueId>& shouldBeDeleteEdges);
-
     bool AddNewPruningRule(const std::string& newPruningGroup, const std::string& newPruningType,
                            std::unordered_map<std::string, std::set<std::string>>& allPruningRule);
     [[nodiscard]] bool ApplyPruningRule(
