@@ -1513,7 +1513,6 @@ void DrawPinShape(const ImVec2& pin_pos, const ImPinData& pin, const ImU32 pin_c
         break;
     }
 
-    std::string test{"test"};
     if (is_hoverd && pin.CusDrawData.IsValid)
     {
      GImNodes->CanvasDrawList->AddText(pin.Pos + pin.CusDrawData.DrawPos, 

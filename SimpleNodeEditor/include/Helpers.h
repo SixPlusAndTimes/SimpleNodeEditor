@@ -85,21 +85,7 @@ struct UniqueIdGenerator
     }
 };
 
-void DebugDrawRect(ImRect rect)
-{
-    ImDrawList* draw_list    = ImGui::GetWindowDrawList();
-    ImU32       border_color = IM_COL32(255, 0, 0, 255);
-    float       rounding     = 0.0f; // No corner rounding
-    float       thickness    = 1.0f; // Border thickness
-    draw_list->AddRect(rect.Min, rect.Max, border_color, rounding, 0, thickness);
-}
 
-void DegbugDrawCircle(const ImVec2& center, float radius)
-{
-    ImU32       color     = IM_COL32(255, 0, 0, 255);
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    draw_list->AddCircleFilled(center, radius, color);
-}
 
 template <typename T>
 size_t GetMatchedIndex(const std::vector<T>& inputVec, const T& comp)

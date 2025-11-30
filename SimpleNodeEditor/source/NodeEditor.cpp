@@ -205,7 +205,7 @@ void NodeEditor::ShowNodes()
             {
                 const InputPort&    ip = inPorts[row];
                 CustumiszedDrawData custumiszedDrawData{std::to_string(row), ImVec2{-15.f, -10.f},
-                                                        COLOR_RED_U32};
+                                                                        ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text]) };
                 ImNodes::BeginInputAttribute(ip.GetPortUniqueId(), custumiszedDrawData);
                 ImGui::TextUnformatted(ip.GetPortname().data());
                 ImNodes::EndInputAttribute();
@@ -229,7 +229,7 @@ void NodeEditor::ShowNodes()
                 const float textPosX = outColumnX + (maxOutLabelWidth - textW);
 
                 CustumiszedDrawData custumiszedDrawData{std::to_string(row), ImVec2{10.f, -10.f},
-                                                        IM_COL32(255, 0, 0, 255)};
+                                                        ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text])};
                 ImNodes::BeginOutputAttribute(op.GetPortUniqueId(), custumiszedDrawData);
                 // Position the text so its right edge aligns with the column's right edge
                 ImGui::SetCursorPosX(textPosX);
