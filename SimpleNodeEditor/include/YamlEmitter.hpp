@@ -1,8 +1,8 @@
 #ifndef YAMLEMITTER_H
 #define YAMLEMITTER_H
 #include "yaml-cpp/yaml.h"
-#include "Node.hpp"
-
+#include "DataStructureEditor.hpp"
+#include "DataStructureYaml.hpp"
 namespace SimpleNodeEditor
 {
 

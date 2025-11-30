@@ -1,13 +1,13 @@
 #ifndef NODEEDITOR_H
 #define NODEEDITOR_H
-#include "Node.hpp"
-#include <unordered_set>
-#include "imnodes.h"
-#include "NodeDescription.hpp"
-#include <set>
+#include "DataStructureEditor.hpp"
+#include "DataStructureYaml.hpp"
 #include "Helpers.h"
 #include "YamlParser.hpp"
 #include "YamlEmitter.hpp"
+#include <unordered_set>
+#include "imnodes.h"
+#include <set>
 
 struct ImNodesStyle;
 

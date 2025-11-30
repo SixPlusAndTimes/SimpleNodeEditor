@@ -2,10 +2,10 @@
 #define YAMLPARSER_H
 #include <string>
 #include <yaml-cpp/yaml.h>
-#include "NodeDescription.hpp"
-#include "Node.hpp"
 #include "Log.hpp"
-
+#include "Notify.hpp"
+#include "DataStructureEditor.hpp"
+#include "DataStructureYaml.hpp"
 namespace YAML
 {
 
@@ -125,7 +125,9 @@ struct convert<SimpleNodeEditor::YamlNode>
                 "isValidKey(node, \"NodeName\")[{}] isValidKey(node, \"NodeId\")[{}] "
                 "isValidKey(node, \"IsSrcNode\")[{}] isValidKey(node, \"NodeType\")[{}]",
                 isValidKey(node, "NodeName"), isValidKey(node, "NodeId"),
+
                 isValidKey(node, "IsSrcNode"), isValidKey(node, "NodeType"));
+            SimpleNodeEditor::Notifier::Add(SimpleNodeEditor::Message{SimpleNodeEditor::Message::Type::ERR, "",  "parse pipeline file failed, parse node fail"});
         }
 
         std::string pruneRuleKey = "PruneRule";
@@ -139,7 +141,7 @@ struct convert<SimpleNodeEditor::YamlNode>
         }
         else
         {
-            SNELOG_WARN("invalide nodePruneRule key {}", pruneRuleKey);
+            SNELOG_WARN("invalid nodePruneRule key {}", pruneRuleKey);
         }
 
         std::string nodePropertyKey = "NodeProperty";
@@ -208,6 +210,7 @@ struct convert<SimpleNodeEditor::YamlPort>
                 "isValidKey(node, \"PortName\")[{}] isValidKey(node, \"PortId\")[{}]",
                 isValidKey(node, "NodeName"), isValidKey(node, "NodeId"),
                 isValidKey(node, "PortName"), isValidKey(node, "PortId"));
+            SimpleNodeEditor::Notifier::Add(SimpleNodeEditor::Message{SimpleNodeEditor::Message::Type::ERR, "",  "parse pipeline file failed, parse port fail"});
         }
 
         std::string pruneRuleKey = "PruneRule";

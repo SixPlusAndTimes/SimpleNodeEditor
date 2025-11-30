@@ -49,7 +49,7 @@ If you want intall it at another dir, just modify the default intallation path i
 - [ ] 截屏功能?
 - [ ] 可能的bug ： Edge已经被裁掉，此时它连接的Node添加了一个新的PruningRule，Edge无法同步新的pruningrule
 - [ ] 重复代码太多了
-- [ ] **notify 组件**
+- [x] **notify 组件**
 - [x] node property 正确显示以及添加新的property
 - [x] **log 封装**
 - [ ] 如果nodedes中没有yamlpipeline中的对应的portid，别挂死，提示错误即可 
@@ -58,5 +58,6 @@ If you want intall it at another dir, just modify the default intallation path i
 - [x] **hover 在port上能够显示portid**
 - [ ] 自定义node颜色
 - [ ] 支持多个窗口切换，分别渲染不同的pipeline
+- [ ] **文件系统浏览、打开文件**
 - [x] bugs: add node popup 不能滑动到底部 
 - [ ] 支持linux平台的file operation dialog 

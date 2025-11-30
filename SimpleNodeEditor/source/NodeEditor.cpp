@@ -571,8 +571,6 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const Yaml
         SNELOG_ERROR("m_nodes insert new node fail! check it!");
         return -1;
     }
-    Notifier::Add(Message(Message::Type::WARNING,"", "Test NewNode Added"));
-    Notifier::Add(Message(Message::Type::ERR, "", "Test NewNode Added"));
     return ret;
 }
 
