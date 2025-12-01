@@ -21,11 +21,13 @@ public:
     void NodeEditorInitialize();
     void NodeEditorShow();
     void NodeEditorDestroy();
-    void HandleFileDrop(const std::string& filePath);
+    bool OpenFile(const std::string& filePath);
+    void OpenFile(); // will open file dialog for user interactions
 
 private:
     // draw ui infereface
     void DrawMenu();
+    void DrawFileMenu();
     void ShowNodes();
     void ShowEdges();
     void ShowPipelineName();
@@ -71,7 +73,7 @@ private:
     void HandleZooming();
     void HandleOtherUserInputs();
 
-    void               SaveToFile();
+    void               SaveToFile(); 
     [[nodiscard]] bool LoadPipelineFromFile(const std::string& filePath);
     void               ClearCurrentPipeLine();
 

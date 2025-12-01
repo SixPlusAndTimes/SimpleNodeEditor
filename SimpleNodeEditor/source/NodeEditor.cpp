@@ -87,18 +87,6 @@ void NodeEditor::NodeEditorShow()
 
 void NodeEditor::NodeEditorDestroy() {}
 
-void NodeEditor::HandleFileDrop(const std::string& filePath)
-{
-    ClearCurrentPipeLine();
-    if (LoadPipelineFromFile(filePath))
-    {
-        SNELOG_INFO("LoadPipeLineFromFile Success, filePath[{}]", filePath);
-    }
-    else
-    {
-        SNELOG_ERROR("LoadPipeLineFromFile failed, filePath[{}]", filePath);
-    }
-}
 
 void MenuStyle()
 {
@@ -123,22 +111,25 @@ void MenuStyle()
     }
 }
 
-void MenuFile()
+void NodeEditor::DrawFileMenu()
 {
     if (ImGui::BeginMenu("File"))
     {
         if (ImGui::MenuItem("Open", nullptr, false, true))
         {
-            SNELOG_INFO("Open Not Implemented!");
+            OpenFile();
         }
-        ImGui::Separator();
-        if (ImGui::MenuItem("Save", "Ctrl + d", false, true))
+        if (ImGui::MenuItem("Save", "Ctrl + s", false, true))
         {
-            SNELOG_INFO("Save Not Implemented!");
+            SaveToFile();
         }
         if (ImGui::MenuItem("Save As...", nullptr, false, true))
         {
-            SNELOG_INFO("Save as Not Implemented!");
+            SNELOG_WARN("Save as Not Implemented!");
+        }
+        if (ImGui::MenuItem("Clear", "Ctrl + l", false, true))
+        {
+            ClearCurrentPipeLine();
         }
 
         ImGui::EndMenu();
@@ -149,7 +140,7 @@ void NodeEditor::DrawMenu()
 {
     if (ImGui::BeginMenuBar())
     {
-        MenuFile();
+        DrawFileMenu();
         // ShowMiniMapMenu();
         MenuStyle();
         ImGui::EndMenuBar();
@@ -1767,11 +1758,78 @@ void NodeEditor::HandleOtherUserInputs()
             SaveToFile();
         }
 
+        if (ImGui::IsKeyPressed(ImGuiKey_L) && io.KeyCtrl)
+        {
+            ClearCurrentPipeLine();
+        }
+
         // S : toposort
         if (ImGui::IsKeyReleased(ImGuiKey_S) && !io.KeyCtrl)
         {
             m_needTopoSort = true;
         }
+    }
+}
+
+void NodeEditor::OpenFile()
+{
+    // Show file open dialog
+    char          szFile[MAX_PATH] = {0};
+    OPENFILENAMEA ofn              = {0};
+    ofn.lStructSize                = sizeof(OPENFILENAMEA);
+    ofn.hwndOwner                  = nullptr;
+    ofn.lpstrFile                  = szFile;
+    ofn.nMaxFile                   = sizeof(szFile);
+    ofn.lpstrFilter                = "YAML Files (*.yaml)\0*.yaml\0All Files (*.*)\0*.*\0";
+    ofn.nFilterIndex               = 1;
+    ofn.lpstrTitle                 = "Open Yaml File";
+    ofn.Flags                      = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
+    ofn.lpstrDefExt                = "yaml";
+
+    if (GetOpenFileNameA(&ofn))
+    {
+        try
+        {
+            if(OpenFile(szFile))
+            {
+                SNELOG_INFO("Successfully loaded pipeline file: {}", szFile);
+            }
+            else
+            {
+                SNELOG_ERROR("Failed to open file for reading: {}", szFile);
+            }
+        }
+        catch (const std::exception& e)
+        {
+            SNELOG_ERROR("Error while loading file: {} (File: {})", e.what(), szFile);
+        }
+    }
+    else
+    {
+        DWORD error = CommDlgExtendedError();
+        if (error != 0)
+        {
+            SNELOG_ERROR("File open dialog error: {} (Windows error code)", error);
+        }
+        else
+        {
+            SNELOG_DEBUG("File open dialog cancelled by user");
+        }
+    }
+}
+
+bool NodeEditor::OpenFile(const std::string& filePath)
+{
+    ClearCurrentPipeLine();
+    if (LoadPipelineFromFile(filePath))
+    {
+        SNELOG_INFO("LoadPipeLineFromFile Success, filePath[{}]", filePath);
+        return true;
+    }
+    else
+    {
+        SNELOG_ERROR("LoadPipeLineFromFile failed, filePath[{}]", filePath);
+        return false;
     }
 }
 
@@ -1868,7 +1926,9 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
             // inportEdges will be pruned later
         }
 
+        // collect prunnig rules to m_allPruningRules
         CollectPruningRules(yamlNodes, yamlEdges);
+
         if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))
         {
             for (const auto& [group, type] : m_currentPruninngRule)
@@ -1886,6 +1946,7 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
         }
 
         m_needTopoSort        = true;
+
         m_currentPipeLineName = m_pipeLineParser.GetPipelineName();
     }
     else

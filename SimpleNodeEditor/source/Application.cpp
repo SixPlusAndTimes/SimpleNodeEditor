@@ -100,7 +100,7 @@ int main(int, char**)
                     break;
                 case SDL_DROPFILE:
                     SNELOG_INFO("SDL drop file path : {}", event.drop.file);
-                    nodeEditor.HandleFileDrop(event.drop.file);
+                    nodeEditor.OpenFile(event.drop.file);
                     SDL_free(event.drop.file);
                     break;
             }
