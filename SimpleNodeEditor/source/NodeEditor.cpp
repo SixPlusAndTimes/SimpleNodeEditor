@@ -6,6 +6,7 @@
 #include "Log.hpp"
 #include "Common.hpp"
 #include "Notify.hpp"
+#include "FileDialog.hpp"
 #include <cstdint>
 #include <unordered_set>
 #include <set>
@@ -56,7 +57,9 @@ NodeEditor::NodeEditor()
       m_edgesPruned(),
       m_currentPipeLineName(),
       m_nodeStyle(ImNodes::GetStyle()),
-      m_pipeLineParser()
+      m_pipeLineParser(),
+      m_fileDialog(),
+      m_fileDialogOpen(false)
 {
     // TODO: file path may be a constant value or configed in Config.yaml?
     NodeDescriptionParser        nodeTemplateParser("./resource/NodeDescriptions.yaml");
@@ -67,6 +70,7 @@ NodeEditor::NodeEditor()
         s_nodeDescriptionsTypeDesMap.emplace(nodeD.m_yamlNodeType, nodeD);
         s_nodeDescriptionsNameDesMap.emplace(nodeD.m_nodeName, nodeD);
     }
+    m_fileDialog.SetDirectory(std::filesystem::current_path());
 }
 
 void NodeEditor::NodeEditorInitialize()
@@ -75,6 +79,13 @@ void NodeEditor::NodeEditorInitialize()
     io.LinkDetachWithModifierClick.Modifier = &ImGui::GetIO().KeyCtrl;
 }
 
+void NodeEditor::DrawFileDialog()
+{
+    if (m_fileDialog.Draw(&m_fileDialogOpen))
+    {
+        OpenFile(m_fileDialog.GetResultPath().string());
+    }
+}
 void NodeEditor::NodeEditorShow()
 {
     ImGuiIO& io                    = ImGui::GetIO();
@@ -83,6 +94,7 @@ void NodeEditor::NodeEditorShow()
     ShowGrapghEditWindow(mainWindowDisplaySize);
     ShowPruningRuleEditWinddow(mainWindowDisplaySize);
     Notifier::Draw();
+    DrawFileDialog();
 }
 
 void NodeEditor::NodeEditorDestroy() {}
@@ -117,7 +129,8 @@ void NodeEditor::DrawFileMenu()
     {
         if (ImGui::MenuItem("Open", nullptr, false, true))
         {
-            OpenFile();
+            m_fileDialogOpen = true;
+            SNELOG_WARN("fileDialogOpen [{}]", m_fileDialogOpen);
         }
         if (ImGui::MenuItem("Save", "Ctrl + s", false, true))
         {
@@ -1771,52 +1784,6 @@ void NodeEditor::HandleOtherUserInputs()
     }
 }
 
-void NodeEditor::OpenFile()
-{
-    // Show file open dialog
-    char          szFile[MAX_PATH] = {0};
-    OPENFILENAMEA ofn              = {0};
-    ofn.lStructSize                = sizeof(OPENFILENAMEA);
-    ofn.hwndOwner                  = nullptr;
-    ofn.lpstrFile                  = szFile;
-    ofn.nMaxFile                   = sizeof(szFile);
-    ofn.lpstrFilter                = "YAML Files (*.yaml)\0*.yaml\0All Files (*.*)\0*.*\0";
-    ofn.nFilterIndex               = 1;
-    ofn.lpstrTitle                 = "Open Yaml File";
-    ofn.Flags                      = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
-    ofn.lpstrDefExt                = "yaml";
-
-    if (GetOpenFileNameA(&ofn))
-    {
-        try
-        {
-            if(OpenFile(szFile))
-            {
-                SNELOG_INFO("Successfully loaded pipeline file: {}", szFile);
-            }
-            else
-            {
-                SNELOG_ERROR("Failed to open file for reading: {}", szFile);
-            }
-        }
-        catch (const std::exception& e)
-        {
-            SNELOG_ERROR("Error while loading file: {} (File: {})", e.what(), szFile);
-        }
-    }
-    else
-    {
-        DWORD error = CommDlgExtendedError();
-        if (error != 0)
-        {
-            SNELOG_ERROR("File open dialog error: {} (Windows error code)", error);
-        }
-        else
-        {
-            SNELOG_DEBUG("File open dialog cancelled by user");
-        }
-    }
-}
 
 bool NodeEditor::OpenFile(const std::string& filePath)
 {
@@ -1901,7 +1868,6 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
         std::vector<YamlEdge> yamlEdges = m_pipeLineParser.ParseEdges();
 
         // add node in Editor
-        float                                                  x_axis = 0.f, y_axis = 0.f;
         std::unordered_map<YamlNode::NodeYamlId, NodeUniqueId> t_yamlNodeId2NodeUidMap;
         for (const YamlNode& yamlNode : yamlNodes)
         {

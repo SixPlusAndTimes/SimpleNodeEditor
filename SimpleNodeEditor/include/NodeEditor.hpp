@@ -5,6 +5,7 @@
 #include "Helpers.h"
 #include "YamlParser.hpp"
 #include "YamlEmitter.hpp"
+#include "FileDialog.hpp"
 #include <unordered_set>
 #include "imnodes.h"
 #include <set>
@@ -22,12 +23,12 @@ public:
     void NodeEditorShow();
     void NodeEditorDestroy();
     bool OpenFile(const std::string& filePath);
-    void OpenFile(); // will open file dialog for user interactions
 
 private:
     // draw ui infereface
     void DrawMenu();
     void DrawFileMenu();
+    void DrawFileDialog();
     void ShowNodes();
     void ShowEdges();
     void ShowPipelineName();
@@ -120,6 +121,10 @@ private:
     // should held by nodeeditor instance?
     PipelineEmitter m_pipelineEimtter;
     PipelineParser  m_pipeLineParser;
+
+    FileDialog      m_fileDialog;
+    bool            m_fileDialogOpen;
+
 };
 } // namespace SimpleNodeEditor
 
