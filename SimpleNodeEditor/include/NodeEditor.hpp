@@ -74,7 +74,7 @@ private:
     void HandleZooming();
     void HandleOtherUserInputs();
 
-    void               SaveToFile(); 
+    void               SaveToFile(const std::string& fileName); 
     [[nodiscard]] bool LoadPipelineFromFile(const std::string& filePath);
     void               ClearCurrentPipeLine();
 

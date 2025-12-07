@@ -70,7 +70,11 @@ NodeEditor::NodeEditor()
         s_nodeDescriptionsTypeDesMap.emplace(nodeD.m_yamlNodeType, nodeD);
         s_nodeDescriptionsNameDesMap.emplace(nodeD.m_nodeName, nodeD);
     }
-    m_fileDialog.SetDirectory(std::filesystem::current_path());
+
+    // auto fileDialogPath = std::filesystem::current_path();
+    auto fileDialogPath = std::filesystem::current_path().append("resource");
+    SNELOG_INFO("fileDialogPath is : {}", fileDialogPath.string());
+    m_fileDialog.SetDirectory(fileDialogPath);
 }
 
 void NodeEditor::NodeEditorInitialize()
@@ -83,7 +87,14 @@ void NodeEditor::DrawFileDialog()
 {
     if (m_fileDialog.Draw(&m_fileDialogOpen))
     {
-        OpenFile(m_fileDialog.GetResultPath().string());
+        if (m_fileDialog.GetType() == FileDialog::Type::OPEN)
+        {
+            OpenFile(m_fileDialog.GetResultPath().string());
+        }else if (m_fileDialog.GetType() == FileDialog::Type::SAVE)
+        {
+            SNELOG_INFO("save pipeline file to {}", m_fileDialog.GetFileName().string());
+            SaveToFile(m_fileDialog.GetResultPath().string());
+        }
     }
 }
 void NodeEditor::NodeEditorShow()
@@ -127,18 +138,16 @@ void NodeEditor::DrawFileMenu()
 {
     if (ImGui::BeginMenu("File"))
     {
-        if (ImGui::MenuItem("Open", nullptr, false, true))
+        if (ImGui::MenuItem("Open", "Ctrl + o", false, true))
         {
             m_fileDialogOpen = true;
-            SNELOG_WARN("fileDialogOpen [{}]", m_fileDialogOpen);
+            m_fileDialog.SetType(FileDialog::Type::OPEN);
         }
         if (ImGui::MenuItem("Save", "Ctrl + s", false, true))
         {
-            SaveToFile();
-        }
-        if (ImGui::MenuItem("Save As...", nullptr, false, true))
-        {
-            SNELOG_WARN("Save as Not Implemented!");
+            m_fileDialogOpen = true;
+            m_fileDialog.SetType(FileDialog::Type::SAVE);
+            m_fileDialog.SetFileName("untitled.yaml");
         }
         if (ImGui::MenuItem("Clear", "Ctrl + l", false, true))
         {
@@ -1768,7 +1777,16 @@ void NodeEditor::HandleOtherUserInputs()
         // ctrl + S : handle saving to file, i.e serialize the pipeline to a yaml
         if (ImGui::IsKeyPressed(ImGuiKey_S) && io.KeyCtrl)
         {
-            SaveToFile();
+            m_fileDialogOpen = true;
+            m_fileDialog.SetType(FileDialog::Type::SAVE);
+            m_fileDialog.SetFileName("untitiled.yaml");
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_O) && io.KeyCtrl)
+        {
+            ClearCurrentPipeLine(); // should let user confirm to do this ? 
+            m_fileDialogOpen = true;
+            m_fileDialog.SetType(FileDialog::Type::OPEN);
         }
 
         if (ImGui::IsKeyPressed(ImGuiKey_L) && io.KeyCtrl)
@@ -1800,61 +1818,26 @@ bool NodeEditor::OpenFile(const std::string& filePath)
     }
 }
 
-void NodeEditor::SaveToFile()
+void NodeEditor::SaveToFile(const std::string& fileName)
 {
-    const std::string pipelineNameToEmit =
-        m_currentPipeLineName.empty() ? m_pipeLineParser.GetPipelineName() : m_currentPipeLineName;
-    m_pipelineEimtter.EmitPipeline(pipelineNameToEmit, m_nodes, m_nodesPruned, m_edges,
-                                   m_edgesPruned);
-    SNELOG_INFO(m_pipelineEimtter.GetEmitter().c_str());
 
-    // Show file save dialog
-    char          szFile[MAX_PATH] = {0};
-    OPENFILENAMEA ofn              = {0};
-    ofn.lStructSize                = sizeof(OPENFILENAMEA);
-    ofn.hwndOwner                  = nullptr;
-    ofn.lpstrFile                  = szFile;
-    ofn.nMaxFile                   = sizeof(szFile);
-    ofn.lpstrFilter                = "YAML Files (*.yaml)\0*.yaml\0All Files (*.*)\0*.*\0";
-    ofn.nFilterIndex               = 1;
-    ofn.lpstrTitle                 = "Save Pipeline As";
-    ofn.Flags                      = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
-    ofn.lpstrDefExt                = "yaml";
-
-    // Prefill the save dialog with a sensible default filename based on the pipeline name
-    std::string defaultFileName = pipelineNameToEmit + ".yaml";
-    strncpy(szFile, defaultFileName.c_str(), sizeof(szFile) - 1);
-    szFile[sizeof(szFile) - 1] = '\0';
-
-    if (GetSaveFileNameA(&ofn))
+    try
     {
-        try
+        std::ofstream outFile(fileName);
+        if (outFile.is_open())
         {
-            std::ofstream outFile(szFile);
-            if (outFile.is_open())
-            {
-                outFile << m_pipelineEimtter.GetEmitter().c_str();
-                outFile.close();
-                SNELOG_INFO("Successfully saved pipeline to: {}", szFile);
-            }
-            else
-            {
-                SNELOG_ERROR("Failed to open file for writing: {}", szFile);
-            }
+            outFile << m_pipelineEimtter.GetEmitter().c_str();
+            outFile.close();
+            SNELOG_INFO("Successfully saved pipeline to: {}", fileName);
         }
-        catch (const std::exception& e)
+        else
         {
-            SNELOG_ERROR("Error while saving file: {}", e.what());
+            SNELOG_ERROR("Failed to open file for writing: {}", fileName);
         }
     }
-    else
+    catch (const std::exception& e)
     {
-        // Only log error if user didn't just cancel
-        DWORD error = CommDlgExtendedError();
-        if (error != 0)
-        {
-            SNELOG_ERROR("File save dialog error: {}", error);
-        }
+        SNELOG_ERROR("Error while saving file: {}", e.what());
     }
 }
 

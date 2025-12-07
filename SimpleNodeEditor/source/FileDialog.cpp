@@ -11,59 +11,59 @@ bool FileDialog::Draw(bool* open)
     }
     else
     {
-        ImGui::OpenPopup(title.c_str());
+        ImGui::OpenPopup(m_title.c_str());
     }
 
     bool done = false;
-    title = (type == Type::OPEN) ? "Open File" : "Save File";
+    m_title = (m_type == Type::OPEN) ? "Open File" : "Save File";
     ImGui::SetNextWindowSize(ImVec2(660.0f, 410.0f), ImGuiCond_Once);
     ImGui::SetNextWindowSizeConstraints(ImVec2(410, 410), ImVec2(1080, 410));
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    if (ImGui::BeginPopupModal(title.c_str(), nullptr, ImGuiWindowFlags_NoCollapse))
+    if (ImGui::BeginPopupModal(m_title.c_str(), nullptr, ImGuiWindowFlags_NoCollapse))
     {
-        if (currentFiles.empty() && currentDirectories.empty() || refresh)
+        if (m_currentFiles.empty() && m_currentDirectories.empty() || m_refresh)
         {
-            refresh = false;
-            currentIndex = 0;
-            currentFiles.clear();
-            currentDirectories.clear();
-            for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(directoryPath))
+            m_refresh = false;
+            m_currentIndex = 0;
+            m_currentFiles.clear();
+            m_currentDirectories.clear();
+            for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(m_directoryPath))
             {
-                entry.is_directory() ? currentDirectories.push_back(entry) : currentFiles.push_back(entry);
+                entry.is_directory() ? m_currentDirectories.push_back(entry) : m_currentFiles.push_back(entry);
             }
         }
 
         // Path
-        ImGui::Text("%s", directoryPath.string().c_str());
+        ImGui::Text("%s", m_directoryPath.string().c_str());
         ImGui::BeginChild("##browser", ImVec2(ImGui::GetContentRegionAvail().x, 300.0f), true, ImGuiWindowFlags_None);
         size_t index = 0;
 
         // Parent
-        if (directoryPath.has_parent_path())
+        if (m_directoryPath.has_parent_path())
         {
-            if (ImGui::Selectable("..", currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+            if (ImGui::Selectable("..", m_currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
             {
-                currentIndex = index;
+                m_currentIndex = index;
                 if (ImGui::IsMouseDoubleClicked(0))
                 {
-                    directoryPath = directoryPath.parent_path();
-                    refresh = true;
+                    m_directoryPath = m_directoryPath.parent_path();
+                    m_refresh = true;
                 }
             }
             index++;
         }
 
         // Directories
-        for (const auto& element : currentDirectories)
+        for (const auto& element : m_currentDirectories)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 210, 0, 255));
-            if (ImGui::Selectable(element.path().filename().string().c_str(), currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+            if (ImGui::Selectable(element.path().filename().string().c_str(), m_currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
             {
-                currentIndex = index;
+                m_currentIndex = index;
                 if (ImGui::IsMouseDoubleClicked(0))
                 {
-                    directoryPath = element.path();
-                    refresh = true;
+                    m_directoryPath = element.path();
+                    m_refresh = true;
                 }
             }
             ImGui::PopStyleColor();
@@ -71,55 +71,55 @@ bool FileDialog::Draw(bool* open)
         }
 
         // Files
-        for (const auto& element : currentFiles)
+        for (const auto& element : m_currentFiles)
         {
-            if (ImGui::Selectable(element.path().filename().string().c_str(), currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+            if (ImGui::Selectable(element.path().filename().string().c_str(), m_currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
             {
-                currentIndex = index;
-                fileName = element.path().filename();
+                m_currentIndex = index;
+                m_fileName = element.path().filename();
             }
             index++;
         }
         ImGui::EndChild();
 
         // Draw filename
-        size_t fileNameSize = fileName.string().size();
-        if (fileNameSize >= bufferSize)
+        size_t fileNameSize = m_fileName.string().size();
+        if (fileNameSize >= s_bufferSize)
         {
-            fileNameSize = bufferSize - 1;
+            fileNameSize = s_bufferSize - 1;
         }
-        std::memcpy(buffer, fileName.string().c_str(), fileNameSize);
-        buffer[fileNameSize] = 0;
+        std::memcpy(m_buffer, m_fileName.string().c_str(), fileNameSize);
+        m_buffer[fileNameSize] = 0;
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 200, 0, 255));
-        if (ImGui::InputText("File Name", buffer, bufferSize))
+        if (ImGui::InputText("File Name", m_buffer, s_bufferSize))
         {
-            fileName = std::string(buffer);
-            currentIndex = 0;
+            m_fileName = std::string(m_buffer);
+            m_currentIndex = 0;
         }
         ImGui::PopStyleColor();
         if (ImGui::Button("Cancel"))
         {
-            refresh = false;
-            currentIndex = 0;
-            currentFiles.clear();
-            currentDirectories.clear();
+            m_refresh = false;
+            m_currentIndex = 0;
+            m_currentFiles.clear();
+            m_currentDirectories.clear();
             *open = false;
         }
         ImGui::SameLine();
-        resultPath = directoryPath / fileName;
-        if (type == Type::OPEN)
+        m_resultPath = m_directoryPath / m_fileName;
+        if (m_type == Type::OPEN)
         {
             if (ImGui::Button("Open"))
             {
-                if (std::filesystem::exists(resultPath) && fileName.string().rfind(".") != std::string::npos
-                    && fileName.string().substr(fileName.string().rfind(".")) == fileFormat)
+                if (std::filesystem::exists(m_resultPath) && m_fileName.string().rfind(".") != std::string::npos
+                    && m_fileName.string().substr(m_fileName.string().rfind(".")) == m_fileFormat)
                 {
-                    refresh = false;
-                    currentIndex = 0;
-                    currentFiles.clear();
-                    currentDirectories.clear();
+                    m_refresh = false;
+                    m_currentIndex = 0;
+                    m_currentFiles.clear();
+                    m_currentDirectories.clear();
                     done = true;
                     *open = false;
                 }
@@ -129,17 +129,17 @@ bool FileDialog::Draw(bool* open)
                 }
             }
         }
-        else if (type == Type::SAVE)
+        else if (m_type == Type::SAVE)
         {
-            const auto beforeFormatCheck = resultPath.string();
+            const auto beforeFormatCheck = m_resultPath.string();
             bool isFormatCorrect = false;
-            if (auto dot = fileName.string().rfind("."); dot == std::string::npos)
+            if (auto dot = m_fileName.string().rfind("."); dot == std::string::npos)
             {
-                resultPath = resultPath.string() + fileFormat;
+                m_resultPath = m_resultPath.string() + m_fileFormat;
             }
-            else if(fileName.string().substr(dot) != fileFormat)
+            else if(m_fileName.string().substr(dot) != m_fileFormat)
             {
-                resultPath = resultPath.string() + fileFormat;
+                m_resultPath = m_resultPath.string() + m_fileFormat;
             }
             else
             {
@@ -151,12 +151,12 @@ bool FileDialog::Draw(bool* open)
                 {
                     Notifier::Add(Message(Message::Type::ERR, "", "Another file exists with the same name."));
                 }
-                else if (std::filesystem::exists(resultPath) == false)
+                else if (std::filesystem::exists(m_resultPath) == false)
                 {
-                    refresh = false;
-                    currentIndex = 0;
-                    currentFiles.clear();
-                    currentDirectories.clear();
+                    m_refresh = false;
+                    m_currentIndex = 0;
+                    m_currentFiles.clear();
+                    m_currentDirectories.clear();
                     done = true;
                     *open = false;
                 }
@@ -172,10 +172,10 @@ bool FileDialog::Draw(bool* open)
                 ImGui::Separator();
                 if (ImGui::Button("Yes", ImVec2(50.0f, 0.0f)))
                 {
-                    refresh = false;
-                    currentIndex = 0;
-                    currentFiles.clear();
-                    currentDirectories.clear();
+                    m_refresh = false;
+                    m_currentIndex = 0;
+                    m_currentFiles.clear();
+                    m_currentDirectories.clear();
                     done = true;
                     *open = false;
                 }

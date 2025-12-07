@@ -61,3 +61,4 @@ If you want intall it at another dir, just modify the default intallation path i
 - [ ] **文件系统浏览、打开文件**
 - [x] bugs: add node popup 不能滑动到底部 
 - [ ] 支持linux平台的file operation dialog 
+- [ ] 支持中文 
