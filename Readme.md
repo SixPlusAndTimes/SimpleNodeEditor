@@ -11,8 +11,8 @@ following commads will make debug target bydefault
 cd ImguiCmakeStarter
 mkdir cmake_build
 cmake -S . -B .\cmake_build\
-cmake --build .\cmake_build\ -- config Debug
-cmake --build .\cmake_build\ -- config Release
+cmake --build .\cmake_build\ --config Debug
+cmake --build .\cmake_build\ --config Release
 ~~~~
 
 Default intallation path is "${CMAKE_CURRENT_SOURCE_DIR}/install", you can check it in CmakeLists.txt.  

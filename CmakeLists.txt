@@ -62,6 +62,11 @@ if (WIN32)
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:SDL2::SDL2>" "$<TARGET_FILE_DIR:${project_name}>"
         VERBATIM
     )
+        # /SUBSYSTEM:WINDOWS tells the linker to produce a GUI app (no console)
+    target_link_options(${project_name} PRIVATE
+        $<$<CONFIG:Release>:/SUBSYSTEM:WINDOWS>
+        $<$<CONFIG:Debug>:/SUBSYSTEM:CONSOLE>
+    )
 endif()
 
 # copy resource to bindir
