@@ -12,8 +12,9 @@ Log::Log()
     logSinks.emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
     logSinks.emplace_back(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
         "SimpleNodeEditor.log", 1024 * 1024 * 10, 3));
-    logSinks[0]->set_pattern("%^[%T.%e] %n: %v%$");
-    logSinks[1]->set_pattern("[%T.%e] [%l] %n: %v");
+
+    logSinks[0]->set_pattern("[%T.%e] %^[%l]%$ [%s:%#] %n: %v");
+    logSinks[1]->set_pattern("[%T.%e] [%l] [%s:%#] %n: %v");
 
     m_spdLogger = std::make_shared<spdlog::logger>("SNELogger", begin(logSinks), end(logSinks));
     spdlog::register_logger(m_spdLogger);

@@ -37,12 +37,19 @@ private:
 };
 } // end namespace SimpleNodeEditor
 
-#define SNELOG_TRACE(...) ::SimpleNodeEditor::Log::GetInstance().GetLogger()->trace(__VA_ARGS__)
-#define SNELOG_DEBUG(...) ::SimpleNodeEditor::Log::GetInstance().GetLogger()->debug(__VA_ARGS__)
-#define SNELOG_INFO(...)  ::SimpleNodeEditor::Log::GetInstance().GetLogger()->info(__VA_ARGS__)
-#define SNELOG_WARN(...)  ::SimpleNodeEditor::Log::GetInstance().GetLogger()->warn(__VA_ARGS__)
-#define SNELOG_ERROR(...) ::SimpleNodeEditor::Log::GetInstance().GetLogger()->error(__VA_ARGS__)
-#define SNELOG_CRITICAL(...) \
-    ::SimpleNodeEditor::Log::GetInstance().GetLogger()->critical(__VA_ARGS__)
+// #define SNELOG_TRACE(...) ::SimpleNodeEditor::Log::GetInstance().GetLogger()->trace(__VA_ARGS__)
+// #define SNELOG_DEBUG(...) ::SimpleNodeEditor::Log::GetInstance().GetLogger()->debug(__VA_ARGS__)
+// #define SNELOG_INFO(...)  ::SimpleNodeEditor::Log::GetInstance().GetLogger()->info(__VA_ARGS__)
+// #define SNELOG_WARN(...)  ::SimpleNodeEditor::Log::GetInstance().GetLogger()->warn(__VA_ARGS__)
+// #define SNELOG_ERROR(...) ::SimpleNodeEditor::Log::GetInstance().GetLogger()->error(__VA_ARGS__)
+// #define SNELOG_CRITICAL(...) \
+//     ::SimpleNodeEditor::Log::GetInstance().GetLogger()->critical(__VA_ARGS__)
+
+#define SNELOG_TRACE(...)  SPDLOG_LOGGER_TRACE(::SimpleNodeEditor::Log::GetInstance().GetLogger(), __VA_ARGS__)
+#define SNELOG_DEBUG(...)  SPDLOG_LOGGER_DEBUG(::SimpleNodeEditor::Log::GetInstance().GetLogger(), __VA_ARGS__)
+#define SNELOG_INFO(...)   SPDLOG_LOGGER_INFO(::SimpleNodeEditor::Log::GetInstance().GetLogger(), __VA_ARGS__)
+#define SNELOG_WARN(...)   SPDLOG_LOGGER_WARN(::SimpleNodeEditor::Log::GetInstance().GetLogger(), __VA_ARGS__)
+#define SNELOG_ERROR(...)  SPDLOG_LOGGER_ERROR(::SimpleNodeEditor::Log::GetInstance().GetLogger(), __VA_ARGS__)
+#define SNELOG_CRITICAL(...)  SPDLOG_LOGGER_CRITICAL(::SimpleNodeEditor::Log::GetInstance().GetLogger(), __VA_ARGS__)
 
 #endif // LOG_H

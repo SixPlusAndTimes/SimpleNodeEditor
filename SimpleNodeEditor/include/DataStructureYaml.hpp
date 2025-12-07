@@ -3,8 +3,6 @@
 
 #include <string>
 #include <vector>
-// TODO : refactor the Yaml related infomation
-// NodeDescription is store in yaml file, we need parse it, see YamlParser::NodeDescriptionParser
 namespace SimpleNodeEditor
 {
 using YamlNodeType = int32_t;

@@ -12,10 +12,6 @@
 #include <set>
 #include <algorithm>
 #include <numeric>
-// Windows headers should come after STL to avoid macro conflicts
-#define NOMINMAX  // Prevent Windows from defining min/max macros
-#include <Windows.h>
-#include <commdlg.h>
 #include <fstream>
 
 namespace SimpleNodeEditor
