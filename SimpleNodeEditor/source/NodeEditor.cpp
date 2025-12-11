@@ -1809,6 +1809,7 @@ bool NodeEditor::OpenFile(const std::string& filePath)
     }
     else
     {
+        ClearCurrentPipeLine();
         SNELOG_ERROR("LoadPipeLineFromFile failed, filePath[{}]", filePath);
         return false;
     }
@@ -1850,49 +1851,62 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
         std::unordered_map<YamlNode::NodeYamlId, NodeUniqueId> t_yamlNodeId2NodeUidMap;
         for (const YamlNode& yamlNode : yamlNodes)
         {
-            NodeUniqueId newNodeUid =
-                AddNewNodes(s_nodeDescriptionsTypeDesMap.at(yamlNode.m_nodeYamlType), yamlNode);
-            t_yamlNodeId2NodeUidMap.emplace(yamlNode.m_nodeYamlId, newNodeUid);
-        }
-
-        // add edges in editor
-        for (const YamlEdge& yamlEdge : yamlEdges)
-        {
-            NodeUniqueId ownedBySrcNodeUid =
-                t_yamlNodeId2NodeUidMap.at(yamlEdge.m_yamlSrcPort.m_nodeYamlId);
-            NodeUniqueId ownedByDstNodeUid =
-                t_yamlNodeId2NodeUidMap.at(yamlEdge.m_yamlDstPort.m_nodeYamlId);
-            const Node& srcNode = m_nodes.at(ownedBySrcNodeUid);
-            const Node& dstNode = m_nodes.at(ownedByDstNodeUid);
-            AddNewEdge(srcNode.FindPortUidAmongOutports(yamlEdge.m_yamlSrcPort.m_portYamlId),
-                       dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId),
-                       yamlEdge,
-                       false /*avoidMultipleInputLinks*/); // allow multiple edges there, multiple
-            // inportEdges will be pruned later
-        }
-
-        // collect prunnig rules to m_allPruningRules
-        CollectPruningRules(yamlNodes, yamlEdges);
-
-        if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))
-        {
-            for (const auto& [group, type] : m_currentPruninngRule)
+            if (s_nodeDescriptionsTypeDesMap.contains(yamlNode.m_nodeYamlType))
             {
-                SNELOG_INFO(
-                    "currentpruning rule is : group[{}] type[{}], any node or edge that matches "
-                    "the "
-                    "group but not matches the type will be removed",
-                    group, type);
+                NodeUniqueId newNodeUid =
+                    AddNewNodes(s_nodeDescriptionsTypeDesMap.at(yamlNode.m_nodeYamlType), yamlNode);
+                t_yamlNodeId2NodeUidMap.emplace(yamlNode.m_nodeYamlId, newNodeUid);
+            }
+            else
+            {
+                ret = false;
+                Notifier::Add(Message(Message::Type::ERR, "", "Invalid NodeType" + std::to_string(yamlNode.m_nodeYamlId)));
+                SNE_ASSERT(false, "Invalid NodeType" + std::to_string(yamlNode.m_nodeYamlType));
+                break;
             }
         }
-        else
+
+        if (ret)
         {
-            SNELOG_ERROR("ApplyPruningRule Fail!!");
-        }
+            // add edges in editor
+            for (const YamlEdge& yamlEdge : yamlEdges)
+            {
+                NodeUniqueId ownedBySrcNodeUid =
+                    t_yamlNodeId2NodeUidMap.at(yamlEdge.m_yamlSrcPort.m_nodeYamlId);
+                NodeUniqueId ownedByDstNodeUid =
+                    t_yamlNodeId2NodeUidMap.at(yamlEdge.m_yamlDstPort.m_nodeYamlId);
+                const Node& srcNode = m_nodes.at(ownedBySrcNodeUid);
+                const Node& dstNode = m_nodes.at(ownedByDstNodeUid);
+                AddNewEdge(srcNode.FindPortUidAmongOutports(yamlEdge.m_yamlSrcPort.m_portYamlId),
+                        dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId),
+                        yamlEdge,
+                        false /*avoidMultipleInputLinks*/); // allow multiple edges there, multiple
+                // inportEdges will be pruned later
+            }
 
-        m_needTopoSort        = true;
+            // collect prunnig rules to m_allPruningRules
+            CollectPruningRules(yamlNodes, yamlEdges);
 
-        m_currentPipeLineName = m_pipeLineParser.GetPipelineName();
+            if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))
+            {
+                for (const auto& [group, type] : m_currentPruninngRule)
+                {
+                    SNELOG_INFO(
+                        "currentpruning rule is : group[{}] type[{}], any node or edge that matches "
+                        "the "
+                        "group but not matches the type will be removed",
+                        group, type);
+                }
+            }
+            else
+            {
+                SNELOG_ERROR("ApplyPruningRule Fail!!");
+            }
+
+            m_needTopoSort        = true;
+
+            m_currentPipeLineName = m_pipeLineParser.GetPipelineName();
+            }
     }
     else
     {

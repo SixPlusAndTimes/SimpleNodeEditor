@@ -12,12 +12,26 @@
 
 // inspired by HAZEL
 #ifdef DEBUG
+	#if defined(WIN32)
+		#define DEBUGBREAK() __debugbreak()
+	#elif defined(LINUX) ## TODO
+		#include <signal.h>
+		#define DEBUGBREAK() raise(SIGTRAP)
+	#else
+		#error "Platform doesn't support debugbreak yet!"
+	#endif
+	#define HZ_ENABLE_ASSERTS
+#else
+	#define DEBUGBREAK()
+#endif
+
+#ifdef DEBUG
 #define SNE_INTERNAL_ASSERT_IMPL(check, msg, ...) \
     {                                             \
         if (!(check))                             \
         {                                         \
             SNELOG_CRITICAL(msg, __VA_ARGS__);    \
-            std::abort();                         \
+            DEBUGBREAK();                         \
         }                                         \
     }
 #else

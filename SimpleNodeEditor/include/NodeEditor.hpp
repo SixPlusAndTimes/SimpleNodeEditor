@@ -2,7 +2,7 @@
 #define NODEEDITOR_H
 #include "DataStructureEditor.hpp"
 #include "DataStructureYaml.hpp"
-#include "Helpers.h"
+#include "Helpers.hpp"
 #include "YamlParser.hpp"
 #include "YamlEmitter.hpp"
 #include "FileDialog.hpp"
