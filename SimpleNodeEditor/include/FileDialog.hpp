@@ -31,6 +31,7 @@ private:
     std::string m_title{ "" };
     static const size_t s_bufferSize = 200;
     char m_buffer[s_bufferSize];
+    bool m_isDoubleClickedOnItem = false;
 
 public:
     FileDialog() = default;

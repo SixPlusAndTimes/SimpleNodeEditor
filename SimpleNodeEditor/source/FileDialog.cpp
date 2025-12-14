@@ -77,6 +77,10 @@ bool FileDialog::Draw(bool* open)
             {
                 m_currentIndex = index;
                 m_fileName = element.path().filename();
+                if (ImGui::IsMouseDoubleClicked(0))
+                {
+                    m_isDoubleClickedOnItem = true;
+                }
             }
             index++;
         }
@@ -111,7 +115,7 @@ bool FileDialog::Draw(bool* open)
         m_resultPath = m_directoryPath / m_fileName;
         if (m_type == Type::OPEN)
         {
-            if (ImGui::Button("Open"))
+            if (ImGui::Button("Open") || m_isDoubleClickedOnItem)
             {
                 if (std::filesystem::exists(m_resultPath) && m_fileName.string().rfind(".") != std::string::npos
                     && m_fileName.string().substr(m_fileName.string().rfind(".")) == m_fileFormat)
@@ -122,6 +126,7 @@ bool FileDialog::Draw(bool* open)
                     m_currentDirectories.clear();
                     done = true;
                     *open = false;
+                    m_isDoubleClickedOnItem = false;
                 }
                 else
                 {

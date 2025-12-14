@@ -68,15 +68,6 @@ Pipeline:
       - 
           group: pruneppp
           type: Disble
-    - 
-      NodeName: 812
-      NodeId: 72
-      IsSrcNode: 0
-      NodeType: 1235
-      PruneRule:
-      - 
-          group: pruneppp
-          type: Disble
 
   LinkList:
     - 
