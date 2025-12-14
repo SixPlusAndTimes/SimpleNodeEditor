@@ -2,6 +2,8 @@
 #define FILEDIALOG_H
 
 #include <filesystem>
+#include <vector>
+#include <cstring>
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_stdlib.h"

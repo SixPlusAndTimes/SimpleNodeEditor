@@ -1,5 +1,10 @@
 #include "FileDialog.hpp"
 #include "Log.hpp"
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
+#include <vector>
 namespace SimpleNodeEditor
 {
     
@@ -21,6 +26,41 @@ bool FileDialog::Draw(bool* open)
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(m_title.c_str(), nullptr, ImGuiWindowFlags_NoCollapse))
     {
+        // allow for virtual disk change in windows
+        #ifdef _WIN32
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+            std::vector<std::string> virtualDrivers;
+            DWORD len = GetLogicalDriveStringsA(0, nullptr);
+            if (len > 0)
+            {
+                std::vector<char> buf(len + 1);
+                GetLogicalDriveStringsA(len, buf.data());
+                char* cur = buf.data();
+                while (*cur)
+                {
+                    virtualDrivers.emplace_back(cur);
+                    cur += strlen(cur) + 1;
+                }
+            }
+            if (ImGui::BeginCombo("##ChangeRoot", m_directoryPath.string().c_str()))
+            {
+                static int driveIndex = -1;
+                for (size_t index = 0; index < virtualDrivers.size(); ++index)
+                {
+                    bool sel = (index == driveIndex);
+                    if (ImGui::Selectable(virtualDrivers[index].c_str(), sel))
+                    {
+                        driveIndex = index;
+                        m_directoryPath = virtualDrivers[index];
+                        m_refresh = true;
+                    }
+                }
+                ImGui::EndCombo();
+            }
+        # else
+            ImGui::Text("%s", m_directoryPath.string().c_str());
+        #endif
+
         if (m_currentFiles.empty() && m_currentDirectories.empty() || m_refresh)
         {
             m_refresh = false;
@@ -33,8 +73,6 @@ bool FileDialog::Draw(bool* open)
             }
         }
 
-        // Path
-        ImGui::Text("%s", m_directoryPath.string().c_str());
         ImGui::BeginChild("##browser", ImVec2(ImGui::GetContentRegionAvail().x, 300.0f), true, ImGuiWindowFlags_None);
         size_t index = 0;
 
