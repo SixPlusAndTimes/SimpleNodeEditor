@@ -3545,24 +3545,24 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSDL_BUILD_MICRO_VERSION=${SDL_MICRO_VERSIO
 
 ##### Tests #####
 
-if(SDL_TEST)
-  file(GLOB TEST_SOURCES ${SDL2_SOURCE_DIR}/src/test/*.c)
-  add_library(SDL2_test STATIC ${TEST_SOURCES})
-  add_dependencies(SDL2_test sdl_headers_copy)
-  add_library(SDL2::SDL2test ALIAS SDL2_test)
-  set_target_properties(SDL2_test PROPERTIES
-      EXPORT_NAME SDL2test)
-  target_include_directories(SDL2_test PUBLIC
-      "$<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include>"
-      "$<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include/SDL2>"
-      "$<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include-config-$<LOWER_CASE:$<CONFIG>>/SDL2>"
-      "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-      "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/SDL2>")
-  target_link_libraries(SDL2_test PRIVATE ${EXTRA_TEST_LIBS})
-  target_include_directories(SDL2_test PRIVATE ${EXTRA_TEST_INCLUDES})
-  set_property(TARGET SDL2_test APPEND PROPERTY COMPATIBLE_INTERFACE_STRING "SDL_VERSION")
-  set_property(TARGET SDL2_test PROPERTY INTERFACE_SDL_VERSION "SDL2")
-endif()
+# if(SDL_TEST)
+#   file(GLOB TEST_SOURCES ${SDL2_SOURCE_DIR}/src/test/*.c)
+#   add_library(SDL2_test STATIC ${TEST_SOURCES})
+#   add_dependencies(SDL2_test sdl_headers_copy)
+#   add_library(SDL2::SDL2test ALIAS SDL2_test)
+#   set_target_properties(SDL2_test PROPERTIES
+#       EXPORT_NAME SDL2test)
+#   target_include_directories(SDL2_test PUBLIC
+#       "$<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include>"
+#       "$<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include/SDL2>"
+#       "$<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include-config-$<LOWER_CASE:$<CONFIG>>/SDL2>"
+#       "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+#       "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/SDL2>")
+#   target_link_libraries(SDL2_test PRIVATE ${EXTRA_TEST_LIBS})
+#   target_include_directories(SDL2_test PRIVATE ${EXTRA_TEST_INCLUDES})
+#   set_property(TARGET SDL2_test APPEND PROPERTY COMPATIBLE_INTERFACE_STRING "SDL_VERSION")
+#   set_property(TARGET SDL2_test PROPERTY INTERFACE_SDL_VERSION "SDL2")
+# endif()
 
 if(MSVC AND NOT SDL_LIBC)
   set(targets )

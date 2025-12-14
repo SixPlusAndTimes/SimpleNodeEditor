@@ -442,18 +442,16 @@ function(transform_makefile_inc _input_file _output_file)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_input_file}")
 endfunction()
 
-#
-
 add_subdirectory(src)
 
-if(BUILD_EXAMPLES)
-  add_subdirectory(example)
-endif()
+# if(BUILD_EXAMPLES)
+#   add_subdirectory(example)
+# endif()
 
-if(BUILD_TESTING)
-  enable_testing()
-  add_subdirectory(tests)
-endif()
+# if(BUILD_TESTING)
+#   enable_testing()
+#   add_subdirectory(tests)
+# endif()
 
 option(LINT "Check style while building" OFF)
 if(LINT)

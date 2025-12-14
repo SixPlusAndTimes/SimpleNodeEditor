@@ -7,7 +7,6 @@
 #include <vector>
 namespace SimpleNodeEditor
 {
-    
 bool FileDialog::Draw(bool* open)
 {
     if (*open == false)

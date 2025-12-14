@@ -49,24 +49,33 @@ target_link_libraries(${project_name} PRIVATE spdlog::spdlog)
 add_subdirectory(./3rdParts/yaml-cpp/ EXCLUDE_FROM_ALL)
 target_link_libraries(${project_name} PRIVATE yaml-cpp::yaml-cpp)
 
-# link libssh2
+# link libssh2 (link the built target so symbols are resolved)
 add_subdirectory(./3rdParts/libssh2/ EXCLUDE_FROM_ALL)
-target_compile_definitions(${project_name} PRIVATE libssh2::libssh2)
+target_link_libraries(${project_name} PRIVATE libssh2)
+
+
+# target_include_directories(${project_name} PRIVATE
+#     ${CMAKE_CURRENT_SOURCE_DIR}/3rdParts/libssh2/src
+# )
 
 target_compile_definitions(${project_name} PRIVATE
     $<$<CONFIG:Debug>:DEBUG>
     $<$<CONFIG:Release>:RELEASE>
 )
 
-# copy dll files to executable directory
-#   check this linkage for reference https://github.com/libsdl-org/SDL/issues/6399
 if (WIN32)
+    # for windows dynamic linking
     add_custom_command(
         TARGET ${project_name} POST_BUILD
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:SDL2::SDL2>" "$<TARGET_FILE_DIR:${project_name}>"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:spdlog::spdlog>" "$<TARGET_FILE_DIR:${project_name}>"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:libssh2>" "$<TARGET_FILE_DIR:${project_name}>"
         VERBATIM
     )
-        # /SUBSYSTEM:WINDOWS tells the linker to produce a GUI app (no console)
+    # should link ws2_32 if the libssh is dynamicly linked, we just link it anyway
+    target_link_libraries(${project_name} PRIVATE Ws2_32)
+
+    # /SUBSYSTEM:WINDOWS tells the linker to produce a GUI app (no console)
     target_link_options(${project_name} PRIVATE
         $<$<CONFIG:Release>:/SUBSYSTEM:WINDOWS>
         $<$<CONFIG:Debug>:/SUBSYSTEM:CONSOLE>
