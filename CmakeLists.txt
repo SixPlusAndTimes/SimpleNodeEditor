@@ -49,6 +49,10 @@ target_link_libraries(${project_name} PRIVATE spdlog::spdlog)
 add_subdirectory(./3rdParts/yaml-cpp/ EXCLUDE_FROM_ALL)
 target_link_libraries(${project_name} PRIVATE yaml-cpp::yaml-cpp)
 
+# link libssh2
+add_subdirectory(./3rdParts/libssh2/ EXCLUDE_FROM_ALL)
+target_compile_definitions(${project_name} PRIVATE libssh2::libssh2)
+
 target_compile_definitions(${project_name} PRIVATE
     $<$<CONFIG:Debug>:DEBUG>
     $<$<CONFIG:Release>:RELEASE>

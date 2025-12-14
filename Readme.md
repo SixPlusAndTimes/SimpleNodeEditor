@@ -58,7 +58,8 @@ If you want intall it at another dir, just modify the default intallation path i
 - [x] **hover 在port上能够显示portid**
 - [ ] 自定义node颜色
 - [ ] 支持多个窗口切换，分别渲染不同的pipeline
-- [ ] **文件系统浏览、打开文件**
+- [x] **文件系统浏览、打开文件**
+- [ ] 支持远程文件浏览
 - [x] bugs: add node popup 不能滑动到底部 
-- [ ] 支持linux平台的file operation dialog 
+- [x] 支持linux平台的file operation dialog
 - [ ] 支持中文 
