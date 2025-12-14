@@ -1,5 +1,4 @@
-/* Copyright (C) The libssh2 project and its contributors.
- *
+/* Copyright (C) The libssh2 project and its contributors. *
  * Sample doing an SFTP directory listing.
  *
  * The sample code has default values for host name, user name, password and
@@ -29,6 +28,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "Log.hpp"
+#include <filesystem>
 
 #if defined(_MSC_VER)
 #define LIBSSH2_FILESIZE_MASK "I64u"
@@ -36,11 +37,15 @@
 #define LIBSSH2_FILESIZE_MASK "llu"
 #endif
 
-static const char *pubkey = "/home/username/.ssh/id_rsa.pub";
-static const char *privkey = "/home/username/.ssh/id_rsa";
-static const char *username = "username";
-static const char *password = "password";
-static const char *sftppath = "/tmp/secretdir";
+static const char *pubkey = "C:\\Users\\19269\\.ssh\\id_rsa.pub";
+static const char *privkey = "C:\\Users\\19269\\.ssh\\id_rsa";
+static const char *username = "root";
+static const char *password = "";
+// static const char *username = nullptr;
+// static const char *password = nullptr;
+static const char *sftppath = "/tmp";
+// static const std::string s_hostAdd{"169.254.202.122"};
+static const std::string s_hostAdd{"172.25.48.190"};
 
 static void kbd_callback(const char *name, int name_len,
                          const char *instruction, int instruction_len,
@@ -60,6 +65,15 @@ static void kbd_callback(const char *name, int name_len,
     (void)prompts;
     (void)abstract;
 } /* kbd_callback */
+
+/* libssh2 debug callback to print protocol/debug messages to stderr */
+static void debug_cb(LIBSSH2_SESSION *sess, int always_display,
+                     const char *message, int message_len,
+                     const char *language, int language_len, void **abstract)
+{
+    (void)always_display; (void)language; (void)language_len; (void)abstract;
+    fprintf(stderr, "libssh2-debug: %.*s\n", message_len, message);
+}
 
 int test_main(int argc, char *argv[])
 {
@@ -84,21 +98,12 @@ int test_main(int argc, char *argv[])
     }
 #endif
 
-    if(argc > 1) {
-        hostaddr = inet_addr(argv[1]);
-    }
-    else {
-        hostaddr = htonl(0x7F000001);
-    }
-    if(argc > 2) {
-        username = argv[2];
-    }
-    if(argc > 3) {
-        password = argv[3];
-    }
-    if(argc > 4) {
-        sftppath = argv[4];
-    }
+
+    username = "root";
+
+    // hostaddr = htonl(0x7F000001);
+    hostaddr = inet_addr(s_hostAdd.data());
+    SNELOG_INFO("usert input addr[{}]", s_hostAdd);
 
     rc = libssh2_init(0);
     if(rc) {
@@ -113,22 +118,23 @@ int test_main(int argc, char *argv[])
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if(sock == LIBSSH2_INVALID_SOCKET) {
         fprintf(stderr, "failed to create socket.\n");
-        goto shutdown;
+        // goto shutdown;
     }
 
     sin.sin_family = AF_INET;
     sin.sin_port = htons(22);
     sin.sin_addr.s_addr = hostaddr;
     if(connect(sock, (struct sockaddr*)(&sin), sizeof(struct sockaddr_in))) {
-        fprintf(stderr, "failed to connect.\n");
-        goto shutdown;
+        int errcode = WSAGetLastError();
+        SNELOG_ERROR("failed to conect to {}, error code {}", hostaddr, errcode);
+        // goto shutdown;
     }
 
     /* Create a session instance */
     session = libssh2_session_init();
     if(!session) {
-        fprintf(stderr, "Could not initialize SSH session.\n");
-        goto shutdown;
+        SNELOG_ERROR("Could not initialize SSH session.");
+        // goto shutdown;
     }
 
     /* ... start it up. This will trade welcome banners, exchange keys,
@@ -136,93 +142,64 @@ int test_main(int argc, char *argv[])
      */
     rc = libssh2_session_handshake(session, sock);
     if(rc) {
-        fprintf(stderr, "Failure establishing SSH session: %d\n", rc);
-        goto shutdown;
+        SNELOG_ERROR("Failure establishing SSH session: %d\n", rc);
+        // goto shutdown;
     }
+
+    /* Enable libssh2 debug callback and trace to see auth/signature details */
+    // libssh2_session_callback_set(session, LIBSSH2_CALLBACK_DEBUG, (void*)debug_cb);
+    // libssh2_trace(session, LIBSSH2_TRACE_CONN | LIBSSH2_TRACE_KEX | LIBSSH2_TRACE_AUTH);
+
+    // /* Prefer rsa-sha2-512 for RSA key signing if server supports it */
+    // libssh2_session_method_pref(session, LIBSSH2_METHOD_SIGN_ALGO,
+    //                            "rsa-sha2-256,ssh-rsa");
+    // const char *prefs = libssh2_session_methods(session, LIBSSH2_METHOD_SIGN_ALGO);
+    // if(prefs) {
+    //     SNELOG_INFO("Sign algorithm preferences: {}", prefs);
+    // }
 
     /* At this point we have not yet authenticated.  The first thing to do
      * is check the hostkey's fingerprint against our known hosts Your app
      * may have it hard coded, may go to a file, may present it to the
      * user, that's your call
      */
-    fingerprint = libssh2_hostkey_hash(session, LIBSSH2_HOSTKEY_HASH_SHA1);
-    fprintf(stderr, "Fingerprint: ");
-    for(i = 0; i < 20; i++) {
-        fprintf(stderr, "%02X ", (unsigned char)fingerprint[i]);
-    }
-    fprintf(stderr, "\n");
 
     /* check what authentication methods are available */
-    userauthlist = libssh2_userauth_list(session, username,
-                                         (unsigned int)strlen(username));
-    if(userauthlist) {
-        fprintf(stderr, "Authentication methods: %s\n", userauthlist);
-        if(strstr(userauthlist, "password")) {
-            auth_pw |= 1;
-        }
-        if(strstr(userauthlist, "keyboard-interactive")) {
-            auth_pw |= 2;
-        }
-        if(strstr(userauthlist, "publickey")) {
-            auth_pw |= 4;
-        }
+    // userauthlist = libssh2_userauth_list(session, username,
+    //                                      (unsigned int)strlen(username));
 
-        /* check for options */
-        if(argc > 5) {
-            if((auth_pw & 1) && !strcmp(argv[5], "-p")) {
-                auth_pw = 1;
-            }
-            if((auth_pw & 2) && !strcmp(argv[5], "-i")) {
-                auth_pw = 2;
-            }
-            if((auth_pw & 4) && !strcmp(argv[5], "-k")) {
-                auth_pw = 4;
-            }
-        }
-
-        if(auth_pw & 1) {
-            /* We could authenticate via password */
-            if(libssh2_userauth_password(session, username, password)) {
-                fprintf(stderr, "Authentication by password failed.\n");
-                goto shutdown;
-            }
-        }
-        else if(auth_pw & 2) {
-            /* Or via keyboard-interactive */
-            if(libssh2_userauth_keyboard_interactive(session, username,
-                                                     &kbd_callback) ) {
-                fprintf(stderr,
-                        "Authentication by keyboard-interactive failed.\n");
-                goto shutdown;
-            }
-            else {
-                fprintf(stderr,
-                        "Authentication by keyboard-interactive succeeded.\n");
-            }
-        }
-        else if(auth_pw & 4) {
-            /* Or by public key */
-            if(libssh2_userauth_publickey_fromfile(session, username,
-                                                   pubkey, privkey,
-                                                   password)) {
-                fprintf(stderr, "Authentication by public key failed.\n");
-                goto shutdown;
-            }
-            else {
-                fprintf(stderr, "Authentication by public key succeeded.\n");
-            }
+    if (!std::filesystem::exists(privkey))
+    {
+        SPDLOG_ERROR("not valid filepath {}", privkey);
+    }
+    if (!std::filesystem::exists(pubkey))
+    {
+        SPDLOG_ERROR("not valid filepath {}", pubkey);
+    }
+    int ret = libssh2_userauth_publickey_fromfile(session, username,
+                                            pubkey, privkey,
+                                            password);
+    if(ret) {
+        char *err_msg = NULL;
+        int err_msg_len = 0;
+        /* Ask libssh2 for a more detailed error message */
+        libssh2_session_last_error(session, &err_msg, &err_msg_len, 0);
+        if(err_msg && err_msg_len > 0) {
+            SNELOG_ERROR("Authentication by public key failed: {} (errcode {}) username[{}], strlen(username)={}", err_msg, ret, username, strlen(username));
         }
         else {
-            fprintf(stderr, "No supported authentication methods found.\n");
-            goto shutdown;
+            SNELOG_ERROR("Authentication by public key failed (no detailed message available).");
         }
+        goto shutdown;
+    }
+    else {
+        SNELOG_INFO("Authentication by public key succeeded.");
     }
 
-    fprintf(stderr, "libssh2_sftp_init().\n");
     sftp_session = libssh2_sftp_init(session);
 
     if(!sftp_session) {
-        fprintf(stderr, "Unable to init SFTP session\n");
+        SNELOG_ERROR("Unable to init SFTP session");
         goto shutdown;
     }
 
