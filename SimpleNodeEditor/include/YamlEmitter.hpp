@@ -55,7 +55,7 @@ public:
     PipelineEmitter(const PipelineEmitter&)            = delete;
     PipelineEmitter& operator=(const PipelineEmitter&) = delete;
     ~PipelineEmitter()                                 = default;
-    void EmitPipeline(const std::string&                            pipelineName,
+    std::string_view EmitPipeline(const std::string&                            pipelineName,
                       const std::unordered_map<NodeUniqueId, Node>& nodesMap,
                       const std::unordered_map<NodeUniqueId, Node>& prunedNodesMap,
                       const std::unordered_map<EdgeUniqueId, Edge>& egesMap,

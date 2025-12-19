@@ -54,8 +54,7 @@ NodeEditor::NodeEditor()
       m_currentPipeLineName(),
       m_nodeStyle(ImNodes::GetStyle()),
       m_pipeLineParser(),
-      m_fileDialog(),
-      m_fileDialogOpen(false)
+      m_fileDialog()
 {
     // TODO: file path may be a constant value or configed in Config.yaml?
     NodeDescriptionParser        nodeTemplateParser("./resource/NodeDescriptions.yaml");
@@ -81,7 +80,7 @@ void NodeEditor::NodeEditorInitialize()
 
 void NodeEditor::DrawFileDialog()
 {
-    if (m_fileDialog.Draw(&m_fileDialogOpen))
+    if (m_fileDialog.Draw())
     {
         if (m_fileDialog.GetType() == FileDialog::Type::OPEN)
         {
@@ -136,14 +135,11 @@ void NodeEditor::DrawFileMenu()
     {
         if (ImGui::MenuItem("Open", "Ctrl + o", false, true))
         {
-            m_fileDialogOpen = true;
-            m_fileDialog.SetType(FileDialog::Type::OPEN);
+            m_fileDialog.MarkFileDialogOpen();
         }
         if (ImGui::MenuItem("Save", "Ctrl + s", false, true))
         {
-            m_fileDialogOpen = true;
-            m_fileDialog.SetType(FileDialog::Type::SAVE);
-            m_fileDialog.SetFileName("untitled.yaml");
+            m_fileDialog.MarkFileDialogSave("untitled.yaml");
         }
         if (ImGui::MenuItem("Clear", "Ctrl + l", false, true))
         {
@@ -1773,16 +1769,13 @@ void NodeEditor::HandleOtherUserInputs()
         // ctrl + S : handle saving to file, i.e serialize the pipeline to a yaml
         if (ImGui::IsKeyPressed(ImGuiKey_S) && io.KeyCtrl)
         {
-            m_fileDialogOpen = true;
-            m_fileDialog.SetType(FileDialog::Type::SAVE);
-            m_fileDialog.SetFileName("untitiled.yaml");
+            m_fileDialog.MarkFileDialogSave("untitled.yaml");
         }
 
         if (ImGui::IsKeyPressed(ImGuiKey_O) && io.KeyCtrl)
         {
             ClearCurrentPipeLine(); // should let user confirm to do this ? 
-            m_fileDialogOpen = true;
-            m_fileDialog.SetType(FileDialog::Type::OPEN);
+            m_fileDialog.MarkFileDialogOpen();
         }
 
         if (ImGui::IsKeyPressed(ImGuiKey_L) && io.KeyCtrl)
@@ -1823,9 +1816,9 @@ void NodeEditor::SaveToFile(const std::string& fileName)
         std::ofstream outFile(fileName);
         if (outFile.is_open())
         {
-            outFile << m_pipelineEimtter.GetEmitter().c_str();
-            outFile.close();
+            outFile << m_pipelineEimtter.EmitPipeline(m_currentPipeLineName, m_nodes, m_nodesPruned, m_edges, m_edgesPruned);
             SNELOG_INFO("Successfully saved pipeline to: {}", fileName);
+            outFile.close();
         }
         else
         {
@@ -1892,7 +1885,7 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
                 for (const auto& [group, type] : m_currentPruninngRule)
                 {
                     SNELOG_INFO(
-                        "currentpruning rule is : group[{}] type[{}], any node or edge that matches "
+                        "current pruning rule is : group[{}] type[{}], any node or edge that matches "
                         "the "
                         "group but not matches the type will be removed",
                         group, type);

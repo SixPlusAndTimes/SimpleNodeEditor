@@ -43,7 +43,7 @@ static const char *username = "root";
 static const char *password = "";
 // static const char *username = nullptr;
 // static const char *password = nullptr;
-static const char *sftppath = "/tmp";
+static const char *sftppath = "/root/pipelines";
 // static const std::string s_hostAdd{"169.254.202.122"};
 static const std::string s_hostAdd{"172.25.48.190"};
 
@@ -228,6 +228,7 @@ int test_main(int argc, char *argv[])
                buffer */
 
             if(longentry[0] != '\0') {
+                SNELOG_INFO("print longentry");
                 printf("%s\n", longentry);
             }
             else {

@@ -123,8 +123,6 @@ private:
     PipelineParser  m_pipeLineParser;
 
     FileDialog      m_fileDialog;
-    bool            m_fileDialogOpen;
-
 };
 } // namespace SimpleNodeEditor
 

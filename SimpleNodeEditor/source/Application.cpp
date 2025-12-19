@@ -10,7 +10,6 @@
 #include "Log.hpp"
 #include "NodeEditor.hpp"
 #include "YamlParser.hpp"
-#include "examplessh.h"
 
 bool ReConfigLogLevlel()
 {
@@ -27,7 +26,6 @@ int main(int, char**)
     SNELOG_INFO("APP start ....");
     ReConfigLogLevlel();
 
-    test_main(1, nullptr);
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {

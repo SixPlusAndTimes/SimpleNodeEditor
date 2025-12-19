@@ -94,7 +94,7 @@ void YamlEmitter::Clear()
 
 PipelineEmitter::PipelineEmitter() : YamlEmitter() {}
 
-void PipelineEmitter::EmitPipeline(const std::string&                            pipelineName,
+std::string_view PipelineEmitter::EmitPipeline(const std::string&                            pipelineName,
                                    const std::unordered_map<NodeUniqueId, Node>& nodesMap,
                                    const std::unordered_map<NodeUniqueId, Node>& prunedNodesMap,
                                    const std::unordered_map<EdgeUniqueId, Edge>& egesMap,
@@ -114,6 +114,8 @@ void PipelineEmitter::EmitPipeline(const std::string&                           
     EndMap();
     EndSequence();
     EndMap();
+
+    return GetEmitter().c_str();
 }
 
 void PipelineEmitter::EmitYamlNode(const YamlNode& yamlNode)

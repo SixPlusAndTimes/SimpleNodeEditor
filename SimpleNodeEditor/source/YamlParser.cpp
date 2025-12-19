@@ -163,6 +163,8 @@ const std::string& PipelineParser::GetPipelineName()
     return m_pipelineName;
 }
 
+// invalid NodeList should trigger an error
+// invalid LinkList or Pipelinename just trigger a warning
 bool PipelineParser::LoadFile(const std::string& filePath)
 {
     bool ret   = true;
@@ -185,8 +187,8 @@ bool PipelineParser::LoadFile(const std::string& filePath)
     }
     else
     {
-        SNELOG_ERROR("file {} has no valid pipelinename sequence, check it", filePath);
-        ret = false;
+        SNELOG_WARN("file {} has no valid pipelinename sequence, check it", filePath);
+        // ret = false;
     }
 
     if (ret && m_rootNode["NodeList"] && m_rootNode["NodeList"].IsSequence() &&
@@ -207,8 +209,9 @@ bool PipelineParser::LoadFile(const std::string& filePath)
     }
     else
     {
-        SNELOG_ERROR("file {} has no valid List sequence, check it", filePath);
-        ret = false;
+        SNELOG_WARN("file {} has no valid LinkList sequence, better to check it", filePath);
+        Notifier::Add(Message(Message::Type::WARNING, "", "invalid Linklist, better to check it"));
+        // ret = false;
     }
 
     return ret;

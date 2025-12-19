@@ -7,15 +7,17 @@
 #include <vector>
 namespace SimpleNodeEditor
 {
-bool FileDialog::Draw(bool* open)
+bool FileDialog::Draw()
 {
-    if (*open == false)
+    if (!m_isRendered)
     {
         return false;
+        SNELOG_DEBUG("(m_isRendered false)");
     }
     else
     {
         ImGui::OpenPopup(m_title.c_str());
+        SNELOG_DEBUG("FileDiaLogOpenBegin()");
     }
 
     bool done = false;
@@ -25,7 +27,7 @@ bool FileDialog::Draw(bool* open)
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(m_title.c_str(), nullptr, ImGuiWindowFlags_NoCollapse))
     {
-        // allow for virtual disk change in windows
+        // allow for virtual disk changing in windows
         #ifdef _WIN32
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
             std::vector<std::string> virtualDrivers;
@@ -62,19 +64,15 @@ bool FileDialog::Draw(bool* open)
 
         if (m_currentFiles.empty() && m_currentDirectories.empty() || m_refresh)
         {
-            m_refresh = false;
-            m_currentIndex = 0;
-            m_currentFiles.clear();
-            m_currentDirectories.clear();
+            ResetState();
             for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(m_directoryPath))
             {
                 entry.is_directory() ? m_currentDirectories.push_back(entry) : m_currentFiles.push_back(entry);
             }
         }
-
+        /** Begin of listing directories and files**/
         ImGui::BeginChild("##browser", ImVec2(ImGui::GetContentRegionAvail().x, 300.0f), true, ImGuiWindowFlags_None);
         size_t index = 0;
-
         // Parent
         if (m_directoryPath.has_parent_path())
         {
@@ -110,20 +108,30 @@ bool FileDialog::Draw(bool* open)
         // Files
         for (const auto& element : m_currentFiles)
         {
+            // ImGui::SetNextItemShortcut(ImGuiKey_Enter);
             if (ImGui::Selectable(element.path().filename().string().c_str(), m_currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
             {
                 m_currentIndex = index;
                 m_fileName = element.path().filename();
                 if (ImGui::IsMouseDoubleClicked(0))
                 {
-                    m_isDoubleClickedOnItem = true;
+                    m_isDoubleClickedOnFileName = true;
                 }
             }
             index++;
         }
+        if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
+        {
+            m_currentIndex = m_currentIndex == std::numeric_limits<size_t>::max() ? index : (m_currentIndex == 0 ? index - 1 : m_currentIndex - 1);
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))
+        {
+            m_currentIndex = (m_currentIndex == std::numeric_limits<size_t>::max() || (m_currentIndex == index -1)) ? 0 : std::min(m_currentIndex + 1, index - 1);
+        }
         ImGui::EndChild();
+        /** End of listing directories and files**/
 
-        // Draw filename
+        // Draw filename in input texteditor
         size_t fileNameSize = m_fileName.string().size();
         if (fileNameSize >= s_bufferSize)
         {
@@ -137,37 +145,39 @@ bool FileDialog::Draw(bool* open)
         if (ImGui::InputText("File Name", m_buffer, s_bufferSize))
         {
             m_fileName = std::string(m_buffer);
-            m_currentIndex = 0;
+            m_currentIndex = std::numeric_limits<size_t>::max();
         }
         ImGui::PopStyleColor();
+
+        ImGui::SetNextItemShortcut(ImGuiKey_Escape);
         if (ImGui::Button("Cancel"))
         {
-            m_refresh = false;
-            m_currentIndex = 0;
-            m_currentFiles.clear();
-            m_currentDirectories.clear();
-            *open = false;
+            ResetState();
+            m_isRendered = false;
         }
         ImGui::SameLine();
+
         m_resultPath = m_directoryPath / m_fileName;
         if (m_type == Type::OPEN)
         {
-            if (ImGui::Button("Open") || m_isDoubleClickedOnItem)
+            // ImGui::SetNextItemShortcut(ImGuiKey_Enter);
+            if (ImGui::Button("Open") || m_isDoubleClickedOnFileName)
             {
-                if (std::filesystem::exists(m_resultPath) && m_fileName.string().rfind(".") != std::string::npos
+                if ( m_fileName.string().rfind(".") != std::string::npos
                     && m_fileName.string().substr(m_fileName.string().rfind(".")) == m_fileFormat)
                 {
-                    m_refresh = false;
-                    m_currentIndex = 0;
-                    m_currentFiles.clear();
-                    m_currentDirectories.clear();
-                    done = true;
-                    *open = false;
-                    m_isDoubleClickedOnItem = false;
+                    if (std::filesystem::exists(m_resultPath))
+                    {
+                        ResetState();
+                        m_isRendered = false;
+                        done = true;
+                    }
                 }
-                else
+                else 
                 {
-                    Notifier::Add(Message(Message::Type::ERR, "", "File format is not valid."));
+                    SNELOG_ERROR("Invalid File Name[{}]", m_fileName.string());
+                    Notifier::Add(Message(Message::Type::ERR, "", "File format is not valid. Only " + m_fileFormat + " is allowed"));
+                    m_isDoubleClickedOnFileName = false;
                 }
             }
         }
@@ -187,7 +197,9 @@ bool FileDialog::Draw(bool* open)
             {
                 isFormatCorrect = true;
             }
-            if (ImGui::Button("Save"))
+
+            ImGui::SetNextItemShortcut(ImGuiKey_Enter);
+            if (ImGui::Button("Save") )
             {
                 if (std::filesystem::exists(beforeFormatCheck) == true && isFormatCorrect == false)
                 {
@@ -195,12 +207,9 @@ bool FileDialog::Draw(bool* open)
                 }
                 else if (std::filesystem::exists(m_resultPath) == false)
                 {
-                    m_refresh = false;
-                    m_currentIndex = 0;
-                    m_currentFiles.clear();
-                    m_currentDirectories.clear();
+                    ResetState();
+                    m_isRendered = false;
                     done = true;
-                    *open = false;
                 }
                 else
                 {
@@ -212,16 +221,15 @@ bool FileDialog::Draw(bool* open)
             {
                 ImGui::Text("File already exists. Do you want to override?");
                 ImGui::Separator();
+                ImGui::SetNextItemShortcut(ImGuiKey_Enter);
                 if (ImGui::Button("Yes", ImVec2(50.0f, 0.0f)))
                 {
-                    m_refresh = false;
-                    m_currentIndex = 0;
-                    m_currentFiles.clear();
-                    m_currentDirectories.clear();
+                    ResetState();
+                    m_isRendered = false;
                     done = true;
-                    *open = false;
                 }
                 ImGui::SameLine();
+                ImGui::SetNextItemShortcut(ImGuiKey_Escape);
                 if (ImGui::Button("No", ImVec2(50.0f, 0.0f)))
                 {
                     ImGui::CloseCurrentPopup();
@@ -232,7 +240,6 @@ bool FileDialog::Draw(bool* open)
         ImGui::EndPopup();
 
     }
-    
     return done;
 }
 
