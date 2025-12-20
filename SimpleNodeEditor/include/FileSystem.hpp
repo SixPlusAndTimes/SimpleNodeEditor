@@ -12,7 +12,7 @@ namespace stdfs = std::filesystem;
 namespace SimpleNodeEditor {
 namespace FS
 {
-// std::filesystem::path is a general class which is not tied to localsystem
+// std::filesystem::path is a general class which is almost not tied to localsystem
 // so we can reuse this as our sshfilesystems's "path impl backend"
 struct Path
 {
@@ -44,6 +44,7 @@ struct Path
     }
 
 };
+
 struct FileEntry {
 	std::string name;
 	std::string fullPath;
@@ -57,13 +58,13 @@ public:
     IFileSystem() = default;
 	virtual ~IFileSystem() = default;
 
-	virtual bool exists(const std::string& path) = 0;
-	virtual bool isDirectory(const std::string& path) = 0;
-	virtual std::vector<FileEntry> list(const std::string& path) = 0;
+	virtual bool Exists(const Path& path) = 0;
+	virtual bool IsDirectory(const Path& path) = 0;
+	virtual std::vector<FileEntry> List(const Path& path) = 0;
 
 
-	virtual std::string getName(const std::string& path) = 0;
-	virtual std::string getParent(const std::string& path) = 0;
+	virtual std::string GetName(const Path& path) = 0;
+	virtual std::string GetParent(const Path& path) = 0;
 	// virtual char separator() = 0;
 
 	// virtual std::string join(const std::string& a, const std::string& b) = 0;
@@ -80,13 +81,14 @@ public:
     LocalFileSystem() = default;
     virtual ~LocalFileSystem() = default;
 
-    virtual bool exists(const std::string& path) override;
-	virtual bool isDirectory(const std::string& path) override;
-	virtual std::vector<FileEntry> list(const std::string& path) override;
+    virtual bool Exists(const Path& path) override;
+	virtual bool IsDirectory(const Path& path) override;
+	virtual std::vector<FileEntry> List(const Path& path) override;
 
-	virtual std::string getName(const std::string& path) override;
-	virtual std::string getParent(const std::string& path) override;
+	virtual std::string GetName(const Path& path) override;
+	virtual std::string GetParent(const Path& path) override;
 };
+
 
 } // namespace FS
 

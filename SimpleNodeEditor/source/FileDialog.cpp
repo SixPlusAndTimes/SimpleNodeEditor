@@ -72,7 +72,7 @@ bool FileDialog::Draw()
         if (m_currentFiles.empty() && m_currentDirectories.empty() || m_refresh)
         {
             ResetState();
-            for (auto &entry : m_fs->list(m_directoryPath.String()))
+            for (auto &entry : m_fs->List(m_directoryPath.String()))
             {
                 entry.isDirectory ? m_currentDirectories.push_back(entry) : m_currentFiles.push_back(entry);
             }
@@ -172,7 +172,7 @@ bool FileDialog::Draw()
                 if ( m_fileName.String().rfind(".") != std::string::npos
                     && m_fileName.String().substr(m_fileName.String().rfind(".")) == m_fileFormat)
                 {
-                    if (m_fs->exists(m_resultPath.String()))
+                    if (m_fs->Exists(m_resultPath.String()))
                     {
                         ResetState();
                         m_isRendered = false;
@@ -207,11 +207,11 @@ bool FileDialog::Draw()
             ImGui::SetNextItemShortcut(ImGuiKey_Enter);
             if (ImGui::Button("Save") )
             {
-                if (m_fs->exists(beforeFormatCheck) == true && isFormatCorrect == false)
+                if (m_fs->Exists(beforeFormatCheck) == true && isFormatCorrect == false)
                 {
-                    Notifier::Add(Message(Message::Type::ERR, "", "Another file exists with the same name."));
+                    Notifier::Add(Message(Message::Type::ERR, "", "Another file Exists with the same name."));
                 }
-                else if (m_fs->exists(m_resultPath.String()) == false)
+                else if (m_fs->Exists(m_resultPath.String()) == false)
                 {
                     ResetState();
                     m_isRendered = false;

@@ -15,21 +15,20 @@ static std::time_t file_time_to_time_t(const stdfs::file_time_type& ftime) {
     return system_clock::to_time_t(sctp);
 }
 
-bool LocalFileSystem::exists(const std::string& path) {
-    std::error_code ec;
-    return stdfs::exists(path, ec) && !ec;
+bool LocalFileSystem::Exists(const Path& path) {
+    return stdfs::exists(path.m_path);
 }
 
-bool LocalFileSystem::isDirectory(const std::string& path) {
+bool LocalFileSystem::IsDirectory(const Path& path) {
     std::error_code ec;
-    return stdfs::is_directory(path, ec) && !ec;
+    return stdfs::is_directory(path.m_path, ec) && !ec;
 }
 
-std::vector<FileEntry> LocalFileSystem::list(const std::string& path){
+std::vector<FileEntry> LocalFileSystem::List(const Path& path){
     std::vector<FileEntry> out;
-    if (!stdfs::exists(path) || !stdfs::is_directory(path)) return out;
+    if (!stdfs::exists(path.m_path) || !stdfs::is_directory(path.m_path)) return out;
 
-    for (auto &p : stdfs::directory_iterator(path)) {
+    for (auto &p : stdfs::directory_iterator(path.m_path)) {
         FileEntry e;
         e.fullPath = p.path().string();
         e.name = p.path().filename().string();
@@ -44,12 +43,12 @@ std::vector<FileEntry> LocalFileSystem::list(const std::string& path){
 }
 
 
-std::string LocalFileSystem::getName(const std::string& path) {
-    return stdfs::path(path).filename().string();
+std::string LocalFileSystem::GetName(const Path& path) {
+    return stdfs::path(path.m_path).filename().string();
 }
 
-std::string LocalFileSystem::getParent(const std::string& path) {
-    return stdfs::path(path).parent_path().string();
+std::string LocalFileSystem::GetParent(const Path& path) {
+    return stdfs::path(path.m_path).parent_path().string();
 }
 
 // char  LocalFileSystem::separator() {
