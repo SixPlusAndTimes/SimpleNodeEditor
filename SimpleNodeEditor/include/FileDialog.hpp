@@ -4,15 +4,15 @@
 #include <filesystem>
 #include <vector>
 #include <cstring>
-#ifdef _WIN32
-#define NOMINMAX // avoid macro max confilic with numeric_limits::max function in windows
-#endif
-#include <limits>
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_stdlib.h"
 #include "Notify.hpp"
-
+#include "FileSystem.hpp"
+#ifdef _WIN32
+#define NOMINMAX // avoid macro max confilic with numeric_limits::max function in windows
+#endif
+#include <limits>
 namespace SimpleNodeEditor
 {
 
@@ -28,18 +28,20 @@ private:
     Type m_type = Type::OPEN;
     
     std::string m_fileFormat{ ".yaml" };
-    std::filesystem::path m_fileName;
-    std::filesystem::path m_directoryPath;
-    std::filesystem::path m_resultPath;
+    FS::Path m_fileName;
+    FS::Path m_directoryPath;
+    FS::Path m_resultPath;
     bool m_refresh;
     bool m_isRendered = false;
     size_t m_currentIndex = std::numeric_limits<size_t>::max();
-    std::vector<std::filesystem::directory_entry> m_currentFiles;
-    std::vector<std::filesystem::directory_entry> m_currentDirectories;
+    std::vector<FS::FileEntry> m_currentFiles;
+    std::vector<FS::FileEntry> m_currentDirectories;
     std::string m_title{ "" };
     static const size_t s_bufferSize = 200;
     char m_buffer[s_bufferSize];
     bool m_isDoubleClickedOnFileName = false;
+    // RemoteSshContext m_sshContext;
+    std::unique_ptr<FS::IFileSystem> m_fs;
     void ResetState()
     {
         m_refresh = false;
@@ -49,15 +51,15 @@ private:
         m_isDoubleClickedOnFileName = false;
     }; // related to file views
 public:
-    FileDialog() = default;
+    FileDialog();
     virtual ~FileDialog() = default;
 
     void MarkFileDialogOpen(){m_type = Type::OPEN; m_isRendered = true;};
     void MarkFileDialogSave(const std::string& name){m_type = Type::SAVE; m_isRendered = true; SetFileName(name);};
     void SetType(Type t) { m_type = t; }
-    void SetFileName(std::string_view name) { m_fileName = name; }
-    void SetDirectory(const std::filesystem::path& dir) { m_directoryPath = dir; }
-    std::filesystem::path GetResultPath() const { return m_resultPath; }
+    void SetFileName(const std::string name) { m_fileName = name; }
+    void SetDefaultDirectoryPath(const std::filesystem::path& dir) { m_directoryPath = dir; }
+    FS::Path GetResultPath() const { return m_resultPath; }
     auto GetFileName() const { return m_fileName; }
     auto GetFileFormat() const { return m_fileFormat; }
     Type GetType() const { return m_type; }

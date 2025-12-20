@@ -1,14 +1,21 @@
 #include "FileDialog.hpp"
 #include "Log.hpp"
+#include <vector>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #endif
-#include <vector>
 namespace SimpleNodeEditor
 {
+
+FileDialog::FileDialog()
+:m_fs{ std::make_unique<FS::LocalFileSystem>() } // local filesystem bydefault
+{
+}
+
 bool FileDialog::Draw()
 {
+    std::filesystem::path path{"/rott/test/asdj.teo"};
     if (!m_isRendered)
     {
         return false;
@@ -43,7 +50,7 @@ bool FileDialog::Draw()
                     cur += strlen(cur) + 1;
                 }
             }
-            if (ImGui::BeginCombo("##ChangeRoot", m_directoryPath.string().c_str()))
+            if (ImGui::BeginCombo("##ChangeRoot", m_directoryPath.String().c_str()))
             {
                 static int driveIndex = -1;
                 for (size_t index = 0; index < virtualDrivers.size(); ++index)
@@ -65,23 +72,23 @@ bool FileDialog::Draw()
         if (m_currentFiles.empty() && m_currentDirectories.empty() || m_refresh)
         {
             ResetState();
-            for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(m_directoryPath))
+            for (auto &entry : m_fs->list(m_directoryPath.String()))
             {
-                entry.is_directory() ? m_currentDirectories.push_back(entry) : m_currentFiles.push_back(entry);
+                entry.isDirectory ? m_currentDirectories.push_back(entry) : m_currentFiles.push_back(entry);
             }
         }
         /** Begin of listing directories and files**/
         ImGui::BeginChild("##browser", ImVec2(ImGui::GetContentRegionAvail().x, 300.0f), true, ImGuiWindowFlags_None);
         size_t index = 0;
         // Parent
-        if (m_directoryPath.has_parent_path())
+        if (m_directoryPath.HasParentPath())
         {
             if (ImGui::Selectable("..", m_currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
             {
                 m_currentIndex = index;
                 if (ImGui::IsMouseDoubleClicked(0))
                 {
-                    m_directoryPath = m_directoryPath.parent_path();
+                    m_directoryPath = m_directoryPath.ParentPath();
                     m_refresh = true;
                 }
             }
@@ -92,12 +99,12 @@ bool FileDialog::Draw()
         for (const auto& element : m_currentDirectories)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 210, 0, 255));
-            if (ImGui::Selectable(element.path().filename().string().c_str(), m_currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+            if (ImGui::Selectable(element.name.c_str(), m_currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
             {
                 m_currentIndex = index;
                 if (ImGui::IsMouseDoubleClicked(0))
                 {
-                    m_directoryPath = element.path();
+                    m_directoryPath = std::filesystem::path(element.fullPath);
                     m_refresh = true;
                 }
             }
@@ -108,11 +115,10 @@ bool FileDialog::Draw()
         // Files
         for (const auto& element : m_currentFiles)
         {
-            // ImGui::SetNextItemShortcut(ImGuiKey_Enter);
-            if (ImGui::Selectable(element.path().filename().string().c_str(), m_currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+            if (ImGui::Selectable(element.name.c_str(), m_currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
             {
                 m_currentIndex = index;
-                m_fileName = element.path().filename();
+                m_fileName = std::filesystem::path(element.name);
                 if (ImGui::IsMouseDoubleClicked(0))
                 {
                     m_isDoubleClickedOnFileName = true;
@@ -132,12 +138,12 @@ bool FileDialog::Draw()
         /** End of listing directories and files**/
 
         // Draw filename in input texteditor
-        size_t fileNameSize = m_fileName.string().size();
+        size_t fileNameSize = m_fileName.String().size();
         if (fileNameSize >= s_bufferSize)
         {
             fileNameSize = s_bufferSize - 1;
         }
-        std::memcpy(m_buffer, m_fileName.string().c_str(), fileNameSize);
+        std::memcpy(m_buffer, m_fileName.String().c_str(), fileNameSize);
         m_buffer[fileNameSize] = 0;
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
@@ -163,10 +169,10 @@ bool FileDialog::Draw()
             // ImGui::SetNextItemShortcut(ImGuiKey_Enter);
             if (ImGui::Button("Open") || m_isDoubleClickedOnFileName)
             {
-                if ( m_fileName.string().rfind(".") != std::string::npos
-                    && m_fileName.string().substr(m_fileName.string().rfind(".")) == m_fileFormat)
+                if ( m_fileName.String().rfind(".") != std::string::npos
+                    && m_fileName.String().substr(m_fileName.String().rfind(".")) == m_fileFormat)
                 {
-                    if (std::filesystem::exists(m_resultPath))
+                    if (m_fs->exists(m_resultPath.String()))
                     {
                         ResetState();
                         m_isRendered = false;
@@ -175,7 +181,7 @@ bool FileDialog::Draw()
                 }
                 else 
                 {
-                    SNELOG_ERROR("Invalid File Name[{}]", m_fileName.string());
+                    SNELOG_ERROR("Invalid File Name[{}]", m_fileName.String());
                     Notifier::Add(Message(Message::Type::ERR, "", "File format is not valid. Only " + m_fileFormat + " is allowed"));
                     m_isDoubleClickedOnFileName = false;
                 }
@@ -183,15 +189,15 @@ bool FileDialog::Draw()
         }
         else if (m_type == Type::SAVE)
         {
-            const auto beforeFormatCheck = m_resultPath.string();
+            const auto beforeFormatCheck = m_resultPath.String();
             bool isFormatCorrect = false;
-            if (auto dot = m_fileName.string().rfind("."); dot == std::string::npos)
+            if (auto dot = m_fileName.String().rfind("."); dot == std::string::npos)
             {
-                m_resultPath = m_resultPath.string() + m_fileFormat;
+                m_resultPath = m_resultPath.String() + m_fileFormat;
             }
-            else if(m_fileName.string().substr(dot) != m_fileFormat)
+            else if(m_fileName.String().substr(dot) != m_fileFormat)
             {
-                m_resultPath = m_resultPath.string() + m_fileFormat;
+                m_resultPath = m_resultPath.String() + m_fileFormat;
             }
             else
             {
@@ -201,11 +207,11 @@ bool FileDialog::Draw()
             ImGui::SetNextItemShortcut(ImGuiKey_Enter);
             if (ImGui::Button("Save") )
             {
-                if (std::filesystem::exists(beforeFormatCheck) == true && isFormatCorrect == false)
+                if (m_fs->exists(beforeFormatCheck) == true && isFormatCorrect == false)
                 {
                     Notifier::Add(Message(Message::Type::ERR, "", "Another file exists with the same name."));
                 }
-                else if (std::filesystem::exists(m_resultPath) == false)
+                else if (m_fs->exists(m_resultPath.String()) == false)
                 {
                     ResetState();
                     m_isRendered = false;

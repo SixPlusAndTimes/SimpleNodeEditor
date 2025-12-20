@@ -63,3 +63,4 @@ If you want intall it at another dir, just modify the default intallation path i
 - [x] bugs: add node popup 不能滑动到底部 
 - [x] 支持linux平台的file operation dialog
 - [ ] 支持中文 
+- [ ] bugfix: 前一个pipeline中裁剪掉的Edge和node也会加入新的的pipeline中

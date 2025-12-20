@@ -69,7 +69,7 @@ NodeEditor::NodeEditor()
     // auto fileDialogPath = std::filesystem::current_path();
     auto fileDialogPath = std::filesystem::current_path().append("resource");
     SNELOG_INFO("fileDialogPath is : {}", fileDialogPath.string());
-    m_fileDialog.SetDirectory(fileDialogPath);
+    m_fileDialog.SetDefaultDirectoryPath(fileDialogPath);
 }
 
 void NodeEditor::NodeEditorInitialize()
@@ -84,11 +84,11 @@ void NodeEditor::DrawFileDialog()
     {
         if (m_fileDialog.GetType() == FileDialog::Type::OPEN)
         {
-            OpenFile(m_fileDialog.GetResultPath().string());
+            OpenFile(m_fileDialog.GetResultPath().String());
         }else if (m_fileDialog.GetType() == FileDialog::Type::SAVE)
         {
-            SNELOG_INFO("save pipeline file to {}", m_fileDialog.GetFileName().string());
-            SaveToFile(m_fileDialog.GetResultPath().string());
+            SNELOG_INFO("save pipeline file to {}", m_fileDialog.GetFileName().String());
+            SaveToFile(m_fileDialog.GetResultPath().String());
         }
     }
 }
@@ -1706,8 +1706,8 @@ void NodeEditor::HandleEdgeInfoEditing()
                         }
                     }
                     if (addIt)
-                        popUpYamlEdge.m_yamlDstPort.m_PruningRules.push_back(
-                            {chosenGroup.data(), chosenType.data()});
+                        popUpYamlEdge.m_yamlDstPort.m_PruningRules.emplace_back(
+                            chosenGroup.data(), chosenType.data());
                 }
                 ImGui::CloseCurrentPopup();
             }
