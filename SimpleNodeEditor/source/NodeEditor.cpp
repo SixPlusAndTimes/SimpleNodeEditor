@@ -84,6 +84,7 @@ void NodeEditor::DrawFileDialog()
     {
         if (m_fileDialog.GetType() == FileDialog::Type::OPEN)
         {
+            ClearCurrentPipeLine(); // should let user confirm to do this ? 
             OpenFile(m_fileDialog.GetResultPath().String());
         }else if (m_fileDialog.GetType() == FileDialog::Type::SAVE)
         {
@@ -1774,7 +1775,6 @@ void NodeEditor::HandleOtherUserInputs()
 
         if (ImGui::IsKeyPressed(ImGuiKey_O) && io.KeyCtrl)
         {
-            ClearCurrentPipeLine(); // should let user confirm to do this ? 
             m_fileDialog.MarkFileDialogOpen();
         }
 

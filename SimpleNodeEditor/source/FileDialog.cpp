@@ -9,7 +9,8 @@ namespace SimpleNodeEditor
 {
 
 FileDialog::FileDialog()
-:m_fs{ std::make_unique<FS::LocalFileSystem>() } // local filesystem bydefault
+// :m_fs{ std::make_unique<FS::LocalFileSystem>() } // local filesystem bydefault
+:m_fs{ std::make_unique<FS::SshFileSystem>("172.25.48.190", "22", "root", "unknown",  "C:\\Users\\19269\\.ssh\\id_rsa.pub",  "C:\\Users\\19269\\.ssh\\id_rsa") } 
 {
 }
 

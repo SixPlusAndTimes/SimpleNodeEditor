@@ -4,15 +4,15 @@
 #include <filesystem>
 #include <vector>
 #include <cstring>
+#ifdef WIN32
+#define NOMINMAX // avoid macro max confilic with numeric_limits::max function in windows
+#endif
+#include <limits>
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_stdlib.h"
 #include "Notify.hpp"
 #include "FileSystem.hpp"
-#ifdef _WIN32
-#define NOMINMAX // avoid macro max confilic with numeric_limits::max function in windows
-#endif
-#include <limits>
 namespace SimpleNodeEditor
 {
 

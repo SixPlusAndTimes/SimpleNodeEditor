@@ -10,6 +10,7 @@
 #include "Log.hpp"
 #include "NodeEditor.hpp"
 #include "YamlParser.hpp"
+#include "examplessh.h"
 
 bool ReConfigLogLevlel()
 {
@@ -22,7 +23,6 @@ bool ReConfigLogLevlel()
 
 int main(int, char**)
 {
-
     SNELOG_INFO("APP start ....");
     ReConfigLogLevlel();
 

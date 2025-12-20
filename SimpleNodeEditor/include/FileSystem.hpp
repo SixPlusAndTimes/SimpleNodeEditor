@@ -13,7 +13,7 @@ namespace SimpleNodeEditor {
 namespace FS
 {
 // std::filesystem::path is a general class which is almost not tied to localsystem
-// so we can reuse this as our sshfilesystems's "path impl backend"
+// so we can reuse std::filesystem::path as our sshfilesystems's "path impl backend" 
 struct Path
 {
     stdfs::path m_path;
@@ -53,9 +53,15 @@ struct FileEntry {
 	std::time_t modified = 0;
 };
 
+enum class FileSystemType
+{
+    Local,
+    Ssh,
+    Unkonwn
+};
 class IFileSystem {
 public:
-    IFileSystem() = default;
+    IFileSystem(FileSystemType type) : m_type{type} {}
 	virtual ~IFileSystem() = default;
 
 	virtual bool Exists(const Path& path) = 0;
@@ -65,20 +71,15 @@ public:
 
 	virtual std::string GetName(const Path& path) = 0;
 	virtual std::string GetParent(const Path& path) = 0;
-	// virtual char separator() = 0;
-
-	// virtual std::string join(const std::string& a, const std::string& b) = 0;
-    // virtual bool createDirectory(const std::string& path) = 0;
-	// virtual bool remove(const std::string& path) = 0;
-
-	// virtual bool readAllText(const std::string& path, std::string& out) const = 0;
-	// virtual bool writeAllText(const std::string& path, const std::string& data) = 0;
+    FileSystemType GetFileSystemType() {return m_type;};
+protected:
+    FileSystemType m_type;
 };
 
 class LocalFileSystem : public IFileSystem
 {
 public:
-    LocalFileSystem() = default;
+    LocalFileSystem();
     virtual ~LocalFileSystem() = default;
 
     virtual bool Exists(const Path& path) override;
@@ -89,6 +90,43 @@ public:
 	virtual std::string GetParent(const Path& path) override;
 };
 
+class SshFileSystem : public IFileSystem
+{
+public:
+    SshFileSystem( const std::string & host, const std::string& port,
+        const std::string & username,
+        const std::string & password,
+        const std::string & publicKey,
+        const std::string & privateKey
+    );
+    virtual ~SshFileSystem();
+
+
+    virtual bool Exists(const Path& path) override;
+    virtual bool IsDirectory(const Path& path) override;
+    virtual std::vector<FileEntry> List(const Path& path) override;
+
+    virtual std::string GetName(const Path& path) override;
+    virtual std::string GetParent(const Path& path) override;
+private:
+    bool Connect();
+    void Disconnect();
+    bool InitSftp();
+    std::string CheckError();
+
+    // Configuration
+    std::string m_hostAddr;
+    std::string m_port;
+    std::string m_username;
+    std::string m_password;
+    std::string m_publicKey;
+    std::string m_privateKey;
+
+    // Connection context
+    int  m_socket;
+    void* m_session;      // SSH session handle
+    void* m_sftpSession; // SFTP session handle
+};
 
 } // namespace FS
 
