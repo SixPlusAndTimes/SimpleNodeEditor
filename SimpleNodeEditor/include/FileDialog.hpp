@@ -54,6 +54,7 @@ public:
     FileDialog();
     virtual ~FileDialog() = default;
 
+    void SwitchFileSystemType();
     void MarkFileDialogOpen(){m_type = Type::OPEN; m_isRendered = true;};
     void MarkFileDialogSave(const std::string& name){m_type = Type::SAVE; m_isRendered = true; SetFileName(name);};
     void SetType(Type t) { m_type = t; }

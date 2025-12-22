@@ -1,1 +1,2 @@
 loglevel: info
+SshFileSystemDefaultOpenPath: /root/pipelines

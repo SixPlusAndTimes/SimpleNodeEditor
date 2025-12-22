@@ -22,6 +22,7 @@
 #include "libssh2_setup.h"
 #include "libssh2_sftp.h"
 #include "libssh2.h"
+#include "Common.hpp"
 namespace SimpleNodeEditor {
 namespace FS
 {
@@ -89,6 +90,7 @@ SshFileSystem::SshFileSystem( const std::string & host, const std::string& port,
 , m_session(nullptr)
 , m_sftpSession(nullptr)
 {
+    // what if connect failed?
     Connect();
 }
 
@@ -194,6 +196,13 @@ bool SshFileSystem::Connect()
             {
                 // Set SSH mode to blocking
                 libssh2_session_set_blocking((LIBSSH2_SESSION *)m_session, 1); // maybe unblocking is better
+
+                m_sftpSession = libssh2_sftp_init((LIBSSH2_SESSION *)m_session);
+                if (!m_sftpSession) {
+                    SNELOG_ERROR("Unable to init SFTP session");
+                    Disconnect();
+                    return false;
+                }
             }
             else
             {
@@ -242,24 +251,39 @@ void SshFileSystem::Disconnect()
 }
 
 
-bool SshFileSystem::Exists(const Path& path) {
+bool SshFileSystem::Exists(const Path& path) 
+{
     LIBSSH2_SFTP_ATTRIBUTES attrs;
-    int rc = libssh2_sftp_stat(reinterpret_cast<LIBSSH2_SFTP*>(m_sftpSession), path.m_path.string().c_str(), &attrs);
+    int rc = libssh2_sftp_stat(reinterpret_cast<LIBSSH2_SFTP*>(m_sftpSession), path.String().c_str(), &attrs);
     return rc == 0;
 }
 
-bool SshFileSystem::IsDirectory(const Path& path) {
+bool SshFileSystem::IsDirectory(const Path& path) 
+{
     LIBSSH2_SFTP_ATTRIBUTES attrs;
-    if (libssh2_sftp_stat(reinterpret_cast<LIBSSH2_SFTP*>(m_sftpSession), path.m_path.string().c_str(), &attrs) != 0) return false;
+    if (libssh2_sftp_stat(reinterpret_cast<LIBSSH2_SFTP*>(m_sftpSession), path.String().c_str(), &attrs) != 0) return false;
     return (attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) && ((attrs.permissions & LIBSSH2_SFTP_S_IFMT) == LIBSSH2_SFTP_S_IFDIR);
 }
 
-std::vector<FileEntry> SshFileSystem::List(const Path& path){
+std::vector<FileEntry> SshFileSystem::List(const Path& path)
+{
+    SNELOG_INFO("sshfilesystem List E");
     std::vector<FileEntry> out;
     LIBSSH2_SFTP* sftp = reinterpret_cast<LIBSSH2_SFTP*>(m_sftpSession);
-    LIBSSH2_SFTP_HANDLE* handle = libssh2_sftp_opendir(sftp, path.m_path.string().c_str());
-    if (!handle) return out;
+    LIBSSH2_SFTP_HANDLE* handle = libssh2_sftp_opendir(sftp, path.String().c_str());
+    if (!handle) 
+    {
+        SNELOG_ERROR("fail to opendir, path [{}]", path.m_path.string());
+        char * errorMsg;
+        int    len = 1024;
+        libssh2_session_last_error((LIBSSH2_SESSION *)m_session, &errorMsg, &len, 0);
+        if(errorMsg && len > 0) {
+            SNELOG_ERROR(" opendir failed: errmsg {})", errorMsg);
+        }
+        return out;
+    }
 
+    // TODO: Uniform with std::filesystem::path
     char buffer[512];
     LIBSSH2_SFTP_ATTRIBUTES attrs;
     while (true) {
@@ -278,18 +302,23 @@ std::vector<FileEntry> SshFileSystem::List(const Path& path){
         } else if (rc == 0) {
             break; // end
         } else {
+            SNE_ASSERT(false, "error occured when sftp_readdir");
+            SNELOG_INFO("error occured when sftp_readdir");
             break; // error
         }
     }
     libssh2_sftp_closedir(handle);
+    SNELOG_INFO("sshfilesystem List X");
     return out;
 }
 
-std::string SshFileSystem::GetName(const Path& path) {
+std::string SshFileSystem::GetName(const Path& path) 
+{
     return path.m_path.filename().string();
 }
 
-std::string SshFileSystem::GetParent(const Path& path) {
+std::string SshFileSystem::GetParent(const Path& path) 
+{
     return path.m_path.parent_path().string();
 }
 

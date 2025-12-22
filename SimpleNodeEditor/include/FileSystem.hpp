@@ -12,8 +12,9 @@ namespace stdfs = std::filesystem;
 namespace SimpleNodeEditor {
 namespace FS
 {
-// std::filesystem::path is a general class which is almost not tied to localsystem
+// std::filesystem::path is a general class which is not tied to a specific operating system
 // so we can reuse std::filesystem::path as our sshfilesystems's "path impl backend" 
+// https://en.cppreference.com/w/cpp/filesystem/path.html
 struct Path
 {
     stdfs::path m_path;
@@ -21,26 +22,38 @@ struct Path
     ~Path() = default;
     Path(const std::string pathName): m_path{pathName} { }
     Path(const stdfs::path& path): m_path{path} { }
+
     std::string String()
     {
         return m_path.string();
     }
+
+    const std::string String() const
+    {
+        return m_path.string();
+    }
+
     Path& operator=(const std::string& pathstring)
     {
         m_path = pathstring;
         return *this;
     }
+
     bool HasParentPath()
     {
         return m_path.has_parent_path();
     }
+
     Path ParentPath()
     {
         return Path(m_path.parent_path());
     }
+
     Path operator/(const Path& other)
     {
-        return m_path / other.m_path;
+        auto pathJoined = (m_path / other.m_path).string();
+        std::replace(pathJoined.begin(), pathJoined.end() , '\\' , '/');
+        return Path(pathJoined);
     }
 
 };

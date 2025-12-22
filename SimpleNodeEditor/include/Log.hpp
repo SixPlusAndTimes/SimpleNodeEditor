@@ -30,6 +30,7 @@ public:
 
 private:
     Log();
+    ~Log() = default;
     Log(const Log&)            = delete;
     Log& operator=(const Log&) = delete;
 

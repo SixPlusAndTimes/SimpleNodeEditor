@@ -7,15 +7,14 @@
 #include <SDL2/SDL_opengl.h>
 #include <stdio.h>
 #include "Common.hpp"
-#include "Log.hpp"
 #include "NodeEditor.hpp"
 #include "YamlParser.hpp"
 #include "examplessh.h"
+#include "SNEConfig.hpp"
 
 bool ReConfigLogLevlel()
 {
-    SimpleNodeEditor::ConfigParser configParser("./resource/config.yaml");
-    const std::string&             loglevel = configParser.GetConfigValue<std::string>("loglevel");
+    const std::string& loglevel = SimpleNodeEditor::SNEConfig::GetInstance().GetConfigValue<std::string>("loglevel");
     SimpleNodeEditor::Log::GetInstance().SetLogLevel(loglevel);
     SNELOG_INFO("set LogLevel {}", loglevel);
     return true;

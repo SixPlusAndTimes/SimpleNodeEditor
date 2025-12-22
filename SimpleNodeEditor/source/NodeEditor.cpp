@@ -66,10 +66,6 @@ NodeEditor::NodeEditor()
         s_nodeDescriptionsNameDesMap.emplace(nodeD.m_nodeName, nodeD);
     }
 
-    // auto fileDialogPath = std::filesystem::current_path();
-    auto fileDialogPath = std::filesystem::current_path().append("resource");
-    SNELOG_INFO("fileDialogPath is : {}", fileDialogPath.string());
-    m_fileDialog.SetDefaultDirectoryPath(fileDialogPath);
 }
 
 void NodeEditor::NodeEditorInitialize()

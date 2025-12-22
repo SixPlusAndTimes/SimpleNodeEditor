@@ -1,5 +1,7 @@
 #include "FileDialog.hpp"
+#include "SNEConfig.hpp"
 #include "Log.hpp"
+#include "Common.hpp"
 #include <vector>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -9,9 +11,30 @@ namespace SimpleNodeEditor
 {
 
 FileDialog::FileDialog()
-// :m_fs{ std::make_unique<FS::LocalFileSystem>() } // local filesystem bydefault
-:m_fs{ std::make_unique<FS::SshFileSystem>("172.25.48.190", "22", "root", "unknown",  "C:\\Users\\19269\\.ssh\\id_rsa.pub",  "C:\\Users\\19269\\.ssh\\id_rsa") } 
+:m_fs{ std::make_unique<FS::LocalFileSystem>() } // using local filesystem bydefault
 {
+    if (m_fs->GetFileSystemType() == FS::FileSystemType::Local)
+    {
+        SetDefaultDirectoryPath(std::filesystem::current_path().append("resource"));
+    }
+}
+
+void FileDialog::SwitchFileSystemType()
+{
+    if (m_fs->GetFileSystemType() == FS::FileSystemType::Local)
+    {
+        m_fs = std::make_unique<FS::SshFileSystem>("172.25.48.190", "22", "root", "unknown",  "C:\\Users\\19269\\.ssh\\id_rsa.pub",  "C:\\Users\\19269\\.ssh\\id_rsa");
+        SetDefaultDirectoryPath(SNEConfig::GetInstance().GetConfigValue<std::string>("SshFileSystemDefaultOpenPath"));
+    }
+    else if (m_fs->GetFileSystemType() == FS::FileSystemType::Ssh)
+    {
+        m_fs = std::make_unique<FS::LocalFileSystem>();
+        SetDefaultDirectoryPath(std::filesystem::current_path().append("resource"));
+    }
+    else
+    {
+        SNE_ASSERT(false, "Unreacheable! Invalid filesystem type");
+    }
 }
 
 bool FileDialog::Draw()
@@ -35,36 +58,45 @@ bool FileDialog::Draw()
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(m_title.c_str(), nullptr, ImGuiWindowFlags_NoCollapse))
     {
+        // switch between local and ssh filesystem
+        if (ImGui::Button("Switch"))
+        {
+            SwitchFileSystemType();
+            ResetState();
+        }
         // allow for virtual disk changing in windows
         #ifdef _WIN32
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-            std::vector<std::string> virtualDrivers;
-            DWORD len = GetLogicalDriveStringsA(0, nullptr);
-            if (len > 0)
+            if (m_fs->GetFileSystemType() != FS::FileSystemType::Ssh)
             {
-                std::vector<char> buf(len + 1);
-                GetLogicalDriveStringsA(len, buf.data());
-                char* cur = buf.data();
-                while (*cur)
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+                std::vector<std::string> virtualDrivers;
+                DWORD len = GetLogicalDriveStringsA(0, nullptr);
+                if (len > 0)
                 {
-                    virtualDrivers.emplace_back(cur);
-                    cur += strlen(cur) + 1;
-                }
-            }
-            if (ImGui::BeginCombo("##ChangeRoot", m_directoryPath.String().c_str()))
-            {
-                static int driveIndex = -1;
-                for (size_t index = 0; index < virtualDrivers.size(); ++index)
-                {
-                    bool sel = (index == driveIndex);
-                    if (ImGui::Selectable(virtualDrivers[index].c_str(), sel))
+                    std::vector<char> buf(len + 1);
+                    GetLogicalDriveStringsA(len, buf.data());
+                    char* cur = buf.data();
+                    while (*cur)
                     {
-                        driveIndex = index;
-                        m_directoryPath = virtualDrivers[index];
-                        m_refresh = true;
+                        virtualDrivers.emplace_back(cur);
+                        cur += strlen(cur) + 1;
                     }
                 }
-                ImGui::EndCombo();
+                if (ImGui::BeginCombo("##ChangeRoot", m_directoryPath.String().c_str()))
+                {
+                    static int driveIndex = -1;
+                    for (size_t index = 0; index < virtualDrivers.size(); ++index)
+                    {
+                        bool sel = (index == driveIndex);
+                        if (ImGui::Selectable(virtualDrivers[index].c_str(), sel))
+                        {
+                            driveIndex = index;
+                            m_directoryPath = virtualDrivers[index];
+                            m_refresh = true;
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
             }
         # else
             ImGui::Text("%s", m_directoryPath.string().c_str());
@@ -178,6 +210,10 @@ bool FileDialog::Draw()
                         ResetState();
                         m_isRendered = false;
                         done = true;
+                    }
+                    else
+                    {
+                        SNELOG_ERROR("not exist FileName[{}]", m_fileName.String());
                     }
                 }
                 else 
