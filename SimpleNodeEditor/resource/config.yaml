@@ -1,2 +1,10 @@
 loglevel: info
 SshFileSystemDefaultOpenPath: /root/pipelines
+
+SshConnectionInfo:
+  hostAddr: 
+  port: 22
+  username: root
+  password: unknown 
+  publicKey: 
+  privateKey: 

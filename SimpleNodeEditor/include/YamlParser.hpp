@@ -6,6 +6,8 @@
 #include "Notify.hpp"
 #include "DataStructureEditor.hpp"
 #include "DataStructureYaml.hpp"
+#include "FileSystem.hpp"
+#include "Common.hpp"
 namespace YAML
 {
 
@@ -13,6 +15,39 @@ inline bool isValidKey(const Node& node, const std::string& key)
 {
     return node[key] ? true : false;
 }
+
+// decode overrides always return true in release mode
+template <>
+struct convert<SimpleNodeEditor::FS::SshConnectionInfo>
+{
+    static YAML::Node encode(const SimpleNodeEditor::FS::SshConnectionInfo& rhs)
+    {
+        YAML::Node node;
+        node.force_insert("hostAddr", rhs.m_hostAddr);
+        node.force_insert("port", rhs.m_port);
+        node.force_insert("username", rhs.m_username);
+        node.force_insert("password", rhs.m_password);
+        node.force_insert("publicKey", rhs.m_publicKey);
+        node.force_insert("privateKey", rhs.m_privateKey);
+        return node;
+    }
+
+    static bool decode(const Node& node, SimpleNodeEditor::FS::SshConnectionInfo& rhs)
+    {
+        SNELOG_INFO("StartDecodeSshConfigValue");
+        SNE_ASSERT(!node.IsSequence(), "decode yamlnodeproperty fail not a Sequence");
+
+        if (isValidKey(node, "hostAddr"))   rhs.m_hostAddr =    node["hostAddr"].as<std::string>();
+        if (isValidKey(node, "port"))       rhs.m_port =        node["port"].as<std::string>();
+        if (isValidKey(node, "username"))   rhs.m_username =    node["username"].as<std::string>();
+        if (isValidKey(node, "password"))   rhs.m_password =    node["password"].as<std::string>();
+        if (isValidKey(node, "publicKey"))  rhs.m_publicKey =   node["publicKey"].as<std::string>();
+        if (isValidKey(node, "privateKey")) rhs.m_privateKey =  node["privateKey"].as<std::string>();
+        SNELOG_INFO("decode SshConnectionInfo success, hostAddr[{}], port[{}], username[{}], password[{}], publicKey[{}], privateKey[{}]",
+                    rhs.m_hostAddr, rhs.m_port, rhs.m_username, rhs.m_password, rhs.m_publicKey, rhs.m_privateKey);
+        return true;
+    }
+};
 template <>
 struct convert<SimpleNodeEditor::YamlNodeProperty>
 {
@@ -27,12 +62,7 @@ struct convert<SimpleNodeEditor::YamlNodeProperty>
 
     static bool decode(const Node& node, SimpleNodeEditor::YamlNodeProperty& rhs)
     {
-        bool ret = true;
-        if (!node.IsMap())
-        {
-            SNELOG_INFO("decode yamlnodeproperty fail not a sequence");
-            ret = false;
-        }
+        SNE_ASSERT(!node.IsMap(), "decode yamlnodeproperty fail not a map");
 
         if (isValidKey(node, "NodePropertyName") && isValidKey(node, "NodePropertyValue"))
         {
@@ -43,7 +73,7 @@ struct convert<SimpleNodeEditor::YamlNodeProperty>
 
         SNELOG_INFO("decode yamlnodeproperty done, propertyName = [{}], propertyValue[{}] ",
                     rhs.m_propertyName, rhs.m_propertyValue);
-        return ret;
+        return true;
     }
 };
 
@@ -60,11 +90,7 @@ struct convert<SimpleNodeEditor::YamlPruningRule>
 
     static bool decode(const Node& node, SimpleNodeEditor::YamlPruningRule& rhs)
     {
-        bool ret = true;
-        if (!node.IsMap())
-        {
-            ret = false;
-        }
+        SNE_ASSERT(!node.IsMap(), "decode yamlnodeproperty fail not a map");
 
         if (isValidKey(node, "group") && isValidKey(node, "type"))
         {
@@ -78,7 +104,7 @@ struct convert<SimpleNodeEditor::YamlPruningRule>
 
         SNELOG_INFO("decode yamlpruningrule done, group = [{}], type[{}] ", rhs.m_Group,
                     rhs.m_Type);
-        return ret;
+        return true;
     }
 };
 
@@ -103,11 +129,7 @@ struct convert<SimpleNodeEditor::YamlNode>
 
     static bool decode(const Node& node, SimpleNodeEditor::YamlNode& rhs)
     {
-        bool ret = true;
-        if (!node.IsMap())
-        {
-            ret = false;
-        }
+        SNE_ASSERT(!node.IsMap(), "decode yamlnodeproperty fail not a map");
 
         if (isValidKey(node, "NodeName") && isValidKey(node, "NodeId") &&
             isValidKey(node, "IsSrcNode") && isValidKey(node, "NodeType"))
@@ -119,7 +141,6 @@ struct convert<SimpleNodeEditor::YamlNode>
         }
         else
         {
-            ret = false;
             SNELOG_ERROR(
                 "invalid required key when parsing YamlNode, check it! "
                 "isValidKey(node, \"NodeName\")[{}] isValidKey(node, \"NodeId\")[{}] "
@@ -163,7 +184,7 @@ struct convert<SimpleNodeEditor::YamlNode>
             "yamlNodeType[{}]",
             rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_isSrcNode, rhs.m_nodeYamlType);
 
-        return ret;
+        return true;
     }
 };
 
@@ -188,11 +209,7 @@ struct convert<SimpleNodeEditor::YamlPort>
 
     static bool decode(const Node& node, SimpleNodeEditor::YamlPort& rhs)
     {
-        bool ret = true;
-        if (!node.IsMap())
-        {
-            ret = false;
-        }
+        SNE_ASSERT(!node.IsMap(), "decode yamlnodeproperty fail not a map");
         if (isValidKey(node, "NodeName") && isValidKey(node, "NodeId") &&
             isValidKey(node, "PortName") && isValidKey(node, "PortId"))
         {
@@ -203,7 +220,6 @@ struct convert<SimpleNodeEditor::YamlPort>
         }
         else
         {
-            ret = false;
             SNELOG_ERROR(
                 "invalid required key when parsing YamlPort, check it! "
                 "isValidKey(node, \"NodeName\")[{}] isValidKey(node, \"NodeId\")[{}] "
@@ -229,7 +245,7 @@ struct convert<SimpleNodeEditor::YamlPort>
                 "portName[{}], portYamlId[{}]",
                 pruneRuleKey, rhs.m_nodeName, rhs.m_nodeYamlId, rhs.m_portName, rhs.m_portYamlId);
         }
-        return ret;
+        return true;
     }
 };
 

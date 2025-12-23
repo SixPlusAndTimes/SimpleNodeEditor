@@ -94,6 +94,18 @@ SshFileSystem::SshFileSystem( const std::string & host, const std::string& port,
     Connect();
 }
 
+SshFileSystem::SshFileSystem(const SshConnectionInfo& connectionInfo)
+: SshFileSystem(connectionInfo.m_hostAddr,
+                connectionInfo.m_port,
+                connectionInfo.m_username, 
+                connectionInfo.m_password,
+                connectionInfo.m_publicKey,
+                connectionInfo.m_privateKey)
+{
+
+}
+
+
 SshFileSystem::~SshFileSystem()
 {
     Disconnect();

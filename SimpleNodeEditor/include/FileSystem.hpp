@@ -103,15 +103,30 @@ public:
 	virtual std::string GetParent(const Path& path) override;
 };
 
+struct SshConnectionInfo
+{
+    std::string m_hostAddr;
+    std::string m_port;
+    std::string m_username;
+    std::string m_password;
+    std::string m_publicKey;
+    std::string m_privateKey;
+};
+
 class SshFileSystem : public IFileSystem
 {
 public:
-    SshFileSystem( const std::string & host, const std::string& port,
+    SshFileSystem( 
+        const std::string & host, 
+        const std::string& port,
         const std::string & username,
         const std::string & password,
         const std::string & publicKey,
         const std::string & privateKey
     );
+    
+    SshFileSystem(const SshConnectionInfo& connectionInfo);
+
     virtual ~SshFileSystem();
 
 
@@ -121,6 +136,7 @@ public:
 
     virtual std::string GetName(const Path& path) override;
     virtual std::string GetParent(const Path& path) override;
+
 private:
     bool Connect();
     void Disconnect();

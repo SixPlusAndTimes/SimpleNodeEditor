@@ -23,7 +23,8 @@ void FileDialog::SwitchFileSystemType()
 {
     if (m_fs->GetFileSystemType() == FS::FileSystemType::Local)
     {
-        m_fs = std::make_unique<FS::SshFileSystem>("172.25.48.190", "22", "root", "unknown",  "C:\\Users\\19269\\.ssh\\id_rsa.pub",  "C:\\Users\\19269\\.ssh\\id_rsa");
+        // TODO: what if connecting fail? Is there any chance fallback to local system?
+        m_fs = std::make_unique<FS::SshFileSystem>(SNEConfig::GetInstance().GetConfigValue<FS::SshConnectionInfo>("SshConnectionInfo"));
         SetDefaultDirectoryPath(SNEConfig::GetInstance().GetConfigValue<std::string>("SshFileSystemDefaultOpenPath"));
     }
     else if (m_fs->GetFileSystemType() == FS::FileSystemType::Ssh)
@@ -39,7 +40,6 @@ void FileDialog::SwitchFileSystemType()
 
 bool FileDialog::Draw()
 {
-    std::filesystem::path path{"/rott/test/asdj.teo"};
     if (!m_isRendered)
     {
         return false;
