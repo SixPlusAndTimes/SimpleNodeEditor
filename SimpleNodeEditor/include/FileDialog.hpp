@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <vector>
 #include <cstring>
-#ifdef WIN32
+#ifdef _WIN32
 #define NOMINMAX // avoid macro max confilic with numeric_limits::max function in windows
 #endif
 #include <limits>

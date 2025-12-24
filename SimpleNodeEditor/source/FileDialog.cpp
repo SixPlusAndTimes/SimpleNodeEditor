@@ -90,7 +90,7 @@ bool FileDialog::Draw()
                         bool sel = (index == driveIndex);
                         if (ImGui::Selectable(virtualDrivers[index].c_str(), sel))
                         {
-                            driveIndex = index;
+                            driveIndex = static_cast<int>(index);
                             m_directoryPath = virtualDrivers[index];
                             m_refresh = true;
                         }

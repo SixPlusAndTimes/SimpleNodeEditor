@@ -2,9 +2,9 @@ loglevel: info
 SshFileSystemDefaultOpenPath: /root/pipelines
 
 SshConnectionInfo:
-  hostAddr: 
+  hostAddr: 172.25.48.190
   port: 22
   username: root
   password: unknown 
-  publicKey: 
-  privateKey: 
+  publicKey: C:/Users/19269/.ssh/id_rsa.pub 
+  privateKey: C:/Users/19269/.ssh/id_rsa 

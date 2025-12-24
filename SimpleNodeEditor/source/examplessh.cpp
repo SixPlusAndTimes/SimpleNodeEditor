@@ -47,7 +47,7 @@ static const char *sftppath = "/root/pipelines";
 // static const std::string s_hostAdd{"169.254.202.122"};
 static const std::string s_hostAdd{"172.25.48.190"};
 
-static void kbd_callback(const char *name, int name_len,
+void kbd_callback(const char *name, int name_len,
                          const char *instruction, int instruction_len,
                          int num_prompts,
                          const LIBSSH2_USERAUTH_KBDINT_PROMPT *prompts,
@@ -67,10 +67,11 @@ static void kbd_callback(const char *name, int name_len,
 } /* kbd_callback */
 
 /* libssh2 debug callback to print protocol/debug messages to stderr */
-static void debug_cb(LIBSSH2_SESSION *sess, int always_display,
+void debug_cb(LIBSSH2_SESSION *sess, int always_display,
                      const char *message, int message_len,
                      const char *language, int language_len, void **abstract)
 {
+    (void)sess;
     (void)always_display; (void)language; (void)language_len; (void)abstract;
     fprintf(stderr, "libssh2-debug: %.*s\n", message_len, message);
 }
@@ -87,6 +88,11 @@ int test_main(int argc, char *argv[])
     LIBSSH2_SESSION *session = NULL;
     LIBSSH2_SFTP *sftp_session;
     LIBSSH2_SFTP_HANDLE *sftp_handle;
+
+    (void)argc; (void)argv;
+    (void)i; (void)auth_pw;
+    (void)fingerprint; (void)userauthlist;
+    (void)0;
 
 #ifdef _WIN32
     WSADATA wsadata;

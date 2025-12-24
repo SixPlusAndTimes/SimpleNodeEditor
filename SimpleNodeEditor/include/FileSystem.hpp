@@ -9,6 +9,7 @@
 #include <filesystem>
 
 namespace stdfs = std::filesystem;
+
 namespace SimpleNodeEditor {
 namespace FS
 {
@@ -138,9 +139,9 @@ public:
     virtual std::string GetParent(const Path& path) override;
 
 private:
-    bool Connect();
+    [[nodiscard]] bool Connect();
     void Disconnect();
-    bool InitSftp();
+    [[nodiscard]] bool InitSftp();
     std::string CheckError();
 
     // Configuration
@@ -152,9 +153,9 @@ private:
     std::string m_privateKey;
 
     // Connection context
-    int  m_socket;
-    void* m_session;      // SSH session handle
-    void* m_sftpSession; // SFTP session handle
+    std::int64_t m_socket;
+    void*        m_session;      // SSH session handle
+    void*        m_sftpSession; // SFTP session handle
 };
 
 } // namespace FS

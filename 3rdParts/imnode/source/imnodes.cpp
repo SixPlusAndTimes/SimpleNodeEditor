@@ -1531,8 +1531,8 @@ void DrawPin(ImNodesEditorContext& editor, const int pin_idx)
 
     ImU32 pin_color = pin.ColorStyle.Background;
 
-    bool is_hovered = false;
-    if (is_hovered = (GImNodes->HoveredPinIdx == pin_idx))
+    bool is_hovered = GImNodes->HoveredPinIdx == pin_idx;
+    if (is_hovered)
     {
         pin_color = pin.ColorStyle.Hovered;
     }

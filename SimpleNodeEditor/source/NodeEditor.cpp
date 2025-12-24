@@ -1403,7 +1403,6 @@ void NodeEditor::HandleNodeInfoEditing()
         // PruningRule Show
         ImGui::Separator();
         ImGui::TextUnformatted("Pruning Rules:");
-        int  remove_node_prune_idx = -1;
         auto shouldBeDeleted = popUpYamlNode.m_PruningRules.end(); // static or normal variable?
         for (auto iter = popUpYamlNode.m_PruningRules.begin();
              iter != popUpYamlNode.m_PruningRules.end(); ++iter)
@@ -1448,7 +1447,7 @@ void NodeEditor::HandleNodeInfoEditing()
         {
             std::vector<std::string_view> groups{(m_allPruningRules | std::views::keys).begin(),
                                                  (m_allPruningRules | std::views::keys).end()};
-            static int                    selectedGroupIndex = 0;
+            static size_t                 selectedGroupIndex = 0;
             if (ImGui::BeginCombo("Group", groups[selectedGroupIndex].data()))
             {
                 for (size_t i = 0; i < groups.size(); ++i)
@@ -1462,11 +1461,11 @@ void NodeEditor::HandleNodeInfoEditing()
 
             const auto& typeSet = m_allPruningRules.at(groups[selectedGroupIndex].data());
             std::vector<std::string_view> types{typeSet.begin(), typeSet.end()};
-            static int                    selectedTypeIndex = 0;
+            static size_t                 selectedTypeIndex = 0;
             // types for selected group
             if (ImGui::BeginCombo("Type", types[selectedTypeIndex].data()))
             {
-                for (int i = 0; i < (int)types.size(); ++i)
+                for (size_t i = 0; i < types.size(); ++i)
                 {
                     bool is_sel = (selectedTypeIndex == i);
                     if (ImGui::Selectable(types[i].data(), is_sel)) selectedTypeIndex = i;
@@ -1603,7 +1602,6 @@ void NodeEditor::HandleEdgeInfoEditing()
         ImGui::Separator();
         ImGui::TextUnformatted("DestinationPortPruningRules:");
 
-        int   remove_prune_idx = -1;
         auto  shouldBeDeleted  = popUpYamlEdge.m_yamlDstPort.m_PruningRules.end();
         Node& srcNode          = m_nodes.at(m_edges.at(edgeUidToBePoped).GetSourceNodeUid());
         Node& dstNode          = m_nodes.at(m_edges.at(edgeUidToBePoped).GetDestinationNodeUid());
@@ -1652,7 +1650,7 @@ void NodeEditor::HandleEdgeInfoEditing()
         {
             std::vector<std::string_view> groups{(m_allPruningRules | std::views::keys).begin(),
                                                  (m_allPruningRules | std::views::keys).end()};
-            static int                    selectedGroupIndex = 0;
+            static size_t                 selectedGroupIndex = 0;
             if (ImGui::BeginCombo("Group", groups[selectedGroupIndex].data()))
             {
                 for (size_t i = 0; i < groups.size(); ++i)
@@ -1666,11 +1664,11 @@ void NodeEditor::HandleEdgeInfoEditing()
 
             const auto& typeSet = m_allPruningRules.at(groups[selectedGroupIndex].data());
             std::vector<std::string_view> types{typeSet.begin(), typeSet.end()};
-            static int                    selectedTypeIndex = 0;
+            static size_t                 selectedTypeIndex = 0;
             // types for selected group
             if (ImGui::BeginCombo("Type", types[selectedTypeIndex].data()))
             {
-                for (int i = 0; i < (int)types.size(); ++i)
+                for (size_t i = 0; i < types.size(); ++i)
                 {
                     bool is_sel = (selectedTypeIndex == i);
                     if (ImGui::Selectable(types[i].data(), is_sel)) selectedTypeIndex = i;

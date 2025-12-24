@@ -63,6 +63,11 @@ target_compile_definitions(${project_name} PRIVATE
     $<$<CONFIG:Release>:RELEASE>
 )
 
+target_compile_options(${project_name} PRIVATE
+  $<$<CXX_COMPILER_ID:GNU,Clang>:-Werror -Wall -Wextra>
+  $<$<CXX_COMPILER_ID:MSVC>:/WX /W4>
+)
+
 if (WIN32)
     # for windows dynamic linking
     add_custom_command(

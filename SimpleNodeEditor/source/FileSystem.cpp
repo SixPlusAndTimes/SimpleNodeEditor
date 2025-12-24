@@ -26,12 +26,6 @@
 namespace SimpleNodeEditor {
 namespace FS
 {
-static std::time_t file_time_to_time_t(const stdfs::file_time_type& ftime) {
-    using namespace std::chrono;
-    auto sctp = time_point_cast<system_clock::duration>(
-        ftime - stdfs::file_time_type::clock::now() + system_clock::now());
-    return system_clock::to_time_t(sctp);
-}
 
 // ----------------- LocalFileSystem implementation -----------------
 LocalFileSystem::LocalFileSystem()
@@ -91,7 +85,10 @@ SshFileSystem::SshFileSystem( const std::string & host, const std::string& port,
 , m_sftpSession(nullptr)
 {
     // what if connect failed?
-    Connect();
+    if (!Connect())
+    {
+        SNELOG_ERROR("Connect fail");
+    }
 }
 
 SshFileSystem::SshFileSystem(const SshConnectionInfo& connectionInfo)
@@ -140,13 +137,13 @@ bool SshFileSystem::Connect()
     }
     struct sockaddr_in sin;
     sin.sin_family = AF_INET;
-    sin.sin_port = htons(std::atoi(m_port.c_str()));
-    sin.sin_addr.s_addr = inet_addr(m_hostAddr.data());
+    sin.sin_port = htons(static_cast<u_short>(std::atoi(m_port.c_str())));
+    InetPtonA(sin.sin_family, m_hostAddr.data(), &sin.sin_addr);
     if(connect(m_socket, (struct sockaddr*)(&sin), sizeof(struct sockaddr_in))) {
         int errcode = WSAGetLastError();
         SNELOG_ERROR("failed to conect to {}, error code {}", m_hostAddr, errcode);
         #ifdef WIN32
-                _close(m_socket);
+                closesocket(m_socket);
         #else
                 close(m_socket);
         #endif
