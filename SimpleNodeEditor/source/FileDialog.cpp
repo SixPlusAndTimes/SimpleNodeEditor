@@ -15,6 +15,7 @@ FileDialog::FileDialog()
 {
     if (m_fs->GetFileSystemType() == FS::FileSystemType::Local)
     {
+        // default open directory is currentruningpath/resource
         SetDefaultDirectoryPath(std::filesystem::current_path().append("resource"));
     }
 }
@@ -23,9 +24,18 @@ void FileDialog::SwitchFileSystemType()
 {
     if (m_fs->GetFileSystemType() == FS::FileSystemType::Local)
     {
-        // TODO: what if connecting fail? Is there any chance fallback to local system?
-        m_fs = std::make_unique<FS::SshFileSystem>(SNEConfig::GetInstance().GetConfigValue<FS::SshConnectionInfo>("SshConnectionInfo"));
-        SetDefaultDirectoryPath(SNEConfig::GetInstance().GetConfigValue<std::string>("SshFileSystemDefaultOpenPath"));
+        // Try to create SSH filesystem and only switch to it if connected
+        auto sshfs = std::make_unique<FS::SshFileSystem>(SNEConfig::GetInstance().GetConfigValue<FS::SshConnectionInfo>("SshConnectionInfo"));
+        if (sshfs && sshfs->IsConnected())
+        {
+            m_fs = std::move(sshfs);
+            SetDefaultDirectoryPath(SNEConfig::GetInstance().GetConfigValue<std::string>("SshFileSystemDefaultOpenPath"));
+        }
+        else
+        {
+            SNELOG_ERROR("Failed to connect SSH filesystem, staying on LocalFileSystem");
+            Notifier::Add(Message{Message::Type::ERR, "", "Unable to connect to SSH server. Using local filesystem."});
+        }
     }
     else if (m_fs->GetFileSystemType() == FS::FileSystemType::Ssh)
     {
@@ -34,7 +44,8 @@ void FileDialog::SwitchFileSystemType()
     }
     else
     {
-        SNE_ASSERT(false, "Unreacheable! Invalid filesystem type");
+        SNELOG_ERROR("Unreacheable! Invalid filesystem type [{}]", static_cast<int>(m_fs->GetFileSystemType()));
+        SNE_ASSERT(false);
     }
 }
 

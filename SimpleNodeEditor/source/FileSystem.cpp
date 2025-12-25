@@ -84,11 +84,7 @@ SshFileSystem::SshFileSystem( const std::string & host, const std::string& port,
 , m_session(nullptr)
 , m_sftpSession(nullptr)
 {
-    // what if connect failed?
-    if (!Connect())
-    {
-        SNELOG_ERROR("Connect fail");
-    }
+    Connect();
 }
 
 SshFileSystem::SshFileSystem(const SshConnectionInfo& connectionInfo)
@@ -108,14 +104,19 @@ SshFileSystem::~SshFileSystem()
     Disconnect();
 }
 
-bool SshFileSystem::Connect()
+bool SshFileSystem::IsConnected() const
+{
+    return m_session != nullptr && m_sftpSession != nullptr && m_socket != LIBSSH2_INVALID_SOCKET;
+}
+
+void SshFileSystem::Connect()
 {
     #ifdef WIN32
         // Initialize winsock
         WSADATA wsadata;
         if(WSAStartup(MAKEWORD(2, 0), &wsadata)) {
             SNELOG_ERROR("WSAStartup failed with error");
-            return false;
+            return;
         }
     #endif
 
@@ -126,14 +127,14 @@ bool SshFileSystem::Connect()
     if (libssh2_init(0))
     {
         SNELOG_ERROR("libssh init failed");
-        return false;
+        return;
     }
 
     // Try to connect
     m_socket = socket(AF_INET, SOCK_STREAM, 0);
     if(m_socket == LIBSSH2_INVALID_SOCKET) {
         SNELOG_ERROR("fail to create socket");
-        return false;
+        return;
     }
     struct sockaddr_in sin;
     sin.sin_family = AF_INET;
@@ -147,14 +148,13 @@ bool SshFileSystem::Connect()
         #else
                 close(m_socket);
         #endif
-        return false;
     }
 
     // Check if connection has been successfull
     if (m_socket == -1)
     {
         SNELOG_ERROR("Invalid Socket, connect fail");
-        return false;
+        return;
     }
 
     m_session = libssh2_session_init();
@@ -163,15 +163,13 @@ bool SshFileSystem::Connect()
     {
         // Open session
         retcode = libssh2_session_handshake((LIBSSH2_SESSION *)m_session, m_socket);
-        /*
-        if (res == LIBSSH2_ERROR_SOCKET_NONE)       std::cout << "LIBSSH2_ERROR_SOCKET_NONE" << std::endl;
-        if (res == LIBSSH2_ERROR_BANNER_SEND)       std::cout << "LIBSSH2_ERROR_BANNER_SEND" << std::endl;
-        if (res == LIBSSH2_ERROR_KEX_FAILURE)       std::cout << "LIBSSH2_ERROR_KEX_FAILURE" << std::endl;
-        if (res == LIBSSH2_ERROR_SOCKET_SEND)       std::cout << "LIBSSH2_ERROR_SOCKET_SEND" << std::endl;
-        if (res == LIBSSH2_ERROR_SOCKET_DISCONNECT) std::cout << "LIBSSH2_ERROR_SOCKET_DISCONNECT" << std::endl;
-        if (res == LIBSSH2_ERROR_PROTO)             std::cout << "LIBSSH2_ERROR_PROTO" << std::endl;
-        if (res == LIBSSH2_ERROR_EAGAIN)            std::cout << "LIBSSH2_ERROR_EAGAIN" << std::endl;
-        */
+        if (retcode == LIBSSH2_ERROR_SOCKET_NONE)       SPDLOG_ERROR("LIBSSH2_ERROR_SOCKET_NONE");
+        if (retcode == LIBSSH2_ERROR_BANNER_SEND)       SPDLOG_ERROR("LIBSSH2_ERROR_BANNER_SEND");
+        if (retcode == LIBSSH2_ERROR_KEX_FAILURE)       SPDLOG_ERROR("LIBSSH2_ERROR_KEX_FAILURE");
+        if (retcode == LIBSSH2_ERROR_SOCKET_SEND)       SPDLOG_ERROR("LIBSSH2_ERROR_SOCKET_SEND");
+        if (retcode == LIBSSH2_ERROR_SOCKET_DISCONNECT) SPDLOG_ERROR("LIBSSH2_ERROR_SOCKET_DISCONNECT");
+        if (retcode == LIBSSH2_ERROR_PROTO)             SPDLOG_ERROR("LIBSSH2_ERROR_PROTO");
+        if (retcode == LIBSSH2_ERROR_EAGAIN)            SPDLOG_ERROR("LIBSSH2_ERROR_EAGAIN");
 
         if (retcode == 0)
         {
@@ -188,6 +186,7 @@ bool SshFileSystem::Connect()
                     m_privateKey.c_str(),
                     m_password.c_str()
                 );
+                if (!retcode) SPDLOG_ERROR("libssh2_userauth_publickey_fromfile failed, retcode[{}]", retcode);
             }
             else
             {
@@ -210,7 +209,6 @@ bool SshFileSystem::Connect()
                 if (!m_sftpSession) {
                     SNELOG_ERROR("Unable to init SFTP session");
                     Disconnect();
-                    return false;
                 }
             }
             else
@@ -224,7 +222,6 @@ bool SshFileSystem::Connect()
     {
         SNELOG_INFO("Connect Successed, hostaddr[{}]", m_hostAddr);
     }
-    return retcode == 0;
 }
 
 void SshFileSystem::Disconnect()

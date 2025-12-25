@@ -138,10 +138,11 @@ public:
     virtual std::string GetName(const Path& path) override;
     virtual std::string GetParent(const Path& path) override;
 
+    bool IsConnected() const;
+
 private:
-    [[nodiscard]] bool Connect();
+    void Connect();
     void Disconnect();
-    [[nodiscard]] bool InitSftp();
     std::string CheckError();
 
     // Configuration
