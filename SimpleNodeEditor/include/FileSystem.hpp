@@ -18,53 +18,80 @@ namespace FS
 // https://en.cppreference.com/w/cpp/filesystem/path.html
 struct Path
 {
-    stdfs::path m_path;
     Path() = default;
     ~Path() = default;
-    Path(const std::string pathName): m_path{pathName} { }
-    Path(const stdfs::path& path): m_path{path} { }
+    Path(const Path& other) = default;
+    Path& operator=(const Path& other) = default;
+    Path(Path&& other): m_pathimpl(std::move(other.m_pathimpl)){ }
+    Path& operator=(Path&& other)
+    {
+        if (this != &other)
+        {
+            m_pathimpl = std::move(other.m_pathimpl);
+        }
+        return *this;
+    }
+
+    Path(const std::string pathName): m_pathimpl{pathName} { }
+    Path(const stdfs::path& path): m_pathimpl{path} { }
 
     std::string String()
     {
-        return m_path.string();
+        return m_pathimpl.string();
     }
 
     const std::string String() const
     {
-        return m_path.string();
+        return m_pathimpl.string();
     }
 
-    Path& operator=(const std::string& pathstring)
+    std::string GetFileName() const
     {
-        m_path = pathstring;
-        return *this;
+        return m_pathimpl.filename().string();
     }
-
+    std::string GetFileName()
+    {
+        return m_pathimpl.filename().string();
+    }
     bool HasParentPath()
     {
-        return m_path.has_parent_path();
+        return m_pathimpl.has_parent_path();
     }
 
     Path ParentPath()
     {
-        return Path(m_path.parent_path());
+        return Path(m_pathimpl.parent_path());
     }
 
     Path operator/(const Path& other)
     {
-        auto pathJoined = (m_path / other.m_path).string();
+        auto pathJoined = (m_pathimpl / other.m_pathimpl).string();
         std::replace(pathJoined.begin(), pathJoined.end() , '\\' , '/');
         return Path(pathJoined);
     }
 
+    Path operator/(const std::string& other)
+    {
+        auto pathJoined = (m_pathimpl / Path(other).m_pathimpl).string();
+        std::replace(pathJoined.begin(), pathJoined.end() , '\\' , '/');
+        return Path(pathJoined);
+    }
+    
+    Path operator/(const std::string& other) const
+    {
+        auto pathJoined = (m_pathimpl / Path(other).m_pathimpl).string();
+        std::replace(pathJoined.begin(), pathJoined.end() , '\\' , '/');
+        return Path(pathJoined);
+    }
+
+    stdfs::path m_pathimpl;
 };
 
 struct FileEntry {
-	std::string name;
-	std::string fullPath;
-	bool isDirectory = false;
-	uint64_t size = 0;
-	std::time_t modified = 0;
+    FS::Path m_path; // include filename
+	bool m_isDirectory = false;
+	uint64_t m_size = 0;
+	std::time_t m_modified = 0;
 };
 
 enum class FileSystemType
@@ -82,9 +109,6 @@ public:
 	virtual bool IsDirectory(const Path& path) = 0;
 	virtual std::vector<FileEntry> List(const Path& path) = 0;
 
-
-	virtual std::string GetName(const Path& path) = 0;
-	virtual std::string GetParent(const Path& path) = 0;
     FileSystemType GetFileSystemType() {return m_type;};
 protected:
     FileSystemType m_type;
@@ -99,9 +123,6 @@ public:
     virtual bool Exists(const Path& path) override;
 	virtual bool IsDirectory(const Path& path) override;
 	virtual std::vector<FileEntry> List(const Path& path) override;
-
-	virtual std::string GetName(const Path& path) override;
-	virtual std::string GetParent(const Path& path) override;
 };
 
 struct SshConnectionInfo
@@ -135,15 +156,13 @@ public:
     virtual bool IsDirectory(const Path& path) override;
     virtual std::vector<FileEntry> List(const Path& path) override;
 
-    virtual std::string GetName(const Path& path) override;
-    virtual std::string GetParent(const Path& path) override;
 
     bool IsConnected() const;
 
 private:
     void Connect();
     void Disconnect();
-    std::string CheckError();
+    void CheckError();
 
     // Configuration
     std::string m_hostAddr;

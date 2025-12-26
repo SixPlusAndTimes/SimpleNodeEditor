@@ -118,7 +118,7 @@ bool FileDialog::Draw()
             ResetState();
             for (auto &entry : m_fs->List(m_directoryPath.String()))
             {
-                entry.isDirectory ? m_currentDirectories.push_back(entry) : m_currentFiles.push_back(entry);
+                entry.m_isDirectory ? m_currentDirectories.push_back(entry) : m_currentFiles.push_back(entry);
             }
         }
         /** Begin of listing directories and files**/
@@ -143,12 +143,12 @@ bool FileDialog::Draw()
         for (const auto& element : m_currentDirectories)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 210, 0, 255));
-            if (ImGui::Selectable(element.name.c_str(), m_currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+            if (ImGui::Selectable(element.m_path.GetFileName().c_str(), m_currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
             {
                 m_currentIndex = index;
                 if (ImGui::IsMouseDoubleClicked(0))
                 {
-                    m_directoryPath = std::filesystem::path(element.fullPath);
+                    m_directoryPath = element.m_path;
                     m_refresh = true;
                 }
             }
@@ -159,10 +159,10 @@ bool FileDialog::Draw()
         // Files
         for (const auto& element : m_currentFiles)
         {
-            if (ImGui::Selectable(element.name.c_str(), m_currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+            if (ImGui::Selectable(element.m_path.GetFileName().c_str(), m_currentIndex == index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
             {
                 m_currentIndex = index;
-                m_fileName = std::filesystem::path(element.name);
+                m_fileName = FS::Path(element.m_path.GetFileName());
                 if (ImGui::IsMouseDoubleClicked(0))
                 {
                     m_isDoubleClickedOnFileName = true;

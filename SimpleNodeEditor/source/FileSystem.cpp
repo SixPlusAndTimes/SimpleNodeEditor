@@ -32,26 +32,24 @@ LocalFileSystem::LocalFileSystem()
 : IFileSystem(FileSystemType::Local) { }
 
 bool LocalFileSystem::Exists(const Path& path) {
-    return stdfs::exists(path.m_path);
+    return stdfs::exists(path.m_pathimpl);
 }
 
 bool LocalFileSystem::IsDirectory(const Path& path) {
     std::error_code ec;
-    return stdfs::is_directory(path.m_path, ec) && !ec;
+    return stdfs::is_directory(path.m_pathimpl, ec) && !ec;
 }
 
 std::vector<FileEntry> LocalFileSystem::List(const Path& path){
     std::vector<FileEntry> out;
-    if (!stdfs::exists(path.m_path) || !stdfs::is_directory(path.m_path)) return out;
+    if (!stdfs::exists(path.m_pathimpl) || !stdfs::is_directory(path.m_pathimpl)) return out;
 
-    for (auto &p : stdfs::directory_iterator(path.m_path)) {
+    for (auto &p : stdfs::directory_iterator(path.m_pathimpl)) {
         FileEntry e;
-        e.fullPath = p.path().string();
-        e.name = p.path().filename().string();
-        e.isDirectory = stdfs::is_directory(p.path());
-        if (!e.isDirectory) {
-            std::error_code ec2;
-            e.size = stdfs::file_size(p.path(), ec2);
+        e.m_path = p.path();
+        e.m_isDirectory = stdfs::is_directory(p.path());
+        if (!e.m_isDirectory) {
+            e.m_size = stdfs::file_size(p.path());
         }
         out.push_back(std::move(e));
     }
@@ -59,13 +57,6 @@ std::vector<FileEntry> LocalFileSystem::List(const Path& path){
 }
 
 
-std::string LocalFileSystem::GetName(const Path& path) {
-    return stdfs::path(path.m_path).filename().string();
-}
-
-std::string LocalFileSystem::GetParent(const Path& path) {
-    return stdfs::path(path.m_path).parent_path().string();
-}
 
 // ----------------- SshFileSystem implementation -----------------
 SshFileSystem::SshFileSystem( const std::string & host, const std::string& port,
@@ -279,7 +270,7 @@ std::vector<FileEntry> SshFileSystem::List(const Path& path)
     LIBSSH2_SFTP_HANDLE* handle = libssh2_sftp_opendir(sftp, path.String().c_str());
     if (!handle) 
     {
-        SNELOG_ERROR("fail to opendir, path [{}]", path.m_path.string());
+        SNELOG_ERROR("fail to opendir, path [{}]", path.m_pathimpl.string());
         char * errorMsg;
         int    len = 1024;
         libssh2_session_last_error((LIBSSH2_SESSION *)m_session, &errorMsg, &len, 0);
@@ -289,28 +280,24 @@ std::vector<FileEntry> SshFileSystem::List(const Path& path)
         return out;
     }
 
-    // TODO: Uniform with std::filesystem::path
     char buffer[512];
     LIBSSH2_SFTP_ATTRIBUTES attrs;
     while (true) {
         int rc = libssh2_sftp_readdir(handle, buffer, sizeof(buffer), &attrs);
         if (rc > 0) {
-            std::string name(buffer, rc);
-            if (name == "." || name == "..") continue;
+            std::string filename(buffer, rc);
+            if (filename == "." || filename == "..") continue;
             FileEntry e;
-            e.name = name;
-            std::string fp = path.m_path.string();
-            if (!fp.empty() && fp.back() != '/') fp.push_back('/');
-            e.fullPath = fp + name;
-            e.isDirectory = ( (attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) && ((attrs.permissions & LIBSSH2_SFTP_S_IFMT) == LIBSSH2_SFTP_S_IFDIR) );
-            e.size = attrs.filesize;
+            e.m_path = path / filename;
+            e.m_isDirectory = ( (attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) && ((attrs.permissions & LIBSSH2_SFTP_S_IFMT) == LIBSSH2_SFTP_S_IFDIR) );
+            e.m_size = attrs.filesize;
             out.push_back(std::move(e));
         } else if (rc == 0) {
-            break; // end
+            break;
         } else {
             SNE_ASSERT(false, "error occured when sftp_readdir");
-            SNELOG_INFO("error occured when sftp_readdir");
-            break; // error
+            CheckError();
+            break;
         }
     }
     libssh2_sftp_closedir(handle);
@@ -318,15 +305,12 @@ std::vector<FileEntry> SshFileSystem::List(const Path& path)
     return out;
 }
 
-std::string SshFileSystem::GetName(const Path& path) 
+void SshFileSystem::CheckError()
 {
-    return path.m_path.filename().string();
+    char* errorMsg;
+    int    len = 1024;
+    libssh2_session_last_error((LIBSSH2_SESSION *)m_session, &errorMsg, &len, 0);
+    SNELOG_ERROR("SSH ERROR : {}", errorMsg);
 }
-
-std::string SshFileSystem::GetParent(const Path& path) 
-{
-    return path.m_path.parent_path().string();
-}
-
 } // namespace FS
 } // namespace SimpleNodeEditor
