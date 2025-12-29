@@ -85,7 +85,8 @@ void NodeEditor::DrawFileDialog()
         }else if (m_fileDialog.GetType() == FileDialog::Type::SAVE)
         {
             SNELOG_INFO("save pipeline file to {}", m_fileDialog.GetFileName().String());
-            SaveToFile(m_fileDialog.GetResultPath().String());
+            // SaveToFile(m_fileDialog.GetResultPath().String());
+            SaveToFile(m_fileDialog.GetResultIOStream());
         }
     }
 }
@@ -1800,6 +1801,12 @@ bool NodeEditor::OpenFile(const std::string& filePath)
         SNELOG_ERROR("LoadPipeLineFromFile failed, filePath[{}]", filePath);
         return false;
     }
+}
+
+void NodeEditor::SaveToFile(std::unique_ptr<std::ostream> outputStream)
+{
+
+    *outputStream << m_pipelineEimtter.EmitPipeline(m_currentPipeLineName, m_nodes, m_nodesPruned, m_edges, m_edgesPruned);
 }
 
 void NodeEditor::SaveToFile(const std::string& fileName)

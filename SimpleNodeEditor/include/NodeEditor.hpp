@@ -75,6 +75,7 @@ private:
     void HandleOtherUserInputs();
 
     void               SaveToFile(const std::string& fileName); 
+    void               SaveToFile(std::unique_ptr<std::ostream> outputStream);
     [[nodiscard]] bool LoadPipelineFromFile(const std::string& filePath);
     void               ClearCurrentPipeLine();
 

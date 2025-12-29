@@ -67,4 +67,29 @@
 #define COLOR_BLUE_U32      IM_COL32(0, 0, 255, 255)
 #endif
 
+inline unsigned long long size_b(unsigned long long value)
+{
+    return value;
+}
+
+inline unsigned long long size_kb(unsigned long long value)
+{
+    return value * 1024;
+}
+
+inline unsigned long long size_mb(unsigned long long value)
+{
+    return value * 1024 * 1024;
+}
+
+inline unsigned long long size_gb(unsigned long long value)
+{
+    return value * 1024 * 1024 * 1024;
+}
+
+inline unsigned long long size_tb(unsigned long long value)
+{
+    return value * 1024 * 1024 * 1024 * 1024;
+}
+
 #endif // COMMON_H

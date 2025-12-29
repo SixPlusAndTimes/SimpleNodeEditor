@@ -4,14 +4,15 @@
 #include "Common.hpp"
 #include <vector>
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+    #define WIN32_LEAN_AND_MEAN
+    #define NOMINMAX
+    #include <Windows.h>
 #endif
 namespace SimpleNodeEditor
 {
 
 FileDialog::FileDialog()
-:m_fs{ std::make_unique<FS::LocalFileSystem>() } // using local filesystem bydefault
+:m_fs{ std::make_shared<FS::LocalFileSystem>() } // using local filesystem bydefault
 {
     if (m_fs->GetFileSystemType() == FS::FileSystemType::Local)
     {
@@ -25,7 +26,7 @@ void FileDialog::SwitchFileSystemType()
     if (m_fs->GetFileSystemType() == FS::FileSystemType::Local)
     {
         // Try to create SSH filesystem and only switch to it if connected
-        auto sshfs = std::make_unique<FS::SshFileSystem>(SNEConfig::GetInstance().GetConfigValue<FS::SshConnectionInfo>("SshConnectionInfo"));
+        auto sshfs = std::make_shared<FS::SshFileSystem>(SNEConfig::GetInstance().GetConfigValue<FS::SshConnectionInfo>("SshConnectionInfo"));
         if (sshfs && sshfs->IsConnected())
         {
             m_fs = std::move(sshfs);
@@ -39,7 +40,7 @@ void FileDialog::SwitchFileSystemType()
     }
     else if (m_fs->GetFileSystemType() == FS::FileSystemType::Ssh)
     {
-        m_fs = std::make_unique<FS::LocalFileSystem>();
+        m_fs = std::make_shared<FS::LocalFileSystem>();
         SetDefaultDirectoryPath(std::filesystem::current_path().append("resource"));
     }
     else
@@ -295,6 +296,24 @@ bool FileDialog::Draw()
 
     }
     return done;
+}
+
+std::unique_ptr<std::ostream> FileDialog::GetResultIOStream()
+{
+    if (m_type == Type::SAVE)
+    {
+        return m_fs->createOutputStream(std::ios_base::trunc, GetResultPath());
+    }
+    else if (m_type == Type::OPEN)
+    {
+        SNELOG_ERROR("not implemented");
+        return nullptr;
+    }
+    else 
+    {
+        SNELOG_ERROR("unknown operation tyep");
+        return nullptr;
+    }
 }
 
 } // namespace SimpleNodeEditor

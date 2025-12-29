@@ -5,6 +5,7 @@
 #include <chrono>
 
 #ifdef _WIN32
+#define NOMINMAX
     #include <winsock2.h>
     #include <ws2tcpip.h>
 #else
@@ -14,6 +15,9 @@
     #include <netdb.h>
     #include <unistd.h>
 #endif
+// following 2 file include must behind NOMINMAX macro
+#include <libssh2.h>
+#include <libssh2_sftp.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -56,6 +60,16 @@ std::vector<FileEntry> LocalFileSystem::List(const Path& path){
     return out;
 }
 
+std::unique_ptr<std::istream> LocalFileSystem::createInputStream(std::ios_base::openmode mode, const Path& path) const
+{
+    return std::unique_ptr<std::istream>(new std::ifstream(path.String(), mode));
+}
+
+std::unique_ptr<std::ostream> LocalFileSystem::createOutputStream(std::ios_base::openmode mode, const Path& path)
+{
+
+    return std::unique_ptr<std::ostream>(new std::ofstream(path.String(), mode));
+}
 
 
 // ----------------- SshFileSystem implementation -----------------
@@ -177,7 +191,7 @@ void SshFileSystem::Connect()
                     m_privateKey.c_str(),
                     m_password.c_str()
                 );
-                if (!retcode) SPDLOG_ERROR("libssh2_userauth_publickey_fromfile failed, retcode[{}]", retcode);
+                if (retcode != 0) SPDLOG_ERROR("libssh2_userauth_publickey_fromfile failed, retcode[{}]", retcode);
             }
             else
             {
@@ -295,7 +309,7 @@ std::vector<FileEntry> SshFileSystem::List(const Path& path)
         } else if (rc == 0) {
             break;
         } else {
-            SNE_ASSERT(false, "error occured when sftp_readdir");
+            SNELOG_ERROR("error occured when sftp_readdir");
             CheckError();
             break;
         }
@@ -312,5 +326,186 @@ void SshFileSystem::CheckError()
     libssh2_session_last_error((LIBSSH2_SESSION *)m_session, &errorMsg, &len, 0);
     SNELOG_ERROR("SSH ERROR : {}", errorMsg);
 }
+
+
+std::unique_ptr<std::istream> SshFileSystem::createInputStream(std::ios_base::openmode mode, const Path& path) const
+{
+    return std::unique_ptr<std::istream>(new std::ifstream(path.String(), mode));
+}
+
+SshOutputStreamBuffer::SshOutputStreamBuffer(std::shared_ptr<SshFileSystem> fs, const FS::Path& path, std::ios_base::openmode mode, size_t bufferSize)
+: m_fs(fs)
+, m_path(path)
+, m_file(nullptr)
+, m_buffer(std::max(bufferSize, (size_t)1))
+{
+    SNELOG_ERROR("SshOutputStreamCreation E");
+    if (!m_fs->IsConnected()) 
+    {
+        SNELOG_ERROR("sshfilesystem disconnected, fail to create SshOuputStreamBuffer");
+        return;
+    }
+
+    // Set opening flags
+    unsigned long flags = LIBSSH2_FXF_WRITE | LIBSSH2_FXF_CREAT;
+    if (mode & std::ios::app)   flags |= LIBSSH2_FXF_APPEND;
+    if (mode & std::ios::trunc) flags |= LIBSSH2_FXF_TRUNC;
+
+    m_file = (void *)libssh2_sftp_open((LIBSSH2_SFTP *)m_fs->GetSftpSessionHandle(), m_path.String().c_str(), flags, 0);
+
+    if (m_file)
+    {
+        // Initialize write buffer
+        char * start = &m_buffer.front();
+        char * end   = &m_buffer.front() + m_buffer.size();
+        setp(start, end);
+    }
+    else 
+    {
+        SNELOG_ERROR("m_file is nullptr");
+    }
+    SNELOG_ERROR("SshOutputStreamCreation x");
+}
+
+SshOutputStreamBuffer::~SshOutputStreamBuffer()
+{
+    // Close file
+    if (m_file)
+    {
+        // Flush buffer
+        sync();
+        // Sync file
+        libssh2_sftp_fsync((LIBSSH2_SFTP_HANDLE *)m_file);
+        libssh2_sftp_close((LIBSSH2_SFTP_HANDLE *)m_file);
+    }
+}
+
+std::unique_ptr<std::ostream> SshFileSystem::createOutputStream(std::ios_base::openmode mode, const Path& path)
+{
+    if (!IsConnected()) return nullptr;
+
+    SNELOG_INFO("CreateOutputStream done");
+    return std::unique_ptr<std::ostream>(new OutputStream(new SshOutputStreamBuffer(shared_from_this(), path, mode)));
+}
+
+// Virtual streambuf functions
+std::streambuf::int_type SshOutputStreamBuffer::overflow(std::streambuf::int_type value)
+{
+    SNELOG_INFO("outputbuffer stream start to overflow E");
+    if (!m_file)
+    {
+        return traits_type::eof();
+    }
+
+    // Sync buffer
+    if (sync() != 0 || value == traits_type::eof())
+    {
+        return traits_type::eof();
+    }
+
+    char * start = &m_buffer.front();
+    char * end   = &m_buffer.front() + m_buffer.size();
+    *start = traits_type::to_char_type(value);
+
+    // Update buffer position
+    setp(start + 1, end);
+
+    SNELOG_INFO("outputbuffer stream start to overflow X");
+    return traits_type::to_int_type(traits_type::to_char_type(value));;
+
+}
+
+int SshOutputStreamBuffer::sync()
+{
+    // Get size of data in the buffer
+    size_t size = pptr() - &m_buffer.front();
+    if (size > 0)
+    {
+        auto res = libssh2_sftp_write((LIBSSH2_SFTP_HANDLE *)m_file, &m_buffer.front(), size);
+
+        switch (res)
+        {
+            case LIBSSH2_ERROR_ALLOC:
+                SNELOG_ERROR("SSH error: LIBSSH2_ERROR_ALLOC");
+                break;
+
+            case LIBSSH2_ERROR_SOCKET_SEND:
+                SNELOG_ERROR("SSH error: LIBSSH2_ERROR_SOCKET_SEND");
+                break;
+
+            case LIBSSH2_ERROR_SOCKET_TIMEOUT:
+                SNELOG_ERROR("SSH error: LIBSSH2_ERROR_SOCKET_TIMEOUT");
+                break;
+
+            case LIBSSH2_ERROR_SFTP_PROTOCOL:
+                SNELOG_ERROR("SSH error: LIBSSH2_ERROR_SFTP_PROTOCOL");
+                break;
+
+            default:
+                break;
+        }
+
+        // Reset write buffer
+        char * start = &m_buffer.front();
+        char * end   = &m_buffer.front() + m_buffer.size();
+        setp(start, end);
+    }
+    return 0;
+
+}
+
+SshOutputStreamBuffer::pos_type SshOutputStreamBuffer::seekoff(off_type off, std::ios_base::seekdir way, std::ios_base::openmode which)
+{
+    // Sync output first
+    sync();
+
+    if (way == std::ios_base::beg)
+    {
+        return seekpos((pos_type)off, which);
+    }
+    else if (way == std::ios_base::end)
+    {
+        LIBSSH2_SFTP_ATTRIBUTES attrs;
+
+        if (libssh2_sftp_fstat_ex((LIBSSH2_SFTP_HANDLE *)m_file, &attrs, 0) == 0)
+        {
+            pos_type pos = (pos_type)attrs.filesize + off;
+            return seekpos(pos, which);
+        }
+    }
+    else if (way == std::ios_base::cur)
+    {
+        pos_type pos = (pos_type)libssh2_sftp_tell64((LIBSSH2_SFTP_HANDLE *)m_file);
+        pos += off;
+
+        return seekpos(pos, which);
+    }
+
+    return (pos_type)(off_type)(-1);
+}
+
+SshOutputStreamBuffer::pos_type SshOutputStreamBuffer::seekpos(pos_type pos, [[maybe_unused]] std::ios_base::openmode which)
+{
+    // Sync output first
+    sync();
+
+    // Check file handle
+    if (!m_file)
+    {
+        return (pos_type)(off_type)(-1);
+    }
+
+    // Set file position
+    libssh2_sftp_seek64((LIBSSH2_SFTP_HANDLE *)m_file, (libssh2_uint64_t)pos);
+
+    // Reset write buffer
+    char * start = &m_buffer.front();
+    char * end   = &m_buffer.front() + m_buffer.size();
+    setp(start, end);
+
+    // Return new position
+    return (pos_type)(off_type)(pos);
+}
+
 } // namespace FS
 } // namespace SimpleNodeEditor

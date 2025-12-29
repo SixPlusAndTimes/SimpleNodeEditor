@@ -1,3 +1,13 @@
+// the structure of this file:
+//
+// [SECTION1] implementation of Path and FileEntry
+// [SECTION2] draw list helper
+// [SECTION3] declearations of IFileSystem 、LocalFileSystem、SshFileSystem and other components in the following order: 
+//          [SECTION3.1] IFileSystem
+//          [SECTION3.2] LocalFileSystem
+//          [SECTION3.3] SShFileSystem
+//          [SECTION3.4] SShFileSystem Input&Output streambuffer
+
 #ifndef FILESYSTEM_H
 #define FILESYSTEM_H
 
@@ -7,6 +17,7 @@
 #include <ctime>
 #include <memory>
 #include <filesystem>
+#include "Common.hpp"
 
 namespace stdfs = std::filesystem;
 
@@ -110,6 +121,10 @@ public:
 	virtual std::vector<FileEntry> List(const Path& path) = 0;
 
     FileSystemType GetFileSystemType() {return m_type;};
+
+    virtual std::unique_ptr<std::istream> createInputStream(std::ios_base::openmode mode, const Path& path) const = 0;
+    virtual std::unique_ptr<std::ostream> createOutputStream(std::ios_base::openmode mode, const Path& path) = 0;
+
 protected:
     FileSystemType m_type;
 };
@@ -123,6 +138,8 @@ public:
     virtual bool Exists(const Path& path) override;
 	virtual bool IsDirectory(const Path& path) override;
 	virtual std::vector<FileEntry> List(const Path& path) override;
+    virtual std::unique_ptr<std::istream> createInputStream(std::ios_base::openmode mode, const Path& path) const;
+    virtual std::unique_ptr<std::ostream> createOutputStream(std::ios_base::openmode mode, const Path& path);
 };
 
 struct SshConnectionInfo
@@ -135,7 +152,8 @@ struct SshConnectionInfo
     std::string m_privateKey;
 };
 
-class SshFileSystem : public IFileSystem
+
+class SshFileSystem : public IFileSystem, public std::enable_shared_from_this<SshFileSystem>
 {
 public:
     SshFileSystem( 
@@ -155,7 +173,10 @@ public:
     virtual bool Exists(const Path& path) override;
     virtual bool IsDirectory(const Path& path) override;
     virtual std::vector<FileEntry> List(const Path& path) override;
-
+    virtual std::unique_ptr<std::istream> createInputStream(std::ios_base::openmode mode, const Path& path) const;
+    virtual std::unique_ptr<std::ostream> createOutputStream(std::ios_base::openmode mode, const Path& path);
+    void*   GetSshSessionHandle(){ return m_session;}
+    void*   GetSftpSessionHandle(){ return m_sftpSession;}
 
     bool IsConnected() const;
 
@@ -176,6 +197,57 @@ private:
     std::int64_t m_socket;
     void*        m_session;      // SSH session handle
     void*        m_sftpSession; // SFTP session handle
+};
+
+class SshInputStreamBuffer : public std::streambuf
+{
+public:
+    SshInputStreamBuffer(std::shared_ptr<SshFileSystem> fs, const FS::Path & path, std::ios_base::openmode mode, size_t bufferSize = size_kb(32), size_t putBackSize = size_b(128));
+
+    virtual ~SshInputStreamBuffer();
+
+    virtual std::streambuf::int_type underflow() override;
+    virtual pos_type seekoff(off_type off, std::ios_base::seekdir way, std::ios_base::openmode which) override;
+    virtual pos_type seekpos(pos_type pos, std::ios_base::openmode which) override;
+
+
+protected:
+    std::shared_ptr<SshFileSystem>   m_fs;         
+    const FS::Path                   m_path;       
+    const size_t                     m_putbackSize;
+    void*                            m_file; // actually LIBSSH2_SFTP*
+    std::vector<char>                m_buffer;
+};
+
+class OutputStream : public std::ostream
+{
+public:
+    explicit OutputStream(std::streambuf * sb): std::ostream(sb) , m_sb(sb) {}
+    virtual ~OutputStream() {m_sb->pubsync(); delete m_sb;}
+
+protected:
+    std::streambuf * m_sb;
+};
+
+class SshOutputStreamBuffer : public std::streambuf
+{
+public:
+    SshOutputStreamBuffer(std::shared_ptr<SshFileSystem> fs, const FS::Path& path, std::ios_base::openmode mode, size_t bufferSize = size_kb(24));
+
+    virtual ~SshOutputStreamBuffer();
+
+    // Virtual streambuf functions
+    virtual std::streambuf::int_type overflow(std::streambuf::int_type value) override;
+    virtual int sync() override;
+    virtual pos_type seekoff(off_type off, std::ios_base::seekdir way, std::ios_base::openmode which) override;
+    virtual pos_type seekpos(pos_type pos, std::ios_base::openmode which) override;
+
+
+protected:
+    std::shared_ptr<SshFileSystem>         m_fs;
+    const FS::Path                         m_path;
+    void*                                  m_file; // actually LIBSSH2_SFTP*
+    std::vector<char> m_buffer;
 };
 
 } // namespace FS
