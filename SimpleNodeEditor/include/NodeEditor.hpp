@@ -22,7 +22,8 @@ public:
     void NodeEditorInitialize();
     void NodeEditorShow();
     void NodeEditorDestroy();
-    bool OpenFile(const std::string& filePath);
+    bool LoadPipeline(const std::string& filePath);
+    bool LoadPipeline(std::unique_ptr<std::istream> inputStream);
 
 private:
     // draw ui infereface
@@ -77,6 +78,7 @@ private:
     void               SaveToFile(const std::string& fileName); 
     void               SaveToFile(std::unique_ptr<std::ostream> outputStream);
     [[nodiscard]] bool LoadPipelineFromFile(const std::string& filePath);
+    [[nodiscard]] bool LoadPipelineFromStream(std::unique_ptr<std::istream> inputStream);
     void               ClearCurrentPipeLine();
 
 private:

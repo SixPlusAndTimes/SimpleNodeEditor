@@ -81,12 +81,13 @@ void NodeEditor::DrawFileDialog()
         if (m_fileDialog.GetType() == FileDialog::Type::OPEN)
         {
             ClearCurrentPipeLine(); // should let user confirm to do this ? 
-            OpenFile(m_fileDialog.GetResultPath().String());
+            // OpenFile(m_fileDialog.GetResultPath().String());
+            LoadPipeline(m_fileDialog.GetResultInStream());
         }else if (m_fileDialog.GetType() == FileDialog::Type::SAVE)
         {
             SNELOG_INFO("save pipeline file to {}", m_fileDialog.GetFileName().String());
             // SaveToFile(m_fileDialog.GetResultPath().String());
-            SaveToFile(m_fileDialog.GetResultIOStream());
+            SaveToFile(m_fileDialog.GetResultOutStream());
         }
     }
 }
@@ -1787,9 +1788,9 @@ void NodeEditor::HandleOtherUserInputs()
 }
 
 
-bool NodeEditor::OpenFile(const std::string& filePath)
+bool NodeEditor::LoadPipeline(const std::string& filePath)
 {
-    ClearCurrentPipeLine();
+    ClearCurrentPipeLine(); // TODO: refine the logic
     if (LoadPipelineFromFile(filePath))
     {
         SNELOG_INFO("LoadPipeLineFromFile Success, filePath[{}]", filePath);
@@ -1799,6 +1800,22 @@ bool NodeEditor::OpenFile(const std::string& filePath)
     {
         ClearCurrentPipeLine();
         SNELOG_ERROR("LoadPipeLineFromFile failed, filePath[{}]", filePath);
+        return false;
+    }
+}
+
+bool NodeEditor::LoadPipeline(std::unique_ptr<std::istream> inputStream)
+{
+    ClearCurrentPipeLine();
+    if (LoadPipelineFromStream(std::move(inputStream)))
+    {
+        SNELOG_INFO("LoadPipelineFromStream Success");
+        return true;
+    }
+    else
+    {
+        ClearCurrentPipeLine();
+        SNELOG_ERROR("LoadPipelineFromStream failed");
         return false;
     }
 }
@@ -1830,6 +1847,85 @@ void NodeEditor::SaveToFile(const std::string& fileName)
     {
         SNELOG_ERROR("Error while saving file: {}", e.what());
     }
+}
+
+// TODO: remove redundant code by combining LoadPipelineFromStream and LoadPipelineFromFile logic
+bool NodeEditor::LoadPipelineFromStream(std::unique_ptr<std::istream> inputStream)
+{
+
+    bool ret = true;
+    if (m_pipeLineParser.LoadStream(*inputStream))
+    {
+        std::vector<YamlNode> yamlNodes = m_pipeLineParser.ParseNodes();
+        std::vector<YamlEdge> yamlEdges = m_pipeLineParser.ParseEdges();
+
+        // add node in Editor
+        std::unordered_map<YamlNode::NodeYamlId, NodeUniqueId> t_yamlNodeId2NodeUidMap;
+        for (const YamlNode& yamlNode : yamlNodes)
+        {
+            if (s_nodeDescriptionsTypeDesMap.contains(yamlNode.m_nodeYamlType))
+            {
+                NodeUniqueId newNodeUid =
+                    AddNewNodes(s_nodeDescriptionsTypeDesMap.at(yamlNode.m_nodeYamlType), yamlNode);
+                t_yamlNodeId2NodeUidMap.emplace(yamlNode.m_nodeYamlId, newNodeUid);
+            }
+            else
+            {
+                ret = false;
+                Notifier::Add(Message(Message::Type::ERR, "", "Invalid NodeType" + std::to_string(yamlNode.m_nodeYamlId)));
+                SNE_ASSERT(false, "Invalid NodeType" + std::to_string(yamlNode.m_nodeYamlType));
+                break;
+            }
+        }
+
+        if (ret)
+        {
+            // add edges in editor
+            for (const YamlEdge& yamlEdge : yamlEdges)
+            {
+                NodeUniqueId ownedBySrcNodeUid =
+                    t_yamlNodeId2NodeUidMap.at(yamlEdge.m_yamlSrcPort.m_nodeYamlId);
+                NodeUniqueId ownedByDstNodeUid =
+                    t_yamlNodeId2NodeUidMap.at(yamlEdge.m_yamlDstPort.m_nodeYamlId);
+                const Node& srcNode = m_nodes.at(ownedBySrcNodeUid);
+                const Node& dstNode = m_nodes.at(ownedByDstNodeUid);
+                AddNewEdge(srcNode.FindPortUidAmongOutports(yamlEdge.m_yamlSrcPort.m_portYamlId),
+                        dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId),
+                        yamlEdge,
+                        false /*avoidMultipleInputLinks*/); // allow multiple edges there, multiple
+                // inportEdges will be pruned later
+            }
+
+            // collect prunnig rules to m_allPruningRules
+            CollectPruningRules(yamlNodes, yamlEdges);
+
+            if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))
+            {
+                for (const auto& [group, type] : m_currentPruninngRule)
+                {
+                    SNELOG_INFO(
+                        "current pruning rule is : group[{}] type[{}], any node or edge that matches "
+                        "the "
+                        "group but not matches the type will be removed",
+                        group, type);
+                }
+            }
+            else
+            {
+                SNELOG_ERROR("ApplyPruningRule Fail!!");
+            }
+
+            m_needTopoSort        = true;
+
+            m_currentPipeLineName = m_pipeLineParser.GetPipelineName();
+            }
+    }
+    else
+    {
+        SNELOG_ERROR("pipelineparser loadfile failed, , check it!");
+        ret = false;
+    }
+    return ret;
 }
 
 bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)

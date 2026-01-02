@@ -122,7 +122,7 @@ public:
 
     FileSystemType GetFileSystemType() {return m_type;};
 
-    virtual std::unique_ptr<std::istream> createInputStream(std::ios_base::openmode mode, const Path& path) const = 0;
+    virtual std::unique_ptr<std::istream> createInputStream(std::ios_base::openmode mode, const Path& path) = 0;
     virtual std::unique_ptr<std::ostream> createOutputStream(std::ios_base::openmode mode, const Path& path) = 0;
 
 protected:
@@ -138,7 +138,7 @@ public:
     virtual bool Exists(const Path& path) override;
 	virtual bool IsDirectory(const Path& path) override;
 	virtual std::vector<FileEntry> List(const Path& path) override;
-    virtual std::unique_ptr<std::istream> createInputStream(std::ios_base::openmode mode, const Path& path) const;
+    virtual std::unique_ptr<std::istream> createInputStream(std::ios_base::openmode mode, const Path& path);
     virtual std::unique_ptr<std::ostream> createOutputStream(std::ios_base::openmode mode, const Path& path);
 };
 
@@ -173,7 +173,7 @@ public:
     virtual bool Exists(const Path& path) override;
     virtual bool IsDirectory(const Path& path) override;
     virtual std::vector<FileEntry> List(const Path& path) override;
-    virtual std::unique_ptr<std::istream> createInputStream(std::ios_base::openmode mode, const Path& path) const;
+    virtual std::unique_ptr<std::istream> createInputStream(std::ios_base::openmode mode, const Path& path);
     virtual std::unique_ptr<std::ostream> createOutputStream(std::ios_base::openmode mode, const Path& path);
     void*   GetSshSessionHandle(){ return m_session;}
     void*   GetSftpSessionHandle(){ return m_sftpSession;}
@@ -214,19 +214,9 @@ public:
 protected:
     std::shared_ptr<SshFileSystem>   m_fs;         
     const FS::Path                   m_path;       
-    const size_t                     m_putbackSize;
-    void*                            m_file; // actually LIBSSH2_SFTP*
+    void*                            m_file;        // actually LIBSSH2_SFTP*
+    const size_t                     m_putbackSize; //< Size of the putback area
     std::vector<char>                m_buffer;
-};
-
-class OutputStream : public std::ostream
-{
-public:
-    explicit OutputStream(std::streambuf * sb): std::ostream(sb) , m_sb(sb) {}
-    virtual ~OutputStream() {m_sb->pubsync(); delete m_sb;}
-
-protected:
-    std::streambuf * m_sb;
 };
 
 class SshOutputStreamBuffer : public std::streambuf

@@ -60,7 +60,7 @@ std::vector<FileEntry> LocalFileSystem::List(const Path& path){
     return out;
 }
 
-std::unique_ptr<std::istream> LocalFileSystem::createInputStream(std::ios_base::openmode mode, const Path& path) const
+std::unique_ptr<std::istream> LocalFileSystem::createInputStream(std::ios_base::openmode mode, const Path& path)
 {
     return std::unique_ptr<std::istream>(new std::ifstream(path.String(), mode));
 }
@@ -328,9 +328,142 @@ void SshFileSystem::CheckError()
 }
 
 
-std::unique_ptr<std::istream> SshFileSystem::createInputStream(std::ios_base::openmode mode, const Path& path) const
+std::unique_ptr<std::istream> SshFileSystem::createInputStream(std::ios_base::openmode mode, const Path& path)
 {
-    return std::unique_ptr<std::istream>(new std::ifstream(path.String(), mode));
+    if (!IsConnected()) return nullptr;
+
+    return std::make_unique<std::istream>(new SshInputStreamBuffer(shared_from_this(), path, mode));
+}
+
+std::unique_ptr<std::ostream> SshFileSystem::createOutputStream(std::ios_base::openmode mode, const Path& path)
+{
+    if (!IsConnected()) return nullptr;
+
+    return std::make_unique<std::ostream>(new SshOutputStreamBuffer(shared_from_this(), path, mode));
+}
+
+SshInputStreamBuffer::SshInputStreamBuffer(std::shared_ptr<SshFileSystem> fs, const FS::Path & path, [[maybe_unused]]std::ios_base::openmode mode, size_t bufferSize, size_t putBackSize)
+: m_fs(fs)
+, m_path(path)
+, m_file(nullptr)
+, m_putbackSize(std::max(putBackSize, (size_t)1))
+, m_buffer(std::max(bufferSize, (size_t)1))
+{
+    SNELOG_TRACE("SshOutputStreamCreation E");
+    if (!m_fs->IsConnected()) 
+    {
+        SNELOG_ERROR("sshfilesystem disconnected, fail to create SshOuputStreamBuffer");
+        return;
+    }
+
+    m_file = (void *)libssh2_sftp_open((LIBSSH2_SFTP *)m_fs->GetSftpSessionHandle(), m_path.String().c_str(), LIBSSH2_FXF_READ, 0);
+    if (m_file)
+    {
+        // Initialize read buffer
+        char * end = &m_buffer.front() + m_buffer.size();
+        setg(end, end, end);
+    }
+    else
+    {
+        SNELOG_ERROR("ssh open failed");
+        libssh2_sftp_close((LIBSSH2_SFTP_HANDLE *)m_file);
+    }
+}
+
+SshInputStreamBuffer::~SshInputStreamBuffer()
+{
+    if (m_file)
+    {
+        libssh2_sftp_close((LIBSSH2_SFTP_HANDLE *)m_file);
+    }
+}
+
+std::streambuf::int_type SshInputStreamBuffer::underflow() 
+{
+    if (!m_file)
+    {
+        return traits_type::eof();
+    }
+
+    // Check if the buffer is filled
+    if (gptr() < egptr())
+    {
+        // Return next byte from buffer
+        return traits_type::to_int_type(*gptr());
+    }
+
+    // Prepare buffer
+    char * base  = &m_buffer.front();
+    char * start = base;
+
+    if (eback() == base)
+    {
+        std::memmove(base, egptr() - m_putbackSize, m_putbackSize);
+        start += m_putbackSize;
+    }
+
+    // Refill buffer
+    size_t size = m_buffer.size() - (start - base);
+    ssize_t n = libssh2_sftp_read((LIBSSH2_SFTP_HANDLE *)m_file, start, size);
+
+    if (n == 0)
+    {
+        return traits_type::eof();
+    }
+
+    // Set buffer pointers
+    setg(base, start, start + n);
+
+    // Return next byte
+    return traits_type::to_int_type(*gptr());
+}
+
+SshInputStreamBuffer::pos_type SshInputStreamBuffer::seekoff(off_type off, std::ios_base::seekdir way, std::ios_base::openmode which)
+{
+    if (way == std::ios_base::beg)
+    {
+        return seekpos((pos_type)off, which);
+    }
+
+    else if (way == std::ios_base::end)
+    {
+        LIBSSH2_SFTP_ATTRIBUTES attrs;
+
+        if (libssh2_sftp_fstat_ex((LIBSSH2_SFTP_HANDLE *)m_file, &attrs, 0) == 0)
+        {
+            pos_type pos = (pos_type)attrs.filesize + off;
+            return seekpos(pos, which);
+        }
+    }
+
+    else if (way == std::ios_base::cur)
+    {
+        pos_type pos = (pos_type)libssh2_sftp_tell64((LIBSSH2_SFTP_HANDLE *)m_file);
+        pos += off - (egptr() - gptr());
+
+        return seekpos(pos, which);
+    }
+
+    return (pos_type)(off_type)(-1);
+}
+
+SshInputStreamBuffer::pos_type SshInputStreamBuffer::seekpos(pos_type pos, std::ios_base::openmode)
+{
+    // Check file handle
+    if (!m_file)
+    {
+        return (pos_type)(off_type)(-1);
+    }
+
+    // Set file position
+    libssh2_sftp_seek64((LIBSSH2_SFTP_HANDLE *)m_file, (libssh2_uint64_t)pos);
+
+    // Reset read buffer
+    char * end = &m_buffer.front() + m_buffer.size();
+    setg(end, end, end);
+
+    // Return new position
+    return (pos_type)(off_type)(pos);
 }
 
 SshOutputStreamBuffer::SshOutputStreamBuffer(std::shared_ptr<SshFileSystem> fs, const FS::Path& path, std::ios_base::openmode mode, size_t bufferSize)
@@ -339,7 +472,7 @@ SshOutputStreamBuffer::SshOutputStreamBuffer(std::shared_ptr<SshFileSystem> fs, 
 , m_file(nullptr)
 , m_buffer(std::max(bufferSize, (size_t)1))
 {
-    SNELOG_ERROR("SshOutputStreamCreation E");
+    SNELOG_TRACE("SshOutputStreamCreation E");
     if (!m_fs->IsConnected()) 
     {
         SNELOG_ERROR("sshfilesystem disconnected, fail to create SshOuputStreamBuffer");
@@ -362,9 +495,10 @@ SshOutputStreamBuffer::SshOutputStreamBuffer(std::shared_ptr<SshFileSystem> fs, 
     }
     else 
     {
-        SNELOG_ERROR("m_file is nullptr");
+        SNELOG_ERROR("ssh open failed");
+        libssh2_sftp_close((LIBSSH2_SFTP_HANDLE *)m_file);
     }
-    SNELOG_ERROR("SshOutputStreamCreation x");
+    SNELOG_TRACE("SshOutputStreamCreation x");
 }
 
 SshOutputStreamBuffer::~SshOutputStreamBuffer()
@@ -378,14 +512,6 @@ SshOutputStreamBuffer::~SshOutputStreamBuffer()
         libssh2_sftp_fsync((LIBSSH2_SFTP_HANDLE *)m_file);
         libssh2_sftp_close((LIBSSH2_SFTP_HANDLE *)m_file);
     }
-}
-
-std::unique_ptr<std::ostream> SshFileSystem::createOutputStream(std::ios_base::openmode mode, const Path& path)
-{
-    if (!IsConnected()) return nullptr;
-
-    SNELOG_INFO("CreateOutputStream done");
-    return std::unique_ptr<std::ostream>(new OutputStream(new SshOutputStreamBuffer(shared_from_this(), path, mode)));
 }
 
 // Virtual streambuf functions

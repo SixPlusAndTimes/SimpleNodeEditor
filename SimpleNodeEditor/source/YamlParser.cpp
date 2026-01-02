@@ -167,7 +167,7 @@ const std::string& PipelineParser::GetPipelineName()
 // invalid LinkList or Pipelinename just trigger a warning
 bool PipelineParser::LoadFile(const std::string& filePath)
 {
-    bool ret   = true;
+    bool ret = true;
     m_rootNode = YAML::LoadFile(filePath);
     if (m_rootNode && m_rootNode["Pipeline"] && m_rootNode["Pipeline"].IsSequence())
     {
@@ -210,6 +210,58 @@ bool PipelineParser::LoadFile(const std::string& filePath)
     else
     {
         SNELOG_WARN("file {} has no valid LinkList sequence, better to check it", filePath);
+        Notifier::Add(Message(Message::Type::WARNING, "", "invalid Linklist, better to check it"));
+        // ret = false;
+    }
+
+    return ret;
+}
+
+// TODO: remove redundant code by combine LoadStream and LoadFile logic
+bool PipelineParser::LoadStream(std::istream& inputStream)
+{
+    bool ret   = true;
+    m_rootNode = YAML::Load(inputStream);
+    if (m_rootNode && m_rootNode["Pipeline"] && m_rootNode["Pipeline"].IsSequence())
+    {
+        m_rootNode = m_rootNode["Pipeline"][0];
+        // std::string pipeLineName = m_rootNode["pipelinename"].as<std::string>();
+    }
+    else
+    {
+        SNELOG_ERROR("parse input stream failed");
+        ret = false;
+    }
+
+    if (ret && m_rootNode["pipelinename"] && m_rootNode["pipelinename"].IsScalar())
+    {
+        m_pipelineName = m_rootNode["pipelinename"].as<std::string>();
+    }
+    else
+    {
+        SNELOG_WARN("has no valid pipelinename sequence, check it");
+        // ret = false;
+    }
+
+    if (ret && m_rootNode["NodeList"] && m_rootNode["NodeList"].IsSequence() &&
+        m_rootNode["NodeList"].size() != 0)
+    {
+        m_nodeListNode = m_rootNode["NodeList"];
+    }
+    else
+    {
+        SNELOG_ERROR("file {} has no valid Node sequence, check it");
+        ret = false;
+    }
+
+    if (ret && m_rootNode["LinkList"] && m_rootNode["LinkList"].IsSequence() &&
+        m_rootNode["LinkList"].size() != 0)
+    {
+        m_edgeListNode = m_rootNode["LinkList"];
+    }
+    else
+    {
+        SNELOG_WARN("has no valid LinkList sequence, better to check it");
         Notifier::Add(Message(Message::Type::WARNING, "", "invalid Linklist, better to check it"));
         // ret = false;
     }

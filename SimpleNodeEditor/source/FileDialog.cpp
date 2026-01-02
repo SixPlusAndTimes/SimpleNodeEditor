@@ -23,6 +23,7 @@ FileDialog::FileDialog()
 
 void FileDialog::SwitchFileSystemType()
 {
+    SNELOG_INFO("switch to sshfilesystem E, currente filesystem type {}", static_cast<int>(m_type));
     if (m_fs->GetFileSystemType() == FS::FileSystemType::Local)
     {
         // Try to create SSH filesystem and only switch to it if connected
@@ -31,6 +32,7 @@ void FileDialog::SwitchFileSystemType()
         {
             m_fs = std::move(sshfs);
             SetDefaultDirectoryPath(SNEConfig::GetInstance().GetConfigValue<std::string>("SshFileSystemDefaultOpenPath"));
+            SNELOG_INFO("switch to sshfilesystem");
         }
         else
         {
@@ -42,12 +44,13 @@ void FileDialog::SwitchFileSystemType()
     {
         m_fs = std::make_shared<FS::LocalFileSystem>();
         SetDefaultDirectoryPath(std::filesystem::current_path().append("resource"));
+        SNELOG_INFO("switch to localfilesystem");
     }
     else
     {
         SNELOG_ERROR("Unreacheable! Invalid filesystem type [{}]", static_cast<int>(m_fs->GetFileSystemType()));
-        SNE_ASSERT(false);
     }
+    SNELOG_INFO("switch to sshfilesystem X, currente filesystem type {}", static_cast<int>(m_type));
 }
 
 bool FileDialog::Draw()
@@ -298,23 +301,31 @@ bool FileDialog::Draw()
     return done;
 }
 
-std::unique_ptr<std::ostream> FileDialog::GetResultIOStream()
+std::unique_ptr<std::ostream> FileDialog::GetResultOutStream()
 {
     if (m_type == Type::SAVE)
     {
         return m_fs->createOutputStream(std::ios_base::trunc, GetResultPath());
     }
-    else if (m_type == Type::OPEN)
-    {
-        SNELOG_ERROR("not implemented");
-        return nullptr;
-    }
     else 
     {
-        SNELOG_ERROR("unknown operation tyep");
+        SNELOG_ERROR("invalid operation type");
         return nullptr;
     }
 }
 
+std::unique_ptr<std::istream> FileDialog::GetResultInStream()
+{
+
+    if (m_type == Type::OPEN)
+    {
+        return m_fs->createInputStream(std::ios_base::in, GetResultPath());
+    }
+    else
+    {
+        SNELOG_ERROR("invalid operation type");
+        return nullptr;
+    }
+}
 } // namespace SimpleNodeEditor
 

@@ -9,7 +9,6 @@
 #include "Common.hpp"
 #include "NodeEditor.hpp"
 #include "YamlParser.hpp"
-#include "examplessh.h"
 #include "SNEConfig.hpp"
 
 bool ReConfigLogLevlel()
@@ -101,7 +100,7 @@ int main(int, char**)
                     break;
                 case SDL_DROPFILE:
                     SNELOG_INFO("SDL drop file path : {}", event.drop.file);
-                    nodeEditor.OpenFile(event.drop.file);
+                    nodeEditor.LoadPipeline(event.drop.file);
                     SDL_free(event.drop.file);
                     break;
             }

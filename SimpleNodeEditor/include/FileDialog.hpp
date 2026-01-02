@@ -51,18 +51,19 @@ public:
     FileDialog();
     virtual ~FileDialog() = default;
 
-    void                            SwitchFileSystemType();
-    void                            MarkFileDialogOpen(){m_type = Type::OPEN; m_isRendered = true;};
-    void                            MarkFileDialogSave(const std::string& name){m_type = Type::SAVE; m_isRendered = true; SetFileName(name);};
-    void                            SetType(Type t) { m_type = t; }
-    void                            SetFileName(const std::string name) { m_fileName = name; }
-    void                            SetDefaultDirectoryPath(const std::filesystem::path& dir) { m_directoryPath = dir; }
-    FS::Path                        GetResultPath() const { return m_resultPath; }
-    std::unique_ptr<std::ostream>   GetResultIOStream(); 
-    auto                            GetFileName() const { return m_fileName; }
-    auto                            GetFileFormat() const { return m_fileFormat; }
-    Type                            GetType() const { return m_type; }
-    bool                            Draw();
+    void                                SwitchFileSystemType();
+    void                                MarkFileDialogOpen(){m_type = Type::OPEN; m_isRendered = true;};
+    void                                MarkFileDialogSave(const std::string& name){m_type = Type::SAVE; m_isRendered = true; SetFileName(name);};
+    void                                SetType(Type t) { m_type = t; }
+    void                                SetFileName(const std::string name) { m_fileName = name; }
+    void                                SetDefaultDirectoryPath(const std::filesystem::path& dir) { m_directoryPath = dir; }
+    FS::Path                            GetResultPath() const { return m_resultPath; }
+    std::unique_ptr<std::ostream>       GetResultOutStream(); 
+    std::unique_ptr<std::istream>       GetResultInStream(); 
+    auto                                GetFileName() const { return m_fileName; }
+    auto                                GetFileFormat() const { return m_fileFormat; }
+    Type                                GetType() const { return m_type; }
+    bool                                Draw();
 };
 }
 

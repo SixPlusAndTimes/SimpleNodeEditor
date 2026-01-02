@@ -34,8 +34,7 @@ struct convert<SimpleNodeEditor::FS::SshConnectionInfo>
 
     static bool decode(const Node& node, SimpleNodeEditor::FS::SshConnectionInfo& rhs)
     {
-        SNELOG_INFO("StartDecodeSshConfigValue");
-        SNE_ASSERT(!node.IsSequence(), "decode yamlnodeproperty fail not a Sequence");
+        SNE_ASSERT(node.IsMap(), "decode SshConnectionInfo fail: node is not a map");
 
         if (isValidKey(node, "hostAddr"))   rhs.m_hostAddr =    node["hostAddr"].as<std::string>();
         if (isValidKey(node, "port"))       rhs.m_port =        node["port"].as<std::string>();
@@ -62,7 +61,7 @@ struct convert<SimpleNodeEditor::YamlNodeProperty>
 
     static bool decode(const Node& node, SimpleNodeEditor::YamlNodeProperty& rhs)
     {
-        SNE_ASSERT(!node.IsMap(), "decode yamlnodeproperty fail not a map");
+        SNE_ASSERT(node.IsMap(), "decode YamlNodeProperty fail: node is not a map");
 
         if (isValidKey(node, "NodePropertyName") && isValidKey(node, "NodePropertyValue"))
         {
@@ -90,7 +89,7 @@ struct convert<SimpleNodeEditor::YamlPruningRule>
 
     static bool decode(const Node& node, SimpleNodeEditor::YamlPruningRule& rhs)
     {
-        SNE_ASSERT(!node.IsMap(), "decode yamlnodeproperty fail not a map");
+        SNE_ASSERT(node.IsMap(),"decode YamlPruningRule fail: node is not a map");
 
         if (isValidKey(node, "group") && isValidKey(node, "type"))
         {
@@ -129,7 +128,8 @@ struct convert<SimpleNodeEditor::YamlNode>
 
     static bool decode(const Node& node, SimpleNodeEditor::YamlNode& rhs)
     {
-        SNE_ASSERT(!node.IsMap(), "decode yamlnodeproperty fail not a map");
+            
+        SNE_ASSERT(node.IsMap(), "decode YamlNode fail: node is not a map");
 
         if (isValidKey(node, "NodeName") && isValidKey(node, "NodeId") &&
             isValidKey(node, "IsSrcNode") && isValidKey(node, "NodeType"))
@@ -209,7 +209,7 @@ struct convert<SimpleNodeEditor::YamlPort>
 
     static bool decode(const Node& node, SimpleNodeEditor::YamlPort& rhs)
     {
-        SNE_ASSERT(!node.IsMap(), "decode yamlnodeproperty fail not a map");
+        SNE_ASSERT(node.IsMap(), "decode yamlnodeproperty fail not a map");
         if (isValidKey(node, "NodeName") && isValidKey(node, "NodeId") &&
             isValidKey(node, "PortName") && isValidKey(node, "PortId"))
         {
@@ -309,6 +309,7 @@ public:
     const std::string&    GetPipelineName();
 
     [[nodiscard]] virtual bool LoadFile(const std::string& filePath);
+    [[nodiscard]] bool LoadStream(std::istream& inputStream);
     virtual void               Clear() override;
 
 private:
