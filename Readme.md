@@ -5,10 +5,9 @@
 **all libs except opengl are built from source**
 
 ## how to build
-following commads will make debug target bydefault
 
 ~~~shell
-cd ImguiCmakeStarter
+cd RCNodeEditor
 mkdir cmake_build
 cmake -S . -B .\cmake_build\
 cmake --build .\cmake_build\ --config Debug
@@ -32,10 +31,11 @@ If you want intall it at another dir, just modify the default intallation path i
 
 [imnode](https://github.com/Nelarius/imnodes)
 
-
 [imnode zoom](https://github.com/Nelarius/imnodes/pull/192)  zoom feature is copied from here
 
 [core-nodes](https://github.com/onurae/core-nodes)
+
+[cpp-fs](https://github.com/cginternals/cppfs)
 
 # TODOS
 
@@ -59,7 +59,7 @@ If you want intall it at another dir, just modify the default intallation path i
 - [ ] 自定义node颜色
 - [ ] 支持多个窗口切换，分别渲染不同的pipeline
 - [x] **文件系统浏览、打开文件**
-- [ ] 支持远程文件浏览
+- [x] 支持远程文件浏览、打开以及上传pipeline
 - [x] bugs: add node popup 不能滑动到底部 
 - [x] 支持linux平台的file operation dialog
 - [ ] 支持中文 

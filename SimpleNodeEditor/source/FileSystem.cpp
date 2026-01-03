@@ -278,7 +278,6 @@ bool SshFileSystem::IsDirectory(const Path& path)
 
 std::vector<FileEntry> SshFileSystem::List(const Path& path)
 {
-    SNELOG_INFO("sshfilesystem List E");
     std::vector<FileEntry> out;
     LIBSSH2_SFTP* sftp = reinterpret_cast<LIBSSH2_SFTP*>(m_sftpSession);
     LIBSSH2_SFTP_HANDLE* handle = libssh2_sftp_opendir(sftp, path.String().c_str());
@@ -315,7 +314,6 @@ std::vector<FileEntry> SshFileSystem::List(const Path& path)
         }
     }
     libssh2_sftp_closedir(handle);
-    SNELOG_INFO("sshfilesystem List X");
     return out;
 }
 
@@ -338,7 +336,7 @@ std::unique_ptr<std::istream> SshFileSystem::createInputStream(std::ios_base::op
 std::unique_ptr<std::ostream> SshFileSystem::createOutputStream(std::ios_base::openmode mode, const Path& path)
 {
     if (!IsConnected()) return nullptr;
-
+    SNELOG_INFO("createOutputStream E");
     return std::make_unique<std::ostream>(new SshOutputStreamBuffer(shared_from_this(), path, mode));
 }
 
@@ -472,7 +470,6 @@ SshOutputStreamBuffer::SshOutputStreamBuffer(std::shared_ptr<SshFileSystem> fs, 
 , m_file(nullptr)
 , m_buffer(std::max(bufferSize, (size_t)1))
 {
-    SNELOG_TRACE("SshOutputStreamCreation E");
     if (!m_fs->IsConnected()) 
     {
         SNELOG_ERROR("sshfilesystem disconnected, fail to create SshOuputStreamBuffer");
@@ -498,7 +495,7 @@ SshOutputStreamBuffer::SshOutputStreamBuffer(std::shared_ptr<SshFileSystem> fs, 
         SNELOG_ERROR("ssh open failed");
         libssh2_sftp_close((LIBSSH2_SFTP_HANDLE *)m_file);
     }
-    SNELOG_TRACE("SshOutputStreamCreation x");
+    SNELOG_INFO("SshOutputStreamCreation x");
 }
 
 SshOutputStreamBuffer::~SshOutputStreamBuffer()
@@ -506,9 +503,8 @@ SshOutputStreamBuffer::~SshOutputStreamBuffer()
     // Close file
     if (m_file)
     {
-        // Flush buffer
+        pubsync();
         sync();
-        // Sync file
         libssh2_sftp_fsync((LIBSSH2_SFTP_HANDLE *)m_file);
         libssh2_sftp_close((LIBSSH2_SFTP_HANDLE *)m_file);
     }

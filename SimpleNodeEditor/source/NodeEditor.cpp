@@ -1822,8 +1822,8 @@ bool NodeEditor::LoadPipeline(std::unique_ptr<std::istream> inputStream)
 
 void NodeEditor::SaveToFile(std::unique_ptr<std::ostream> outputStream)
 {
-
     *outputStream << m_pipelineEimtter.EmitPipeline(m_currentPipeLineName, m_nodes, m_nodesPruned, m_edges, m_edgesPruned);
+    outputStream->flush();
 }
 
 void NodeEditor::SaveToFile(const std::string& fileName)
