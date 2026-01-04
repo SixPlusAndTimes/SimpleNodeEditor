@@ -129,8 +129,7 @@ public: // type def
 
 public:
     // Node();
-    Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode,
-         const NodeDescription& nodeDes, ImNodesStyle& nodeStyle);
+    Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode, ImNodesStyle& nodeStyle);
     void SetNodePosition(const ImVec2& pos);
 
     void                           AddInputPort(const InputPort& inPort);

@@ -162,10 +162,8 @@ void NodeEditor::DrawMenu()
 
 void NodeEditor::ShowNodes()
 {
-    NodeUniqueId available = -1;
     for (auto& [nodeUid, node] : m_nodes)
     {
-        available = nodeUid;
         ImNodes::BeginNode(nodeUid);
         ImNodes::BeginNodeTitleBar();
         ImGui::TextUnformatted(node.GetNodeTitle().data());
@@ -277,7 +275,7 @@ void NodeEditor::ShowPipelineName()
     ImGui::PushItemWidth(260.0f);
     ImGui::TextUnformatted("PipelineName:");
     ImGui::SameLine();
-    ImGui::TextColored(COLOR_RED, m_currentPipeLineName.c_str());
+    ImGui::TextColored(COLOR_RED, "%s", m_currentPipeLineName.c_str());
     ImGui::SameLine();
     ImGui::PopItemWidth();
     if (ImGui::SmallButton("EditName"))
@@ -540,8 +538,7 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const Yaml
     SNE_ASSERT(yamlNode.m_nodeYamlId != -1);
     m_yamlNodeUidGenerator.RegisterUniqueID(yamlNode.m_nodeYamlId);
 
-    Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, yamlNode, nodeDesc,
-                 m_nodeStyle);
+    Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, yamlNode, m_nodeStyle);
 
     NodeUniqueId ret = newNode.GetNodeUniqueId();
 
@@ -551,20 +548,20 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const Yaml
     newNode.GetOutputPorts().reserve(nodeDesc.m_outputPortNames.size());
 
     // add inputports in the new node and add pointers in m_inportPorts
-    for (int index = 0; index < nodeDesc.m_inputPortNames.size(); ++index)
+    for (size_t index = 0; index < nodeDesc.m_inputPortNames.size(); ++index)
     {
-        InputPort newInport(m_portUidGenerator.AllocUniqueID(), index,
-                            nodeDesc.m_inputPortNames[index], newNode.GetNodeUniqueId(), index);
+        InputPort newInport(m_portUidGenerator.AllocUniqueID(), (PortUniqueId)index,
+                            nodeDesc.m_inputPortNames[index], newNode.GetNodeUniqueId(), (YamlPort::PortYamlId)index);
         newNode.AddInputPort(newInport);
         m_inportPorts.emplace(newInport.GetPortUniqueId(),
                               newNode.GetInputPort(newInport.GetPortUniqueId()));
     }
 
     // add outputports in the new node and add pointers in m_outportPorts
-    for (int index = 0; index < nodeDesc.m_outputPortNames.size(); ++index)
+    for (size_t index = 0; index < nodeDesc.m_outputPortNames.size(); ++index)
     {
-        OutputPort newOutport(m_portUidGenerator.AllocUniqueID(), index,
-                              nodeDesc.m_outputPortNames[index], newNode.GetNodeUniqueId(), index);
+        OutputPort newOutport(m_portUidGenerator.AllocUniqueID(), (PortUniqueId)index,
+                              nodeDesc.m_outputPortNames[index], newNode.GetNodeUniqueId(), (YamlPort::PortYamlId)index);
         newNode.AddOutputPort(newOutport);
         m_outportPorts.emplace(newOutport.GetPortUniqueId(),
                                newNode.GetOutputPort(newOutport.GetPortUniqueId()));
@@ -726,7 +723,6 @@ void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
     newEdge.GetYamlEdge().m_isValid = true;
     m_edges.emplace(newEdge.GetEdgeUniqueId(), (newEdge));
 }
-
 
 void NodeEditor::HandleDeletingEdges()
 {
@@ -915,7 +911,6 @@ void NodeEditor::RearrangeNodesLayout(
         }
         gridSpaceX += (columWidths[columIndex] + horizontalPadding);
     }
-
     // set editor panning
     ImNodes::EditorContextResetPanning(ImVec2{0, ImGui::GetWindowHeight() / 2.0f});
 }

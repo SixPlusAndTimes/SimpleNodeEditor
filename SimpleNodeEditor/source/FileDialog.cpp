@@ -114,10 +114,10 @@ bool FileDialog::Draw()
                 }
             }
         # else
-            ImGui::Text("%s", m_directoryPath.string().c_str());
+            ImGui::Text("%s", m_directoryPath.String().c_str());
         #endif
 
-        if (m_currentFiles.empty() && m_currentDirectories.empty() || m_refresh)
+        if ((m_currentFiles.empty() && m_currentDirectories.empty()) || m_refresh)
         {
             ResetState();
             for (auto &entry : m_fs->List(m_directoryPath.String()))

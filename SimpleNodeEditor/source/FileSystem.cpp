@@ -144,12 +144,16 @@ void SshFileSystem::Connect()
     struct sockaddr_in sin;
     sin.sin_family = AF_INET;
     sin.sin_port = htons(static_cast<u_short>(std::atoi(m_port.c_str())));
-    InetPtonA(sin.sin_family, m_hostAddr.data(), &sin.sin_addr);
+    #ifdef WIN32
+        InetPtonA(sin.sin_family, m_hostAddr.data(), &sin.sin_addr);
+    #else
+        inet_pton(sin.sin_family, m_hostAddr.data(), &sin.sin_addr);
+    #endif
     if(connect(m_socket, (struct sockaddr*)(&sin), sizeof(struct sockaddr_in))) {
-        int errcode = WSAGetLastError();
-        SNELOG_ERROR("failed to conect to {}, error code {}", m_hostAddr, errcode);
         #ifdef WIN32
-                closesocket(m_socket);
+            int errcode = WSAGetLastError();
+            SNELOG_ERROR("failed to conect to {}, error code {}", m_hostAddr, errcode);
+            closesocket(m_socket);
         #else
                 close(m_socket);
         #endif

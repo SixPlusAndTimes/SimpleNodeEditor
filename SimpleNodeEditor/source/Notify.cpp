@@ -7,7 +7,7 @@ namespace SimpleNodeEditor
 
 Message::Status Message::GetStatus() const
 {
-    const auto elapsedTime = ImGui::GetTime() - m_notifCreateTime; // [s]
+    const auto elapsedTime = ImGui::GetTime() - m_notifCreateTime;
     if (elapsedTime > m_fadeInTime + m_onTime + m_fadeOutTime) { return Status::OFF; }
     else if (elapsedTime > m_fadeInTime + m_onTime) { return Status::FADEOUT; }
     else if (elapsedTime > m_fadeInTime) { return Status::ON; }
@@ -35,7 +35,7 @@ std::string Message::GetTypeName() const
 float Message::GetFadeValue() const
 {
     const auto status = GetStatus();
-    const auto elapsedTime = static_cast<float>(ImGui::GetTime() - m_notifCreateTime); // [s]
+    const auto elapsedTime = static_cast<float>(ImGui::GetTime() - m_notifCreateTime);
     if (status == Status::FADEIN)
     {
         return (elapsedTime / m_fadeInTime) * m_opacity;
@@ -65,7 +65,8 @@ Message::Message(Type type, const std::string& title, const std::string& content
 void Notifier::DrawNotifications()
 {
     float height = 0.0f;
-    for (int i = 0; i < m_msgs.size(); i++)
+    // iterate backwards so removals do not invalidate upcoming indices
+    for (int i = static_cast<int>(m_msgs.size()) - 1; i >= 0; --i)
     {
         auto notif = &m_msgs[i];
         if (notif->GetStatus() == Message::Status::OFF)
@@ -86,20 +87,20 @@ void Notifier::DrawNotifications()
         const auto icon = notif->GetIcon();
         auto iconColor = notif->GetColor();
         iconColor.Value.w = fadeValue;
-        // ImGui::TextColored(iconColor, reinterpret_cast<const char*>(icon.c_str()));
+        ImGui::TextColored(iconColor, "%s", reinterpret_cast<const char*>(icon.c_str()));
         ImGui::SameLine();
         if (const auto title = notif->GetTitle(); title.empty() == false)
         {
-            ImGui::TextColored(notif->GetColor(), title.c_str());
+            ImGui::TextColored(notif->GetColor(), "%s", title.c_str());
         }
         else if (const auto typeName = notif->GetTypeName(); typeName.empty() == false)
         {
-            ImGui::TextColored(notif->GetColor(), typeName.c_str());
+            ImGui::TextColored(notif->GetColor(), "%s", typeName.c_str());
         }
         if (const auto content = notif->GetContent(); content.empty() == false)
         {
             ImGui::Separator();
-            ImGui::TextColored(notif->GetColor(), content.c_str());
+            ImGui::TextColored(notif->GetColor(), "%s", content.c_str());
         }
         ImGui::PopTextWrapPos();
         height += ImGui::GetWindowHeight() + m_yMessagePadding;

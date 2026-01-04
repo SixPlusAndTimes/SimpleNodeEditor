@@ -5,6 +5,10 @@
 **all libs except opengl are built from source**
 
 ## how to build
+intall openssl in Unix like environment 
+~~~shell
+sudo apt update && sudo apt install libssl-dev -y
+~~~
 
 ~~~shell
 cd RCNodeEditor

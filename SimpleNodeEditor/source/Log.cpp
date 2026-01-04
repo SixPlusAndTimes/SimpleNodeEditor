@@ -42,6 +42,7 @@ void Log::SetLogLevel(const std::string& logLevelStr)
     {
         logLevel = Log::LogLevel::LogInfo;
     }
+    SetLogLevel(logLevel);
 }
 
 void Log::SetLogLevel(LogLevel loglevel)
