@@ -5,12 +5,12 @@
             "name": "(Windows) Launch",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/SimpleNodeEditor.exe",
+            "program": "${workspaceFolder}\\win_build\\Debug\\SimpleNodeEditor.exe",
             "args": [],
             "stopAtEntry": false,
             "environment": [],
             "console": "externalTerminal",
-            "cwd" : "${workspaceFolder}/build/Debug/"
+            "cwd" : "${workspaceFolder}\\win_build\\Debug\\"
         },
     ]
 }

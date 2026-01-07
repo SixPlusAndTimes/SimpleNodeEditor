@@ -1355,23 +1355,26 @@ inline void AppendDrawData(ImDrawList* src, ImVec2 origin, float scale)
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const int   vtx_start = dl->VtxBuffer.size();
     const int   idx_start = dl->IdxBuffer.size();
-    dl->VtxBuffer.resize(dl->VtxBuffer.size() + src->VtxBuffer.size());
-    dl->IdxBuffer.resize(dl->IdxBuffer.size() + src->IdxBuffer.size());
+
+    dl->VtxBuffer.reserve(dl->VtxBuffer.size() + src->VtxBuffer.size());
+    dl->IdxBuffer.reserve(dl->IdxBuffer.size() + src->IdxBuffer.size());
     dl->CmdBuffer.reserve(dl->CmdBuffer.size() + src->CmdBuffer.size());
-    dl->_VtxWritePtr = dl->VtxBuffer.Data + vtx_start;
-    dl->_IdxWritePtr = dl->IdxBuffer.Data + idx_start;
-    const ImDrawVert* vtx_read = src->VtxBuffer.Data;
-    const ImDrawIdx*  idx_read = src->IdxBuffer.Data;
+
+    // Deep-copy and transform vertices
     for (int i = 0, c = src->VtxBuffer.size(); i < c; ++i)
     {
-        dl->_VtxWritePtr[i].uv = vtx_read[i].uv;
-        dl->_VtxWritePtr[i].col = vtx_read[i].col;
-        dl->_VtxWritePtr[i].pos = vtx_read[i].pos * scale + origin;
+        ImDrawVert v = src->VtxBuffer[i];
+        v.pos = v.pos * scale + origin;
+        dl->VtxBuffer.push_back(v);
     }
+
+    // Copy indices with offset
     for (int i = 0, c = src->IdxBuffer.size(); i < c; ++i)
     {
-        dl->_IdxWritePtr[i] = idx_read[i] + (ImDrawIdx)vtx_start;
+        dl->IdxBuffer.push_back((ImDrawIdx)(src->IdxBuffer[i] + (ImDrawIdx)vtx_start));
     }
+
+    // Copy and adjust commands
     for (int i = 0, c = src->CmdBuffer.size(); i < c; ++i)
     {
         ImDrawCmd cmd = src->CmdBuffer[i];
@@ -2097,6 +2100,38 @@ ImNodesEditorContext* EditorContextCreate()
 
 void EditorContextFree(ImNodesEditorContext* ctx)
 {
+    // Ensure any constructed objects inside the pools have their destructors run.
+    // ImVector destructor does not automatically call element destructors for non-POD
+    // types, so explicitly destroy any still-in-use objects to release their internal
+    // allocations before freeing the container memory.
+    if (ctx != nullptr)
+    {
+        for (int i = 0; i < ctx->Nodes.Pool.size(); ++i)
+        {
+            if (i < ctx->Nodes.InUse.size() && ctx->Nodes.InUse[i])
+            {
+                (ctx->Nodes.Pool.Data + i)->~ImNodeData();
+                ctx->Nodes.InUse[i] = false;
+            }
+        }
+        for (int i = 0; i < ctx->Pins.Pool.size(); ++i)
+        {
+            if (i < ctx->Pins.InUse.size() && ctx->Pins.InUse[i])
+            {
+                (ctx->Pins.Pool.Data + i)->~ImPinData();
+                ctx->Pins.InUse[i] = false;
+            }
+        }
+        for (int i = 0; i < ctx->Links.Pool.size(); ++i)
+        {
+            if (i < ctx->Links.InUse.size() && ctx->Links.InUse[i])
+            {
+                (ctx->Links.Pool.Data + i)->~ImLinkData();
+                ctx->Links.InUse[i] = false;
+            }
+        }
+    }
+
     ctx->~ImNodesEditorContext();
     ImGui::MemFree(ctx);
 }

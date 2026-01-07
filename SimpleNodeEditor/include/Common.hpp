@@ -12,14 +12,14 @@
 
 // inspired by HAZEL
 #ifdef DEBUG
-	#if defined(WIN32)
-		#define DEBUGBREAK() __debugbreak()
-	#elif defined(LINUX) ## TODO
-		#include <signal.h>
-		#define DEBUGBREAK() raise(SIGTRAP)
-	#else
-		#error "Platform doesn't support debugbreak yet!"
-	#endif
+    #if defined(_WIN32)
+        #define DEBUGBREAK() __debugbreak()
+    #elif defined(__linux__) || defined(__unix__) || defined(__APPLE__)
+        #include <signal.h>
+        #define DEBUGBREAK() raise(SIGTRAP)
+    #else
+        #error "Platform doesn't support debugbreak yet!"
+    #endif
 	#define HZ_ENABLE_ASSERTS
 #else
 	#define DEBUGBREAK()

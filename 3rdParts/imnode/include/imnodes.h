@@ -240,12 +240,12 @@ typedef void* ImNodesMiniMapNodeHoveringCallbackUserData;
 #endif
 struct CustumiszedDrawData
 {
-    std::string Text; // may add circle、rect later, now it is only used to draw pin_idx
+    ImGuiTextBuffer Text; // use ImGuiTextBuffer to be compatible with ImVector relocation
     ImVec2 DrawPos; // normally refer to relative pos
     ImU32  Color;
     bool   IsValid;
-    CustumiszedDrawData() : Text(), DrawPos(), Color(), IsValid(false){ }
-    CustumiszedDrawData(const std::string& text, const ImVec2& drawpos, const ImU32& color) : Text(text), DrawPos(drawpos), Color(color), IsValid(true){ }
+    CustumiszedDrawData() : Text(), DrawPos(), Color(), IsValid(false) { }
+    CustumiszedDrawData(const std::string& text, const ImVec2& drawpos, const ImU32& color) : Text(), DrawPos(drawpos), Color(color), IsValid(true) { Text.append(text.c_str()); }
 };
 
 namespace IMNODES_NAMESPACE
