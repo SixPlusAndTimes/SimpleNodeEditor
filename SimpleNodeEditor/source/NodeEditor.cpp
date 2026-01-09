@@ -816,12 +816,41 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid, bool shouldUnr
 
     for (OutputPort& outPort : node.GetOutputPorts())
     {
-        for (EdgeUniqueId edgeUid : outPort.GetEdgeUids())
+        // Copy the edge UID list because DeleteEdge will modify the port's
+        // internal edge vector, invalidating iterators if we iterate it
+        // directly.
+        const std::vector<EdgeUniqueId> edgeUids = outPort.GetEdgeUids();
+        for (EdgeUniqueId edgeUid : edgeUids)
         {
             DeleteEdge(edgeUid, shouldUnregisterUid);
+            SNELOG_INFO("nodeUid {} outportUid {} deleteEdgeUid {}", node.GetNodeUniqueId(),
+                        outPort.GetPortUniqueId(), edgeUid);
         }
     }
+    // If this is a permanent/user-initiated deletion (`shouldUnregisterUid==true`),
+    // also remove any pruned edges that reference this node. When pruning is being
+    // applied programmatically (shouldUnregisterUid==false) we must keep pruned edges
+    // in `m_edgesPruned` so they can later be restored.
+    if (shouldUnregisterUid && !m_edgesPruned.empty())
+    {
+        std::vector<EdgeUniqueId> pruned_to_delete;
+        for (const auto& pr : m_edgesPruned)
+        {
+            const EdgeUniqueId euid = pr.first;
+            const Edge&        edge = pr.second;
+            if (edge.GetSourceNodeUid() == nodeUid || edge.GetDestinationNodeUid() == nodeUid)
+            {
+                pruned_to_delete.push_back(euid);
+            }
+        }
 
+        for (EdgeUniqueId euid : pruned_to_delete)
+        {
+            m_edgeUidGenerator.UnregisterUniqueID(euid);
+            m_edgesPruned.erase(euid);
+            SNELOG_INFO("erased pruned edge {} related to node {}", euid, nodeUid);
+        }
+    }
     // check that we has already deletes all edges from Node
     for (InputPort& inPort : node.GetInputPorts())
     {
