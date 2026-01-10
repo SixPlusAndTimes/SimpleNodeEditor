@@ -26,7 +26,7 @@ void FileDialog::SwitchFileSystemType()
     SNELOG_INFO("switch to sshfilesystem E, currente filesystem type {}", static_cast<int>(m_type));
     if (m_fs->GetFileSystemType() == FS::FileSystemType::Local)
     {
-        // Try to create SSH filesystem and only switch to it if connected
+        // Try to create SSH filesystem and only switch to it if connecting success
         auto sshfs = std::make_shared<FS::SshFileSystem>(SNEConfig::GetInstance().GetConfigValue<FS::SshConnectionInfo>("SshConnectionInfo"));
         if (sshfs && sshfs->IsConnected())
         {
@@ -73,12 +73,6 @@ bool FileDialog::Draw()
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(m_title.c_str(), nullptr, ImGuiWindowFlags_NoCollapse))
     {
-        // switch between local and ssh filesystem
-        if (ImGui::Button("Switch"))
-        {
-            SwitchFileSystemType();
-            ResetState();
-        }
         // allow for virtual disk changing in windows
         #ifdef _WIN32
             if (m_fs->GetFileSystemType() != FS::FileSystemType::Ssh)
@@ -293,6 +287,35 @@ bool FileDialog::Draw()
                     ImGui::CloseCurrentPopup();
                 }
                 ImGui::EndPopup();
+            }
+        }
+
+        {
+            FS::FileSystemType curType = m_fs->GetFileSystemType();
+            const std::string curLabel = (curType == FS::FileSystemType::Local) ? "Local" : "SSH";
+            const std::string targetLabel = (curType == FS::FileSystemType::Local) ? "SSH" : "Local";
+            const std::string buttonStr = "Switch to " + targetLabel;
+
+            ImGuiStyle& style = ImGui::GetStyle();
+            ImVec2 btnSz = ImGui::CalcTextSize(buttonStr.c_str());
+            float framePadX = style.FramePadding.x * 2.0f;
+            float totalW = btnSz.x + framePadX;
+
+            // compute X such that the combined UI is right-aligned inside the content region
+            float regionMaxX = ImGui::GetWindowContentRegionMax().x;
+            float desiredX = regionMaxX - totalW;
+            ImGui::SameLine();
+            ImGui::SetCursorPosX(desiredX);
+            if (ImGui::Button(buttonStr.c_str()))
+            {
+                SwitchFileSystemType();
+                ResetState();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text("Current type is %s, Click to switch to %s",curLabel.c_str(), targetLabel.c_str());
+                ImGui::EndTooltip();
             }
         }
         ImGui::EndPopup();
