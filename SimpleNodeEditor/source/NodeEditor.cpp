@@ -515,9 +515,12 @@ void NodeEditor::HandleAddNodes()
         NodeDescription selectedNodeDescription =
             s_nodeDescriptionsNameDesMap.at(ret.value().first.data());
 
-        NodeUniqueId newNodeUId = AddNewNodes(selectedNodeDescription);
+        // NodeUniqueId newNodeUId = AddNewNodes(selectedNodeDescription);
 
-        ImNodes::SetNodeScreenSpacePos(newNodeUId, ret.value().second);
+        // ImNodes::SetNodeScreenSpacePos(newNodeUId, ret.value().second);
+        auto addNodeCmd = std::make_unique<AddNodeCommand>(*this, selectedNodeDescription, ret.value().second);
+
+        ExecuteCommand(std::move(addNodeCmd));
     }
 }
 
@@ -1782,11 +1785,39 @@ void NodeEditor::HandleZooming()
 
 void NodeEditor::HandleOtherUserInputs()
 {
+
     if (ImGui::IsWindowFocused(ImGuiFocusedFlags_NoPopupHierarchy |
                                ImGuiFocusedFlags_RootAndChildWindows) &&
         ImNodes::IsEditorHovered())
     {
         ImGuiIO& io = ImGui::GetIO();
+
+        if (ImGui::IsKeyPressed(ImGuiKey_Z) && io.KeyCtrl)
+        {
+            if (CanUndo())
+            {
+                Undo();
+                SNELOG_INFO("User triggered Undo via Ctrl+Z");
+            }
+            else
+            {
+                Notifier::Add(Message(Message::Type::INFO, "", "No more actions to undo!"));
+            }
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_R) && io.KeyCtrl)
+        {
+            if (CanRedo())
+            {
+                Redo();
+                SNELOG_INFO("User triggered Redo via Ctrl+R");
+            }
+            else
+            {
+                Notifier::Add(Message(Message::Type::INFO, "", "No more actions to redo!"));
+            }
+        }
+
         // ctrl + S : handle saving to file, i.e serialize the pipeline to a yaml
         if (ImGui::IsKeyPressed(ImGuiKey_S) && io.KeyCtrl)
         {
@@ -2047,4 +2078,48 @@ void NodeEditor::ClearCurrentPipeLine()
     m_pipeLineParser.Clear();
     m_pipelineEimtter.Clear();
 }
+void NodeEditor::ExecuteCommand(std::unique_ptr<ICommand> cmd)
+{
+    if (m_currentCommandIndex < m_commandStack.size())
+    {
+        m_commandStack.erase(m_commandStack.begin() + m_currentCommandIndex, m_commandStack.end());
+    }
+
+    cmd->Execute();
+    m_commandStack.push_back(std::move(cmd));
+    m_currentCommandIndex = m_commandStack.size();
+}
+
+bool NodeEditor::CanUndo() const
+{
+    return m_currentCommandIndex > 0;
+}
+
+bool NodeEditor::CanRedo() const
+{
+    return m_currentCommandIndex < m_commandStack.size();
+}
+
+void NodeEditor::Undo()
+{
+    if (!CanUndo()) return;
+
+    m_currentCommandIndex--;
+    m_commandStack[m_currentCommandIndex]->Undo();
+
+    m_needTopoSort = true;
+    SNELOG_INFO("Undo command: {}", m_commandStack[m_currentCommandIndex]->GetName());
+}
+
+void NodeEditor::Redo()
+{
+    if (!CanRedo()) return;
+
+    m_commandStack[m_currentCommandIndex]->Redo();
+    m_currentCommandIndex++;
+
+    m_needTopoSort = true;
+    SNELOG_INFO("Redo command: {}", m_commandStack[m_currentCommandIndex-1]->GetName());
+}
+
 } // namespace SimpleNodeEditor

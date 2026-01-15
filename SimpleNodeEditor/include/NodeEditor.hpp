@@ -9,6 +9,8 @@
 #include <unordered_set>
 #include "imnodes.h"
 #include <set>
+#include "Command.hpp"
+
 
 struct ImNodesStyle;
 
@@ -25,7 +27,7 @@ public:
     bool LoadPipeline(const std::string& filePath);
     bool LoadPipeline(std::unique_ptr<std::istream> inputStream);
 
-private:
+public: // TODO: private
     // draw ui infereface
     void DrawMenu();
     void DrawFileMenu();
@@ -81,6 +83,11 @@ private:
     [[nodiscard]] bool LoadPipelineFromStream(std::unique_ptr<std::istream> inputStream);
     void               ClearCurrentPipeLine();
 
+    void               ExecuteCommand(std::unique_ptr<ICommand> cmd);
+    bool               CanUndo() const;
+    bool               CanRedo() const;
+    void               Undo();
+    void               Redo();
 private:
     // maybe map is better than unorderedmap, 
     // because so many insert/delete operations contributing to growing memory space of hashmap 
@@ -126,6 +133,10 @@ private:
     PipelineParser  m_pipeLineParser;
 
     FileDialog      m_fileDialog;
+
+    std::vector<std::unique_ptr<ICommand>> m_commandStack;
+    size_t m_currentCommandIndex = 0; // point to the next command that will be executed
+
 };
 } // namespace SimpleNodeEditor
 
