@@ -52,7 +52,7 @@ NodeEditor::NodeEditor()
       m_nodesPruned(),
       m_edgesPruned(),
       m_currentPipeLineName(),
-      m_nodeStyle(ImNodes::GetStyle()),
+      m_nodeStyle(&ImNodes::GetStyle()),
       m_pipeLineParser(),
       m_fileDialog()
 {
@@ -447,6 +447,11 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
     ImGui::PopStyleVar();
 }
 
+ImVec2 NodeEditor::GetNodePos(NodeUniqueId nodeUid) 
+{
+    return ImNodes::GetNodeRect(nodeUid).Min;
+}
+
 std::optional<std::pair<std::string_view, ImVec2>> ComboFilterCombination(
     const std::string& popupName, const std::vector<std::string_view>& selectList)
 {
@@ -535,13 +540,65 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc)
     return AddNewNodes(nodeDesc, newYamlNode);
 }
 
+NodeUniqueId NodeEditor::RestoreNode(const Node& nodeSnapShot)
+{
+    SNE_ASSERT(nodeSnapShot.GetNodeUniqueId() != -1, "nodeUid and yamlNodeUid should not be -1");
+
+    SNELOG_INFO("Restore Node E");
+    NodeUniqueId nodeUid = nodeSnapShot.GetNodeUniqueId();
+
+    // Insert the node back into the map with its original UID
+    if (!m_nodes.emplace(nodeUid, nodeSnapShot).second)
+    {
+        SNELOG_ERROR("RestoreNode: Failed to insert node with uid {}", nodeUid);
+        return -1;
+    }
+
+    // Repopulate port lookups from the restored node
+    Node& restoredNode = m_nodes.at(nodeUid);
+    
+    const auto& inputPorts = restoredNode.GetInputPorts();
+    for (const InputPort& port : inputPorts)
+    {
+        m_inportPorts.emplace(port.GetPortUniqueId(), restoredNode.GetInputPort(port.GetPortUniqueId()));
+    }
+
+    const auto& outputPorts = restoredNode.GetOutputPorts();
+    for (const OutputPort& port : outputPorts)
+    {
+        m_outportPorts.emplace(port.GetPortUniqueId(), restoredNode.GetOutputPort(port.GetPortUniqueId()));
+    }
+
+    // Register the node UID and all port UIDs with their allocators
+    m_nodeUidGenerator.RegisterUniqueID(nodeUid);
+
+    for (const InputPort& port : inputPorts)
+    {
+        m_portUidGenerator.RegisterUniqueID(port.GetPortUniqueId());
+    }
+
+    for (const OutputPort& port : outputPorts)
+    {
+        m_portUidGenerator.RegisterUniqueID(port.GetPortUniqueId());
+    }
+
+    // Register yaml node ID
+    m_yamlNodeUidGenerator.RegisterUniqueID(nodeSnapShot.GetYamlNode().m_nodeYamlId);
+
+    SNELOG_INFO("Restore Node X");
+    return nodeUid;
+}
+
+
 // TODO : redundant infomation here
-NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNode)
+NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNode, const NodeUniqueId nodeUid)
 {
     SNE_ASSERT(yamlNode.m_nodeYamlId != -1);
     m_yamlNodeUidGenerator.RegisterUniqueID(yamlNode.m_nodeYamlId);
 
-    Node newNode(m_nodeUidGenerator.AllocUniqueID(), Node::NodeType::NormalNode, yamlNode, m_nodeStyle);
+
+    Node newNode(nodeUid == -1 ? m_nodeUidGenerator.AllocUniqueID() : m_nodeUidGenerator.RegisterUniqueID(nodeUid),
+                 Node::NodeType::NormalNode, yamlNode, *m_nodeStyle);
 
     NodeUniqueId ret = newNode.GetNodeUniqueId();
 
@@ -638,7 +695,9 @@ void NodeEditor::HandleAddEdges()
     // note : edge is linked from startPortId to endPortId
     if (ImNodes::IsLinkCreated(&startPortId, &endPortId))
     {
-        AddNewEdge(startPortId, endPortId);
+        // AddNewEdge(startPortId, endPortId);
+        auto addEdgeCmd = std::make_unique<AddEdgeCommand>(*this, startPortId, endPortId);
+        ExecuteCommand(std::move(addEdgeCmd));
     }
 }
 
@@ -670,7 +729,7 @@ void FillYamlEdgePort(YamlPort& yamlPort, const Port& port, std::unordered_map<N
     yamlPort.m_portYamlId = port.GetPortYamlId();
 }
 
-void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
+EdgeUniqueId NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
                             const YamlEdge& yamlEdge, bool avoidMultipleInputLinks)
 {
     // avoid multiple edges linking to the same inport
@@ -678,7 +737,7 @@ void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
     {
         SNELOG_WARN("inport port can not have multiple edges, inportUid[{}] portName[{}]",
                     dstPortUid, m_inportPorts.at(dstPortUid)->GetPortname());
-        return;
+        return -1;
     }
 
     Edge newEdge(srcPortUid, dstPortUid, m_edgeUidGenerator.AllocUniqueID(), yamlEdge);
@@ -725,6 +784,7 @@ void NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid,
     DumpEdge(newEdge);
     newEdge.GetYamlEdge().m_isValid = true;
     m_edges.emplace(newEdge.GetEdgeUniqueId(), (newEdge));
+    return newEdge.GetEdgeUniqueId();
 }
 
 void NodeEditor::HandleDeletingEdges()
@@ -2071,6 +2131,8 @@ void NodeEditor::ClearCurrentPipeLine()
     m_currentPruninngRule.clear();
     m_nodesPruned.clear();
     m_edgesPruned.clear();
+    m_commandStack.clear();
+    m_currentCommandIndex = 0;
 
     m_portUidGenerator.Clear();
     m_nodeUidGenerator.Clear();
@@ -2078,12 +2140,13 @@ void NodeEditor::ClearCurrentPipeLine()
     m_pipeLineParser.Clear();
     m_pipelineEimtter.Clear();
 }
+
 void NodeEditor::ExecuteCommand(std::unique_ptr<ICommand> cmd)
 {
-    if (m_currentCommandIndex < m_commandStack.size())
-    {
-        m_commandStack.erase(m_commandStack.begin() + m_currentCommandIndex, m_commandStack.end());
-    }
+    // if (m_currentCommandIndex < m_commandStack.size())
+    // {
+    //     m_commandStack.erase(m_commandStack.begin() + m_currentCommandIndex, m_commandStack.end());
+    // }
 
     cmd->Execute();
     m_commandStack.push_back(std::move(cmd));
@@ -2107,7 +2170,7 @@ void NodeEditor::Undo()
     m_currentCommandIndex--;
     m_commandStack[m_currentCommandIndex]->Undo();
 
-    m_needTopoSort = true;
+    // m_needTopoSort = true;
     SNELOG_INFO("Undo command: {}", m_commandStack[m_currentCommandIndex]->GetName());
 }
 
@@ -2118,7 +2181,7 @@ void NodeEditor::Redo()
     m_commandStack[m_currentCommandIndex]->Redo();
     m_currentCommandIndex++;
 
-    m_needTopoSort = true;
+    // m_needTopoSort = true;
     SNELOG_INFO("Redo command: {}", m_commandStack[m_currentCommandIndex-1]->GetName());
 }
 

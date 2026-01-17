@@ -33,9 +33,28 @@ public:
 
 private:
     NodeEditor&          m_editor;
-    NodeDescription      m_nodeDesc;
     ImVec2               m_nodePos;
-    NodeUniqueId         m_createdNodeUid;
+    NodeDescription      m_nodeDesc;
+    Node                 m_nodeSnapShot;
+};
+
+class AddEdgeCommand : public ICommand
+{
+public:
+    AddEdgeCommand(NodeEditor& editor, PortUniqueId startPortId, PortUniqueId endPortId);
+
+    void Execute() override;
+    void Undo() override;
+    void Redo() override;
+    std::string GetName() const override;
+
+private:
+    NodeEditor&  m_editor;
+    PortUniqueId m_startPortId;
+    PortId       m_startPortIndex;
+    PortUniqueId m_endPortId;
+    PortId       m_endPortIndex;
+    EdgeUniqueId m_createdEdgeUid;
 };
 
 }

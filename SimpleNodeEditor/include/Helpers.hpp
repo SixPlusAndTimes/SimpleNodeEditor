@@ -37,14 +37,21 @@ public:
         return allocated;
     }
 
-    bool RegisterUniqueID(UidType uid)
+    UidType RegisterUniqueID(UidType uid)
     {
         if (m_registeredUids.contains(uid))
         {
             SNELOG_INFO("allocator[{}] uid[{}] has already been allocated or registered", m_name,
                         uid);
         }
-        return m_registeredUids.insert(uid).second;
+        if (m_registeredUids.insert(uid).second)
+        {
+            return uid;
+        }
+        else
+        {
+            return UidType();
+        }
     }
 
     bool UnregisterUniqueID(UidType uid)

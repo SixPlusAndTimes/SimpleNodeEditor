@@ -22,15 +22,14 @@ using PortUniqueId = int32_t;
 using EdgeUniqueId = int32_t;
 using NodeUniqueId = int32_t;
 
-// TODO: factor out the yaml definition
-
+// indicating index of this port in nodes' outputport/inputport seuqence
+using PortId = int32_t;  
 
 class Port
 {
 public: // type def
-    using PortId =
-        int32_t; // normally, every node's inputports/ourports' Id is increased from 0 in steps of 1
     using PortUPtr = std::unique_ptr<Port>;
+    using PortId = int32_t;
 
 public:
     Port(PortUniqueId portUid, PortId portId, const std::string& name, NodeUniqueId ownedBy,
@@ -47,8 +46,8 @@ public:
     YamlPort::PortYamlId GetPortYamlId() const;
 
 private:
-    PortUniqueId m_portUid;
-    PortId       m_portId;
+    PortUniqueId m_portUid; // port unique id used by imnodes
+    PortId       m_portId; // indicating index of this port in nodes' outputport/inputport seuqence
     std::string  m_portName;
     NodeUniqueId m_ownedByNodeUid; // indicating which node the port belongs to
     // yaml portid is not unique among all nodes' ports, and also not unique among one node's ports,
@@ -128,8 +127,10 @@ public: // type def
     using NodeUPtr = std::unique_ptr<Node>;
 
 public:
-    // Node();
+    Node() = default;
     Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode, ImNodesStyle& nodeStyle);
+    Node& operator=(const Node& node) = default;
+    Node(const Node&) = default;
     void SetNodePosition(const ImVec2& pos);
 
     void                           AddInputPort(const InputPort& inPort);
@@ -144,6 +145,7 @@ public:
     InputPort*                     GetInputPort(PortUniqueId portUid);
     OutputPort*                    GetOutputPort(PortUniqueId portUid);
     std::vector<EdgeUniqueId>      GetAllEdgeUids() const;
+    ImVec2                         GetNodePos() {return m_nodePos; };
 
     PortUniqueId FindPortUidAmongOutports(YamlPort::PortYamlId portYamlId) const;
     PortUniqueId FindPortUidAmongInports(YamlPort::PortYamlId portYamlId) const;
@@ -156,14 +158,13 @@ private:
     // imnode lib need nodeuid to differentiate between nodes
     NodeUniqueId            m_nodeUid; // used for imnode to draw UI
     NodeType                m_nodeType;
-    std::optional<float>    m_nodeWidth;
     ImVec2                  m_nodePos;
     std::vector<InputPort>  m_inputPorts;
     std::vector<OutputPort> m_outputPorts;
 
     // yaml node related
     YamlNode      m_yamlNode;
-    ImNodesStyle& m_nodeStyle;
+    ImNodesStyle* m_nodeStyle;
 
     std::string m_nodeTitle; // nodetitle = nodename_in_nodedescription +  "_" + nodeid_in_yaml
 };

@@ -19,6 +19,9 @@ namespace SimpleNodeEditor
 
 class NodeEditor
 {
+    friend ICommand;
+    friend AddEdgeCommand;
+    friend AddNodeCommand;
 public:
     NodeEditor();
     void NodeEditorInitialize();
@@ -37,17 +40,21 @@ public: // TODO: private
     void ShowPipelineName();
     void ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize);
     void ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize);
+    //
+    ImVec2 GetNodePos(NodeUniqueId nodeUid);
 
     // handle add/delete nodes
     void         HandleAddNodes();
     NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc);
-    NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNde);
+    NodeUniqueId AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNde, const NodeUniqueId nodeUid = -1);
+    NodeUniqueId RestoreNode(const Node& nodeSnapShot);
     void         HandleDeletingNodes();
     void         DeleteNode(NodeUniqueId nodeUid, bool shouldUnregisterUid);
+    
 
     // handle add/delete edges
-    void HandleAddEdges();
-    void AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid, const YamlEdge& yamlEdge = {},
+    void         HandleAddEdges();
+    EdgeUniqueId AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPortUid, const YamlEdge& yamlEdge = {},
                     bool avoidMultipleInputLinks = true);
     void               HandleDeletingEdges();
     void               DeleteEdge(EdgeUniqueId edgeUid, bool shouldUnregisterUid);
@@ -125,7 +132,7 @@ private:
 
     std::string m_currentPipeLineName;
 
-    ImNodesStyle& m_nodeStyle;
+    ImNodesStyle* m_nodeStyle;
 
     // serilizer and deserializer
     // should held by nodeeditor instance?
