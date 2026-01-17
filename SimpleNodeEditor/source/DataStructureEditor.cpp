@@ -161,12 +161,11 @@ NodeUniqueId Edge::GetDestinationNodeUid() const
 Node::Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode, ImNodesStyle& nodeStyle)
 : m_nodeUid(nodeUid),
     m_nodeType(nodeType),
-    m_nodeWidth(),
     m_nodePos(),
     m_inputPorts(),
     m_outputPorts(),
     m_yamlNode(yamlNode),
-    m_nodeStyle(nodeStyle),
+    m_nodeStyle(&nodeStyle),
     m_nodeTitle(m_yamlNode.m_nodeName + "_" + std::to_string(m_yamlNode.m_nodeYamlId))
 {
     SNELOG_INFO("Node constructed with nodeUid = {}, ymalNodeId = {}, nodeTtile = {}", m_nodeUid,
