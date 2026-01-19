@@ -22,6 +22,7 @@ class NodeEditor
     friend ICommand;
     friend AddEdgeCommand;
     friend AddNodeCommand;
+    friend DeleteEdgeCommand;
 public:
     NodeEditor();
     void NodeEditorInitialize();

@@ -14,6 +14,7 @@ void AddNodeCommand::Execute()
     NodeUniqueId nodeUid = m_editor.AddNewNodes(m_nodeDesc);
     m_editor.SetNodePos(nodeUid, m_nodePos);
     m_nodeSnapShot = m_editor.m_nodes.find(nodeUid)->second;
+    SNELOG_INFO("AddNode Execute Done, nodeUid = {}, m_nodes.size() = {}", m_nodeSnapShot.GetNodeUniqueId(), m_editor.m_nodes.size());
 }
 
 void AddNodeCommand::Undo()
@@ -45,6 +46,7 @@ void AddEdgeCommand::Execute()
     {
         // Capture snapshot copy after edge creation for redo
         m_edgeSnapshot = m_editor.m_edges.find(m_createdEdgeUid)->second;
+        SNELOG_INFO("AddEdgeCommand Execute Success: startPortUid {} endPortUid {} edgeUid {}", m_startPortUId, m_endPortUId, m_createdEdgeUid);
     }
     else 
     {
@@ -69,6 +71,49 @@ void AddEdgeCommand::Redo()
 std::string AddEdgeCommand::GetName() const
 {
     return "AddEdgeCommand";
+}
+
+DeleteEdgeCommand::DeleteEdgeCommand(NodeEditor& editor, EdgeUniqueId edgeUid)
+    : m_editor(editor), m_deletedEdgeUid(edgeUid), m_isActuallyDeleted(false)
+{}
+
+
+DeleteEdgeCommand::~DeleteEdgeCommand()
+{
+    if (m_isActuallyDeleted)
+    {
+        m_editor.m_edgeUidGenerator.UnregisterUniqueID(m_edgeSnapshot.GetEdgeUniqueId());
+    }
+}
+
+void DeleteEdgeCommand::Execute()
+{
+    if (m_deletedEdgeUid == -1) return;
+    // Capture snapshot before deleting the edge
+    m_edgeSnapshot = m_editor.m_edges.find(m_deletedEdgeUid)->second;
+    m_editor.DeleteEdge(m_deletedEdgeUid, false);
+    m_isActuallyDeleted = true;
+}
+
+void DeleteEdgeCommand::Undo()
+{
+    if (m_deletedEdgeUid == -1) return;
+    // Restore the edge with its original UID using the snapshot
+    m_editor.RestoreEdge(m_edgeSnapshot);
+    m_isActuallyDeleted = false;
+}
+
+
+void DeleteEdgeCommand::Redo()
+{
+    if (m_deletedEdgeUid == -1) return;
+    m_editor.DeleteEdge(m_deletedEdgeUid, false);
+    m_isActuallyDeleted = true;
+}
+
+std::string DeleteEdgeCommand::GetName() const
+{
+    return "DeleteEdgeCommand";
 }
 
 } // namespace SimpleNodeEditor

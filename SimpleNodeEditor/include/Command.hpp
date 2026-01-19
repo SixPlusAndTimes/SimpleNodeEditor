@@ -56,6 +56,24 @@ private:
     Edge         m_edgeSnapshot;  // Store actual snapshot copy, not pointer
 };
 
+class DeleteEdgeCommand : public ICommand
+{
+public:
+    DeleteEdgeCommand(NodeEditor& editor, EdgeUniqueId edgeUid);
+
+    virtual ~DeleteEdgeCommand();
+    void Execute() override;
+    void Undo() override;
+    void Redo() override;
+    std::string GetName() const override;
+
+private:
+    NodeEditor&  m_editor;
+    EdgeUniqueId m_deletedEdgeUid;
+    bool         m_isActuallyDeleted;
+    Edge         m_edgeSnapshot;  // Store snapshot for undo
+};
+
 }
 
 #endif // COMMAND_H

@@ -351,4 +351,3 @@ std::unique_ptr<std::istream> FileDialog::GetResultInStream()
     }
 }
 } // namespace SimpleNodeEditor
-

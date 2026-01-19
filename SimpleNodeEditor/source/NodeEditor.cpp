@@ -800,7 +800,8 @@ void NodeEditor::HandleDeletingEdges()
         {
             if (m_edges.count(edgeUid) != 0)
             {
-                DeleteEdge(edgeUid, true);
+                auto deleteEdgeCmd = std::make_unique<DeleteEdgeCommand>(*this, edgeUid);
+                ExecuteCommand(std::move(deleteEdgeCmd));
             }
             else
             {
@@ -816,7 +817,8 @@ void NodeEditor::HandleDeletingEdges()
     {
         if (m_edges.count(detachedEdgeUId) != 0)
         {
-            DeleteEdge(detachedEdgeUId, true);
+            auto deleteEdgeCmd = std::make_unique<DeleteEdgeCommand>(*this, detachedEdgeUId);
+            ExecuteCommand(std::move(deleteEdgeCmd));
         }
         else
         {
