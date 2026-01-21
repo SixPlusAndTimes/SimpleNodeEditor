@@ -74,6 +74,23 @@ private:
     Edge         m_edgeSnapshot;  // Store snapshot for undo
 };
 
+class DeleteNodeCommand : public ICommand
+{
+public:
+    DeleteNodeCommand(NodeEditor& editor, NodeUniqueId nodeUid);
+
+    void Execute() override;
+    void Undo() override;
+    void Redo() override;
+    std::string GetName() const override;
+
+private:
+    NodeEditor&              m_editor;
+    NodeUniqueId            m_deletedNodeUid;
+    Node                    m_nodeSnapshot;              // Store snapshot for undo
+    std::vector<Edge>       m_deletedEdgeSnapshots;      // Store snapshots of deleted edges
+};
+
 }
 
 #endif // COMMAND_H

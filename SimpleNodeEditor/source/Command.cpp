@@ -116,4 +116,76 @@ std::string DeleteEdgeCommand::GetName() const
     return "DeleteEdgeCommand";
 }
 
+DeleteNodeCommand::DeleteNodeCommand(NodeEditor& editor, NodeUniqueId nodeUid)
+    : m_editor(editor), m_deletedNodeUid(nodeUid)
+{}
+
+void DeleteNodeCommand::Execute()
+{
+    if (m_deletedNodeUid == -1) return;
+    // Capture snapshot before deleting the node
+    auto it = m_editor.m_nodes.find(m_deletedNodeUid);
+    if (it != m_editor.m_nodes.end())
+    {
+        m_nodeSnapshot = it->second;
+        
+        // Also capture all edges connected to this node before deletion
+        for (const InputPort& inPort : m_nodeSnapshot.GetInputPorts())
+        {
+            EdgeUniqueId edgeUid = inPort.GetEdgeUid();
+            if (edgeUid != -1)
+            {
+                auto edgeIt = m_editor.m_edges.find(edgeUid);
+                if (edgeIt != m_editor.m_edges.end())
+                {
+                    m_deletedEdgeSnapshots.push_back(edgeIt->second);
+                }
+            }
+        }
+        
+        for (const OutputPort& outPort : m_nodeSnapshot.GetOutputPorts())
+        {
+            const auto& edgeUids = outPort.GetEdgeUids();
+            for (EdgeUniqueId edgeUid : edgeUids)
+            {
+                if (edgeUid != -1)
+                {
+                    auto edgeIt = m_editor.m_edges.find(edgeUid);
+                    if (edgeIt != m_editor.m_edges.end())
+                    {
+                        m_deletedEdgeSnapshots.push_back(edgeIt->second);
+                    }
+                }
+            }
+        }
+        
+        m_editor.DeleteNode(m_deletedNodeUid, false);
+    }
+}
+
+void DeleteNodeCommand::Undo()
+{
+    if (m_deletedNodeUid == -1) return;
+    // Restore the node with its original UID using the snapshot
+    m_editor.RestoreNode(m_nodeSnapshot);
+    
+    // Restore all connected edges
+    for (const Edge& edgeSnapshot : m_deletedEdgeSnapshots)
+    {
+        m_editor.RestoreEdge(edgeSnapshot);
+    }
+}
+
+void DeleteNodeCommand::Redo()
+{
+    if (m_deletedNodeUid == -1) return;
+    // Delete the node again (this will also delete connected edges)
+    m_editor.DeleteNode(m_deletedNodeUid, false);
+}
+
+std::string DeleteNodeCommand::GetName() const
+{
+    return "DeleteNodeCommand";
+}
+
 } // namespace SimpleNodeEditor

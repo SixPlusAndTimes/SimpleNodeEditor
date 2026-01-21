@@ -554,19 +554,23 @@ NodeUniqueId NodeEditor::RestoreNode(const Node& nodeSnapShot)
         return -1;
     }
 
-    // Repopulate port lookups from the restored node
+    // Repopulate port lookups from the restored node and clear stale edge references
     Node& restoredNode = m_nodes.at(nodeUid);
     
-    const auto& inputPorts = restoredNode.GetInputPorts();
-    for (const InputPort& port : inputPorts)
+    auto& inputPorts = restoredNode.GetInputPorts();
+    for (InputPort& port : inputPorts)
     {
         m_inportPorts.emplace(port.GetPortUniqueId(), restoredNode.GetInputPort(port.GetPortUniqueId()));
+        // Clear stale edge reference - edges will be restored separately via RestoreEdge
+        port.SetEdgeUid(-1);
     }
 
-    const auto& outputPorts = restoredNode.GetOutputPorts();
-    for (const OutputPort& port : outputPorts)
+    auto& outputPorts = restoredNode.GetOutputPorts();
+    for (OutputPort& port : outputPorts)
     {
         m_outportPorts.emplace(port.GetPortUniqueId(), restoredNode.GetOutputPort(port.GetPortUniqueId()));
+        // Clear stale edge references - edges will be restored separately via RestoreEdge
+        port.ClearEdges();
     }
 
     // Register the node UID and all port UIDs with their allocators
@@ -590,7 +594,6 @@ NodeUniqueId NodeEditor::RestoreNode(const Node& nodeSnapShot)
 }
 
 
-// TODO : redundant infomation here
 NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNode, const NodeUniqueId nodeUid)
 {
     SNE_ASSERT(yamlNode.m_nodeYamlId != -1);
@@ -602,29 +605,23 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const Yaml
 
     NodeUniqueId ret = newNode.GetNodeUniqueId();
 
-    // we must reserve the vector first; if not , the reallocation of std::vector will
-    // mess memory up
     newNode.GetInputPorts().reserve(nodeDesc.m_inputPortNames.size());
     newNode.GetOutputPorts().reserve(nodeDesc.m_outputPortNames.size());
 
-    // add inputports in the new node and add pointers in m_inportPorts
+    // add inputports in the new node (don't populate lookups yet - pointers would be invalid after move)
     for (size_t index = 0; index < nodeDesc.m_inputPortNames.size(); ++index)
     {
         InputPort newInport(m_portUidGenerator.AllocUniqueID(), (PortUniqueId)index,
                             nodeDesc.m_inputPortNames[index], newNode.GetNodeUniqueId(), (YamlPort::PortYamlId)index);
         newNode.AddInputPort(newInport);
-        m_inportPorts.emplace(newInport.GetPortUniqueId(),
-                              newNode.GetInputPort(newInport.GetPortUniqueId()));
     }
 
-    // add outputports in the new node and add pointers in m_outportPorts
+    // add outputports in the new node (don't populate lookups yet - pointers would be invalid after move)
     for (size_t index = 0; index < nodeDesc.m_outputPortNames.size(); ++index)
     {
         OutputPort newOutport(m_portUidGenerator.AllocUniqueID(), (PortUniqueId)index,
                               nodeDesc.m_outputPortNames[index], newNode.GetNodeUniqueId(), (YamlPort::PortYamlId)index);
         newNode.AddOutputPort(newOutport);
-        m_outportPorts.emplace(newOutport.GetPortUniqueId(),
-                               newNode.GetOutputPort(newOutport.GetPortUniqueId()));
     }
 
     if (!m_nodes.insert({newNode.GetNodeUniqueId(), std::move(newNode)}).second)
@@ -632,6 +629,21 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const Yaml
         SNELOG_ERROR("m_nodes insert new node fail! check it!");
         return -1;
     }
+
+    // Now populate port lookups with valid pointers to ports in the stored node
+    Node& storedNode = m_nodes.at(ret);
+    for (const auto& port : storedNode.GetInputPorts())
+    {
+        m_inportPorts.emplace(port.GetPortUniqueId(),
+                              storedNode.GetInputPort(port.GetPortUniqueId()));
+    }
+
+    for (const auto& port : storedNode.GetOutputPorts())
+    {
+        m_outportPorts.emplace(port.GetPortUniqueId(),
+                               storedNode.GetOutputPort(port.GetPortUniqueId()));
+    }
+
     return ret;
 }
 
@@ -709,7 +721,7 @@ bool IsInportAlreadyHasEdge(PortUniqueId portUid, std::unordered_map<PortUniqueI
         InputPort* inport = iter->second;
         if (inport->GetEdgeUid() != -1)
         {
-            SNELOG_INFO("inportportuid:{} already has an edge, edgeuid:{}", portUid, inport->GetEdgeUid());
+            SNELOG_WARN("inportportuid:{} already has an edge, edgeuid:{}", portUid, inport->GetEdgeUid());
             return true;
         }
     }
@@ -736,7 +748,7 @@ EdgeUniqueId NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPor
     if (avoidMultipleInputLinks && IsInportAlreadyHasEdge(dstPortUid, m_inportPorts))
     {
         SNELOG_WARN("inport port can not have multiple edges, inportUid[{}] portName[{}]",
-                    dstPortUid, m_inportPorts.at(dstPortUid)->GetPortname());
+                    dstPortUid, m_inportPorts.at(dstPortUid)->GetPortname().data());
         return -1;
     }
 
@@ -758,7 +770,7 @@ EdgeUniqueId NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPor
     {
         SNELOG_ERROR(
             "not find input port or the pointer is nullptr when handling new edges, check it! "
-            "dstPortUid is{}",
+            "dstPortUid is {}",
             dstPortUid);
     }
 
@@ -876,14 +888,13 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid, bool shouldUnr
         if (inPort.GetEdgeUid() != -1)
         {
             DeleteEdge(inPort.GetEdgeUid(), shouldUnregisterUid);
+            SNELOG_INFO("nodeUid {} inportUid {} deleteEdgeUid {}", node.GetNodeUniqueId(),
+                        inPort.GetPortUniqueId(), inPort.GetEdgeUid());
         }
     }
 
     for (OutputPort& outPort : node.GetOutputPorts())
     {
-        // Copy the edge UID list because DeleteEdge will modify the port's
-        // internal edge vector, invalidating iterators if we iterate it
-        // directly.
         const std::vector<EdgeUniqueId> edgeUids = outPort.GetEdgeUids();
         for (EdgeUniqueId edgeUid : edgeUids)
         {
@@ -892,10 +903,7 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid, bool shouldUnr
                         outPort.GetPortUniqueId(), edgeUid);
         }
     }
-    // If this is a permanent/user-initiated deletion (`shouldUnregisterUid==true`),
-    // also remove any pruned edges that reference this node. When pruning is being
-    // applied programmatically (shouldUnregisterUid==false) we must keep pruned edges
-    // in `m_edgesPruned` so they can later be restored.
+
     if (shouldUnregisterUid && !m_edgesPruned.empty())
     {
         std::vector<EdgeUniqueId> pruned_to_delete;
@@ -916,7 +924,7 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid, bool shouldUnr
             SNELOG_INFO("erased pruned edge {} related to node {}", euid, nodeUid);
         }
     }
-    // check that we has already deletes all edges from Node
+    // check that we has already deleted all edges from Node
     for (InputPort& inPort : node.GetInputPorts())
     {
         SNE_ASSERT(inPort.GetEdgeUid() == -1);
