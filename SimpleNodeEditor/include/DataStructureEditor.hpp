@@ -130,8 +130,12 @@ public: // type def
 public:
     Node() = default;
     Node(NodeUniqueId nodeUid, NodeType nodeType, const YamlNode& yamlNode, ImNodesStyle& nodeStyle);
+
     Node& operator=(const Node& node) = default;
+    Node& operator=(Node&& node) = default;
     Node(const Node&) = default;
+    Node(Node&&) = default;
+    ~Node() = default;
     void SetNodePosition(const ImVec2& pos);
 
     void                           AddInputPort(const InputPort& inPort);
