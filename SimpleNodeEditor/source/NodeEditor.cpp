@@ -658,7 +658,8 @@ void NodeEditor::HandleDeletingNodes()
         ImNodes::GetSelectedNodes(selected_nodes.data());
         for (const NodeUniqueId nodeUid : selected_nodes)
         {
-            DeleteNode(nodeUid, true /*shouldUnregisterUid*/);
+            auto deleteNodeCmd = std::make_unique<DeleteNodeCommand>(*this, nodeUid);
+            ExecuteCommand(std::move(deleteNodeCmd));
         }
     }
 }
@@ -924,15 +925,15 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid, bool shouldUnr
             SNELOG_INFO("erased pruned edge {} related to node {}", euid, nodeUid);
         }
     }
-    // check that we has already deleted all edges from Node
+    // check that we have already deleted all edges from Node
     for (InputPort& inPort : node.GetInputPorts())
     {
-        SNE_ASSERT(inPort.GetEdgeUid() == -1);
+        SNE_ASSERT(inPort.GetEdgeUid() == -1, "inport's edge is did not deleted");
     }
 
     for (OutputPort& outPort : node.GetOutputPorts())
     {
-        SNE_ASSERT(outPort.GetEdgeUids().size() == 0);
+        SNE_ASSERT(outPort.GetEdgeUids().size() == 0, "outport's edge are not deleted");
     }
 }
 

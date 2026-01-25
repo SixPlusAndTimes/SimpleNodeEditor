@@ -107,8 +107,7 @@ void DeleteEdgeCommand::Undo()
 void DeleteEdgeCommand::Redo()
 {
     if (m_deletedEdgeUid == -1) return;
-    m_editor.DeleteEdge(m_deletedEdgeUid, false);
-    m_isActuallyDeleted = true;
+    Execute();
 }
 
 std::string DeleteEdgeCommand::GetName() const
@@ -117,8 +116,20 @@ std::string DeleteEdgeCommand::GetName() const
 }
 
 DeleteNodeCommand::DeleteNodeCommand(NodeEditor& editor, NodeUniqueId nodeUid)
-    : m_editor(editor), m_deletedNodeUid(nodeUid)
-{}
+    : m_editor(editor), m_deletedNodeUid(nodeUid), m_nodeSnapshot(), m_nodePos(), m_deletedEdgeSnapshots(), m_isActuallyDeleted(false)
+{ }
+
+DeleteNodeCommand::~DeleteNodeCommand()
+{
+    if (m_isActuallyDeleted)
+    {
+        m_editor.m_nodeUidGenerator.UnregisterUniqueID(m_deletedNodeUid);
+        for (const auto& edge : m_deletedEdgeSnapshots)
+        {
+           m_editor.m_edgeUidGenerator.UnregisterUniqueID(edge.GetEdgeUniqueId());
+        }
+    }
+}
 
 void DeleteNodeCommand::Execute()
 {
@@ -159,7 +170,9 @@ void DeleteNodeCommand::Execute()
             }
         }
         
+        m_nodePos = m_editor.GetNodePos(m_deletedNodeUid);
         m_editor.DeleteNode(m_deletedNodeUid, false);
+        m_isActuallyDeleted = true;
     }
 }
 
@@ -168,19 +181,19 @@ void DeleteNodeCommand::Undo()
     if (m_deletedNodeUid == -1) return;
     // Restore the node with its original UID using the snapshot
     m_editor.RestoreNode(m_nodeSnapshot);
-    
+    m_editor.SetNodePos(m_deletedNodeUid, m_nodePos);
     // Restore all connected edges
     for (const Edge& edgeSnapshot : m_deletedEdgeSnapshots)
     {
         m_editor.RestoreEdge(edgeSnapshot);
     }
+    m_isActuallyDeleted = false;
 }
 
 void DeleteNodeCommand::Redo()
 {
     if (m_deletedNodeUid == -1) return;
-    // Delete the node again (this will also delete connected edges)
-    m_editor.DeleteNode(m_deletedNodeUid, false);
+    Execute();
 }
 
 std::string DeleteNodeCommand::GetName() const

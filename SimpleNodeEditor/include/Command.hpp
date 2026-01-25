@@ -62,6 +62,10 @@ public:
     DeleteEdgeCommand(NodeEditor& editor, EdgeUniqueId edgeUid);
 
     virtual ~DeleteEdgeCommand();
+    DeleteEdgeCommand(const DeleteEdgeCommand&) = default;
+    DeleteEdgeCommand(DeleteEdgeCommand&&) = default;
+    DeleteEdgeCommand& operator=(const DeleteEdgeCommand&) = default;
+    DeleteEdgeCommand& operator=(DeleteEdgeCommand&&) = default;
     void Execute() override;
     void Undo() override;
     void Redo() override;
@@ -78,6 +82,11 @@ class DeleteNodeCommand : public ICommand
 {
 public:
     DeleteNodeCommand(NodeEditor& editor, NodeUniqueId nodeUid);
+    virtual ~DeleteNodeCommand();
+    DeleteNodeCommand(const DeleteNodeCommand&) = default;
+    DeleteNodeCommand(DeleteNodeCommand&&) = default;
+    DeleteNodeCommand& operator=(const DeleteNodeCommand&) = default;
+    DeleteNodeCommand& operator=(DeleteNodeCommand&&) = default;
 
     void Execute() override;
     void Undo() override;
@@ -85,10 +94,12 @@ public:
     std::string GetName() const override;
 
 private:
-    NodeEditor&              m_editor;
+    NodeEditor&             m_editor;
     NodeUniqueId            m_deletedNodeUid;
     Node                    m_nodeSnapshot;              // Store snapshot for undo
+    ImVec2                  m_nodePos;
     std::vector<Edge>       m_deletedEdgeSnapshots;      // Store snapshots of deleted edges
+    bool                    m_isActuallyDeleted;
 };
 
 }
