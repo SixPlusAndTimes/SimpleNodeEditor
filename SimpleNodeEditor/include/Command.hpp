@@ -16,7 +16,7 @@ class ICommand
     virtual void Execute() = 0;
     virtual void Undo() = 0;
     virtual void Redo() = 0;
-    virtual std::string GetName() const = 0;
+    virtual std::string ToString() const = 0;
 };
 
 class AddNodeCommand : public ICommand
@@ -29,7 +29,7 @@ public:
     void Undo() override;
     void Redo() override;
 
-    std::string GetName() const override { return "AddNodeCommand"; }
+    std::string ToString() const override;
 
 private:
     NodeEditor&          m_editor;
@@ -46,7 +46,7 @@ public:
     void Execute() override;
     void Undo() override;
     void Redo() override;
-    std::string GetName() const override;
+    std::string ToString() const override;
 
 private:
     NodeEditor&  m_editor;
@@ -69,7 +69,7 @@ public:
     void Execute() override;
     void Undo() override;
     void Redo() override;
-    std::string GetName() const override;
+    std::string ToString() const override;
 
 private:
     NodeEditor&  m_editor;
@@ -91,7 +91,7 @@ public:
     void Execute() override;
     void Undo() override;
     void Redo() override;
-    std::string GetName() const override;
+    std::string ToString() const override;
 
 private:
     NodeEditor&             m_editor;

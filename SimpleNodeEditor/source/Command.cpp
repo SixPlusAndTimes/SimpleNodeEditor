@@ -34,6 +34,10 @@ void AddNodeCommand::Redo()
     SNELOG_INFO("AddNode Redo Done, nodeUid {}, m_nodes.size() = {}", nodeUid, m_editor.m_nodes.size());
 }
 
+std::string AddNodeCommand::ToString() const 
+{
+     return "AddNodeCommand, NodeUid is " + std::to_string(m_nodeSnapShot.GetNodeUniqueId()); 
+}
 
 AddEdgeCommand::AddEdgeCommand(NodeEditor& editor, PortUniqueId startPortId, PortUniqueId endPortId)
     : m_editor(editor), m_startPortUId(startPortId), m_endPortUId(endPortId), m_createdEdgeUid(-1)
@@ -68,9 +72,11 @@ void AddEdgeCommand::Redo()
     m_editor.RestoreEdge(m_edgeSnapshot);
 }
 
-std::string AddEdgeCommand::GetName() const
+std::string AddEdgeCommand::ToString() const 
 {
-    return "AddEdgeCommand";
+    return std::format("AddEdgeCommand, EdgeUid is {} sourceNodeUid is {}, sourcePortUid is {} dstNodeUid is {}, dstPortUid is {}",
+                                        m_createdEdgeUid, m_edgeSnapshot.GetSourceNodeUid(), m_edgeSnapshot.GetSourcePortUid(), 
+                                        m_edgeSnapshot.GetDestinationNodeUid(), m_edgeSnapshot.GetDestinationPortUid());
 }
 
 DeleteEdgeCommand::DeleteEdgeCommand(NodeEditor& editor, EdgeUniqueId edgeUid)
@@ -110,9 +116,11 @@ void DeleteEdgeCommand::Redo()
     Execute();
 }
 
-std::string DeleteEdgeCommand::GetName() const
+std::string DeleteEdgeCommand::ToString() const 
 {
-    return "DeleteEdgeCommand";
+    return std::format("DeleteEdgeCommand, EdgeUid is{} sourceNodeUid is {}, sourcePortUid is {} dstNodeUid is {}, dstPortUid is {}",
+                                        m_deletedEdgeUid, m_edgeSnapshot.GetSourceNodeUid(), m_edgeSnapshot.GetSourcePortUid(), 
+                                        m_edgeSnapshot.GetDestinationNodeUid(), m_edgeSnapshot.GetDestinationPortUid());
 }
 
 DeleteNodeCommand::DeleteNodeCommand(NodeEditor& editor, NodeUniqueId nodeUid)
@@ -196,9 +204,9 @@ void DeleteNodeCommand::Redo()
     Execute();
 }
 
-std::string DeleteNodeCommand::GetName() const
+std::string DeleteNodeCommand::ToString() const
 {
-    return "DeleteNodeCommand";
+    return std::format("DeleteNodeCommand, NodeUid is {}", m_deletedNodeUid);
 }
 
 } // namespace SimpleNodeEditor

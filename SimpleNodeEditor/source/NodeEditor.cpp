@@ -54,7 +54,9 @@ NodeEditor::NodeEditor()
       m_currentPipeLineName(),
       m_nodeStyle(&ImNodes::GetStyle()),
       m_pipeLineParser(),
-      m_fileDialog()
+      m_fileDialog(),
+      m_commandStack(),
+      m_currentCommandIndex(0)
 {
     // TODO: file path may be a constant value or configed in Config.yaml?
     NodeDescriptionParser        nodeTemplateParser("./resource/NodeDescriptions.yaml");
@@ -928,7 +930,7 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid, bool shouldUnr
     // check that we have already deleted all edges from Node
     for (InputPort& inPort : node.GetInputPorts())
     {
-        SNE_ASSERT(inPort.GetEdgeUid() == -1, "inport's edge is did not deleted");
+        SNE_ASSERT(inPort.GetEdgeUid() == -1, "inport's edge still did not deleted");
     }
 
     for (OutputPort& outPort : node.GetOutputPorts())
@@ -2187,7 +2189,7 @@ void NodeEditor::Undo()
     m_commandStack[m_currentCommandIndex]->Undo();
 
     // m_needTopoSort = true;
-    SNELOG_INFO("Undo command: {}", m_commandStack[m_currentCommandIndex]->GetName());
+    SNELOG_INFO("Undo commandInfo: {}", m_commandStack[m_currentCommandIndex]->ToString());
 }
 
 void NodeEditor::Redo()
@@ -2198,7 +2200,7 @@ void NodeEditor::Redo()
     m_currentCommandIndex++;
 
     // m_needTopoSort = true;
-    SNELOG_INFO("Redo command: {}", m_commandStack[m_currentCommandIndex-1]->GetName());
+    SNELOG_INFO("Redo command: {}", m_commandStack[m_currentCommandIndex-1]->ToString());
 }
 
 
