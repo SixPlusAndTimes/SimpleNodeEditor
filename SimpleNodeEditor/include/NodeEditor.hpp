@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include "imnodes.h"
 #include <set>
-#include "Command.hpp"
+#include "CommandQueue.hpp"
 
 
 struct ImNodesStyle;
@@ -94,10 +94,8 @@ public: // TODO: private
     void               ClearCurrentPipeLine();
 
     void               ExecuteCommand(std::unique_ptr<ICommand> cmd);
-    bool               CanUndo() const;
-    bool               CanRedo() const;
-    void               Undo();
-    void               Redo();
+    bool               Undo();
+    bool               Redo();
 
     // Snapshot and restore methods for undo/redo
     void               RestoreEdge(const Edge& edgeSnapshot);
@@ -147,8 +145,7 @@ private:
 
     FileDialog      m_fileDialog;
 
-    std::vector<std::unique_ptr<ICommand>> m_commandStack;
-    size_t m_currentCommandIndex = 0; // point to the next command that will be executed
+    CommandQueue m_commandQueue;
 
 };
 } // namespace SimpleNodeEditor

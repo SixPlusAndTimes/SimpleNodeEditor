@@ -55,8 +55,7 @@ NodeEditor::NodeEditor()
       m_nodeStyle(&ImNodes::GetStyle()),
       m_pipeLineParser(),
       m_fileDialog(),
-      m_commandStack(),
-      m_currentCommandIndex(0)
+      m_commandQueue()
 {
     // TODO: file path may be a constant value or configed in Config.yaml?
     NodeDescriptionParser        nodeTemplateParser("./resource/NodeDescriptions.yaml");
@@ -1867,9 +1866,8 @@ void NodeEditor::HandleOtherUserInputs()
 
         if (ImGui::IsKeyPressed(ImGuiKey_Z) && io.KeyCtrl)
         {
-            if (CanUndo())
+            if (Undo())
             {
-                Undo();
                 SNELOG_INFO("User triggered Undo via Ctrl+Z");
             }
             else
@@ -1880,9 +1878,8 @@ void NodeEditor::HandleOtherUserInputs()
 
         if (ImGui::IsKeyPressed(ImGuiKey_R) && io.KeyCtrl)
         {
-            if (CanRedo())
+            if (Redo())
             {
-                Redo();
                 SNELOG_INFO("User triggered Redo via Ctrl+R");
             }
             else
@@ -2149,9 +2146,7 @@ void NodeEditor::ClearCurrentPipeLine()
     m_currentPruninngRule.clear();
     m_nodesPruned.clear();
     m_edgesPruned.clear();
-    m_commandStack.clear();
-    m_currentCommandIndex = 0;
-
+    m_commandQueue.Clear();
     m_portUidGenerator.Clear();
     m_nodeUidGenerator.Clear();
     m_edgeUidGenerator.Clear();
@@ -2161,46 +2156,18 @@ void NodeEditor::ClearCurrentPipeLine()
 
 void NodeEditor::ExecuteCommand(std::unique_ptr<ICommand> cmd)
 {
-    // if (m_currentCommandIndex < m_commandStack.size())
-    // {
-    //     m_commandStack.erase(m_commandStack.begin() + m_currentCommandIndex, m_commandStack.end());
-    // }
-
-    cmd->Execute();
-    m_commandStack.push_back(std::move(cmd));
-    m_currentCommandIndex = m_commandStack.size();
+    m_commandQueue.AddAndExecuteCommad(std::move(cmd));
 }
 
-bool NodeEditor::CanUndo() const
+
+bool NodeEditor::Undo()
 {
-    return m_currentCommandIndex > 0;
+    return m_commandQueue.Undo();
 }
 
-bool NodeEditor::CanRedo() const
+bool NodeEditor::Redo()
 {
-    return m_currentCommandIndex < m_commandStack.size();
-}
-
-void NodeEditor::Undo()
-{
-    if (!CanUndo()) return;
-
-    m_currentCommandIndex--;
-    m_commandStack[m_currentCommandIndex]->Undo();
-
-    // m_needTopoSort = true;
-    SNELOG_INFO("Undo commandInfo: {}", m_commandStack[m_currentCommandIndex]->ToString());
-}
-
-void NodeEditor::Redo()
-{
-    if (!CanRedo()) return;
-
-    m_commandStack[m_currentCommandIndex]->Redo();
-    m_currentCommandIndex++;
-
-    // m_needTopoSort = true;
-    SNELOG_INFO("Redo command: {}", m_commandStack[m_currentCommandIndex-1]->ToString());
+    return m_commandQueue.Redo();
 }
 
 
