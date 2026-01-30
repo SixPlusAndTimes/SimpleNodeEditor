@@ -159,6 +159,7 @@ public:
     YamlNode&       GetYamlNode();
     const YamlNode& GetYamlNode() const;
 
+    std::string     ToString() const;
 private:
     // imnode lib need nodeuid to differentiate between nodes
     NodeUniqueId            m_nodeUid; // used for imnode to draw UI

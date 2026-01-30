@@ -24,6 +24,12 @@ class AddNodeCommand : public ICommand
 public:
     AddNodeCommand(NodeEditor& editor, const NodeDescription& nodeDesc, const ImVec2& nodePos);
 
+    virtual ~AddNodeCommand();
+    AddNodeCommand(const AddNodeCommand&) = default;
+    AddNodeCommand(AddNodeCommand&&) = default;
+    AddNodeCommand& operator=(const AddNodeCommand&) = default;
+    AddNodeCommand& operator=(AddNodeCommand&&) = default;
+
     void Execute() override;
 
     void Undo() override;
@@ -36,6 +42,7 @@ private:
     ImVec2               m_nodePos;
     NodeDescription      m_nodeDesc;
     Node                 m_nodeSnapShot;
+    // std::vector<Edge>    m_deletedEdgeSnapshots; // Store snapshots of edges when undo
 };
 
 class AddEdgeCommand : public ICommand
@@ -66,6 +73,7 @@ public:
     DeleteEdgeCommand(DeleteEdgeCommand&&) = default;
     DeleteEdgeCommand& operator=(const DeleteEdgeCommand&) = default;
     DeleteEdgeCommand& operator=(DeleteEdgeCommand&&) = default;
+
     void Execute() override;
     void Undo() override;
     void Redo() override;
@@ -82,6 +90,7 @@ class DeleteNodeCommand : public ICommand
 {
 public:
     DeleteNodeCommand(NodeEditor& editor, NodeUniqueId nodeUid);
+
     virtual ~DeleteNodeCommand();
     DeleteNodeCommand(const DeleteNodeCommand&) = default;
     DeleteNodeCommand(DeleteNodeCommand&&) = default;

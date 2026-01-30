@@ -541,58 +541,6 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc)
     return AddNewNodes(nodeDesc, newYamlNode);
 }
 
-NodeUniqueId NodeEditor::RestoreNode(const Node& nodeSnapShot)
-{
-    SNE_ASSERT(nodeSnapShot.GetNodeUniqueId() != -1, "nodeUid and yamlNodeUid should not be -1");
-
-    SNELOG_INFO("Restore Node E");
-    NodeUniqueId nodeUid = nodeSnapShot.GetNodeUniqueId();
-
-    // Insert the node back into the map with its original UID
-    if (!m_nodes.emplace(nodeUid, nodeSnapShot).second)
-    {
-        SNELOG_ERROR("RestoreNode: Failed to insert node with uid {}", nodeUid);
-        return -1;
-    }
-
-    // Repopulate port lookups from the restored node and clear stale edge references
-    Node& restoredNode = m_nodes.at(nodeUid);
-    
-    auto& inputPorts = restoredNode.GetInputPorts();
-    for (InputPort& port : inputPorts)
-    {
-        m_inportPorts.emplace(port.GetPortUniqueId(), restoredNode.GetInputPort(port.GetPortUniqueId()));
-        // Clear stale edge reference - edges will be restored separately via RestoreEdge
-        port.SetEdgeUid(-1);
-    }
-
-    auto& outputPorts = restoredNode.GetOutputPorts();
-    for (OutputPort& port : outputPorts)
-    {
-        m_outportPorts.emplace(port.GetPortUniqueId(), restoredNode.GetOutputPort(port.GetPortUniqueId()));
-        // Clear stale edge references - edges will be restored separately via RestoreEdge
-        port.ClearEdges();
-    }
-
-    // Register the node UID and all port UIDs with their allocators
-    m_nodeUidGenerator.RegisterUniqueID(nodeUid);
-
-    for (const InputPort& port : inputPorts)
-    {
-        m_portUidGenerator.RegisterUniqueID(port.GetPortUniqueId());
-    }
-
-    for (const OutputPort& port : outputPorts)
-    {
-        m_portUidGenerator.RegisterUniqueID(port.GetPortUniqueId());
-    }
-
-    // Register yaml node ID
-    m_yamlNodeUidGenerator.RegisterUniqueID(nodeSnapShot.GetYamlNode().m_nodeYamlId);
-
-    SNELOG_INFO("Restore Node X");
-    return nodeUid;
-}
 
 
 NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const YamlNode& yamlNode, const NodeUniqueId nodeUid)
@@ -2157,22 +2105,28 @@ void NodeEditor::ClearCurrentPipeLine()
 void NodeEditor::ExecuteCommand(std::unique_ptr<ICommand> cmd)
 {
     m_commandQueue.AddAndExecuteCommad(std::move(cmd));
+    SPDLOG_INFO("ExecuteCommand done, commandqueue info: \n {}", m_commandQueue.ToString());
 }
 
 
 bool NodeEditor::Undo()
 {
-    return m_commandQueue.Undo();
+    bool ret = m_commandQueue.Undo();
+    SPDLOG_INFO("UndoCommand done, commandqueue info: \n {}", m_commandQueue.ToString());
+    return ret; 
 }
 
 bool NodeEditor::Redo()
 {
-    return m_commandQueue.Redo();
+    bool ret = m_commandQueue.Redo();
+    SPDLOG_INFO("ReodCommand done, commandqueue info: \n {}", m_commandQueue.ToString());
+    return ret;
 }
 
 
 void NodeEditor::RestoreEdge(const Edge& edgeSnapshot)
 {
+    SNE_ASSERT(edgeSnapshot.GetEdgeUniqueId() != -1, "edgeuid should not be -1");
     EdgeUniqueId edgeUid = edgeSnapshot.GetEdgeUniqueId();
     PortUniqueId startPortUid = edgeSnapshot.GetSourcePortUid();
     PortUniqueId endPortUid = edgeSnapshot.GetDestinationPortUid();
@@ -2188,16 +2142,58 @@ void NodeEditor::RestoreEdge(const Edge& edgeSnapshot)
     
     OutputPort* startPort = startPortIt->second;
     InputPort* endPort = endPortIt->second;
-    
-    // Reattach the edge
     startPort->PushEdge(edgeUid);
     endPort->SetEdgeUid(edgeUid);
     
-    // Add edge back to map
     m_edges.emplace(edgeUid, edgeSnapshot);
     
-    // Register the edge UID
     m_edgeUidGenerator.RegisterUniqueID(edgeUid);
+}
+
+NodeUniqueId NodeEditor::RestoreNode(const Node& nodeSnapShot)
+{
+
+    SNE_ASSERT(nodeSnapShot.GetNodeUniqueId() != -1, "nodeUid and yamlNodeUid should not be -1");
+    SNELOG_INFO("Restore Node E");
+    NodeUniqueId nodeUid = nodeSnapShot.GetNodeUniqueId();
+
+    // Insert the node back into the map with its original UID
+    if (!m_nodes.emplace(nodeUid, nodeSnapShot).second)
+    {
+        SNELOG_ERROR("RestoreNode: Failed to insert node with uid {}", nodeUid);
+        return -1;
+    }
+
+    Node& restoredNode = m_nodes.at(nodeUid);
+    auto& inputPorts = restoredNode.GetInputPorts();
+    for (InputPort& port : inputPorts)
+    {
+        m_inportPorts.emplace(port.GetPortUniqueId(), restoredNode.GetInputPort(port.GetPortUniqueId()));
+    }
+
+    auto& outputPorts = restoredNode.GetOutputPorts();
+    for (OutputPort& port : outputPorts)
+    {
+        m_outportPorts.emplace(port.GetPortUniqueId(), restoredNode.GetOutputPort(port.GetPortUniqueId()));
+    }
+
+    // Register the node UID and all port UIDs with their allocators
+    m_nodeUidGenerator.RegisterUniqueID(nodeUid);
+    m_yamlNodeUidGenerator.RegisterUniqueID(nodeSnapShot.GetYamlNode().m_nodeYamlId);
+
+    for (const InputPort& port : inputPorts)
+    {
+        m_portUidGenerator.RegisterUniqueID(port.GetPortUniqueId());
+    }
+
+    for (const OutputPort& port : outputPorts)
+    {
+        m_portUidGenerator.RegisterUniqueID(port.GetPortUniqueId());
+    }
+
+    SNELOG_INFO("Restore Node X");
+    SNELOG_INFO("Restore Node Info : {}", nodeSnapShot.ToString());
+    return nodeUid;
 }
 
 } // namespace SimpleNodeEditor

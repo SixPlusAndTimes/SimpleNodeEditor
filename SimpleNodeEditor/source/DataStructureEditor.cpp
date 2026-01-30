@@ -1,9 +1,10 @@
 #include "DataStructureEditor.hpp"
-#include <algorithm>
 #include "Log.hpp"
-#include <cmath>
 #include "imnodes.h"
 
+#include <algorithm>
+#include <cmath>
+#include <sstream>
 namespace SimpleNodeEditor
 {
 
@@ -301,6 +302,26 @@ const std::vector<OutputPort>& Node::GetOutputPorts() const
 std::vector<OutputPort>& Node::GetOutputPorts()
 {
     return m_outputPorts;
+}
+
+std::string Node::ToString() const
+{
+    std::stringstream strstream;
+    strstream << "NodeInfo start :  NdoeUid " << m_nodeUid << " NodeTitle " << m_nodeTitle << std::endl;
+
+
+    strstream << "\t inputPorts[{PortUid}{EdgeUid}]: ";
+    for (const auto& inport : m_inputPorts)
+    {
+        strstream << std::format("[{}{}]", inport.GetPortUniqueId(), inport.GetEdgeUid()) << " ";
+    }
+
+    strstream << "\t outPorts[{PortUid}]: ";
+    for (const auto& outport : m_outputPorts)
+    {
+        strstream << std::format("[{}]", outport.GetPortUniqueId()) << " ";
+    }
+    return strstream.str();
 }
 
 void OutputPort::PushEdge(EdgeUniqueId edgeUid)

@@ -9,6 +9,11 @@ namespace SimpleNodeEditor
 AddNodeCommand::AddNodeCommand(NodeEditor& editor, const NodeDescription& nodeDesc, const ImVec2& nodePos)
 : m_editor(editor), m_nodePos(nodePos), m_nodeDesc(nodeDesc) {}
 
+AddNodeCommand::~AddNodeCommand()
+{
+    // TODO: see if nodeeditor actually added the node, if not we unregister the nodeuid and the related edgeuid
+}
+
 void AddNodeCommand::Execute() 
 {
     NodeUniqueId nodeUid = m_editor.AddNewNodes(m_nodeDesc);
@@ -24,7 +29,7 @@ void AddNodeCommand::Undo()
 
     // should not unregister nodeuid here, otherwise we may lose all information to rebuild some edges
     m_editor.DeleteNode(m_nodeSnapShot.GetNodeUniqueId(), false); 
-    SNELOG_INFO("AddNode Redo Done, nodeUid = {}, m_nodes.size() = {}", m_nodeSnapShot.GetNodeUniqueId(), m_editor.m_nodes.size());
+    SNELOG_INFO("AddNode Undo Done, nodeUid = {}, m_nodes.size() = {}", m_nodeSnapShot.GetNodeUniqueId(), m_editor.m_nodes.size());
 }
 
 void AddNodeCommand::Redo()
@@ -149,7 +154,7 @@ void DeleteNodeCommand::Execute()
         m_nodeSnapshot = it->second;
         
         // Also capture all edges connected to this node before deletion
-        for (const InputPort& inPort : m_nodeSnapshot.GetInputPorts())
+        for (InputPort& inPort : m_nodeSnapshot.GetInputPorts())
         {
             EdgeUniqueId edgeUid = inPort.GetEdgeUid();
             if (edgeUid != -1)
@@ -160,9 +165,10 @@ void DeleteNodeCommand::Execute()
                     m_deletedEdgeSnapshots.push_back(edgeIt->second);
                 }
             }
+            inPort.SetEdgeUid(-1);
         }
         
-        for (const OutputPort& outPort : m_nodeSnapshot.GetOutputPorts())
+        for (OutputPort& outPort : m_nodeSnapshot.GetOutputPorts())
         {
             const auto& edgeUids = outPort.GetEdgeUids();
             for (EdgeUniqueId edgeUid : edgeUids)
@@ -176,6 +182,7 @@ void DeleteNodeCommand::Execute()
                     }
                 }
             }
+            outPort.ClearEdges();
         }
         
         m_nodePos = m_editor.GetNodePos(m_deletedNodeUid);
@@ -195,6 +202,7 @@ void DeleteNodeCommand::Undo()
     {
         m_editor.RestoreEdge(edgeSnapshot);
     }
+    m_deletedEdgeSnapshots.clear();
     m_isActuallyDeleted = false;
 }
 

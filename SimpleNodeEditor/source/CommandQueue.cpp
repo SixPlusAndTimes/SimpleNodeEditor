@@ -58,13 +58,20 @@ std::string CommandQueue::ToString()
     strstream << "CommandQueueInfo : total elem size : " << COMMANDQUEUE_SIZE << " m_current is " << m_current << std::endl;
     for (size_t i = 0; i < m_queue.size(); ++i)
     {
-        if (m_queue[m_current])
+        if (m_current == i)
         {
-            strstream << "\t" << i << "th elm info : " << m_queue[m_current]->ToString();
+            strstream << "m_current =>\t";
+        } else 
+        {
+            strstream << "\t\t";
+        }
+        if (m_queue[i] != nullptr)
+        {
+            strstream << i << "th elm info : " << m_queue[i]->ToString() << std::endl;
         }
         else
         {
-            strstream << "\t" << i << "th elm is nullptr ";
+            strstream << i << "th elm is nullptr " << std::endl;
         }
     }
     return strstream.str();
