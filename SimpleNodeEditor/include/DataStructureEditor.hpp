@@ -160,6 +160,9 @@ public:
     const YamlNode& GetYamlNode() const;
 
     std::string     ToString() const;
+    float           GetOpacity() const {return m_opacity;};
+    ImNodesStyle*   GetStlye() {return m_nodeStyle;};
+public:
 private:
     // imnode lib need nodeuid to differentiate between nodes
     NodeUniqueId            m_nodeUid; // used for imnode to draw UI
@@ -172,7 +175,8 @@ private:
     YamlNode      m_yamlNode;
     ImNodesStyle* m_nodeStyle;
 
-    std::string m_nodeTitle; // nodetitle = nodename_in_nodedescription +  "_" + nodeid_in_yaml
+    std::string   m_nodeTitle; // nodetitle = nodename_in_nodedescription +  "_" + nodeid_in_yaml
+    float         m_opacity = 0.0f;
 };
 } // namespace SimpleNodeEditor
 
