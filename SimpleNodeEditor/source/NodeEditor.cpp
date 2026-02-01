@@ -177,6 +177,7 @@ void NodeEditor::ShowNodes()
                                     ImNodesCol_BoxSelectorOutline,
                                     ImGuiCol_Text
                                 );
+
         ImNodes::BeginNode(nodeUid);
         ImNodes::BeginNodeTitleBar();
         ImGui::TextUnformatted(node.GetNodeTitle().data());

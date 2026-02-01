@@ -7,11 +7,15 @@ namespace SimpleNodeEditor
 {
 
 AddNodeCommand::AddNodeCommand(NodeEditor& editor, const NodeDescription& nodeDesc, const ImVec2& nodePos)
-: m_editor(editor), m_nodePos(nodePos), m_nodeDesc(nodeDesc) {}
+: m_editor(editor), m_nodePos(nodePos), m_nodeDesc(nodeDesc), m_isActuallyAdded(false) {}
 
 AddNodeCommand::~AddNodeCommand()
 {
     // TODO: see if nodeeditor actually added the node, if not we unregister the nodeuid and the related edgeuid
+    if (!m_isActuallyAdded)
+    {
+        m_editor.m_nodeUidGenerator.UnregisterUniqueID(m_nodeSnapShot.GetNodeUniqueId());
+    }
 }
 
 void AddNodeCommand::Execute() 
@@ -19,6 +23,7 @@ void AddNodeCommand::Execute()
     NodeUniqueId nodeUid = m_editor.AddNewNodes(m_nodeDesc);
     m_editor.SetNodePos(nodeUid, m_nodePos);
     m_nodeSnapShot = m_editor.m_nodes.find(nodeUid)->second;
+    m_isActuallyAdded = true;
     SNELOG_INFO("AddNode Execute Done, nodeUid = {}, m_nodes.size() = {}", m_nodeSnapShot.GetNodeUniqueId(), m_editor.m_nodes.size());
 }
 
@@ -29,6 +34,7 @@ void AddNodeCommand::Undo()
 
     // should not unregister nodeuid here, otherwise we may lose all information to rebuild some edges
     m_editor.DeleteNode(m_nodeSnapShot.GetNodeUniqueId(), false); 
+    m_isActuallyAdded = false;
     SNELOG_INFO("AddNode Undo Done, nodeUid = {}, m_nodes.size() = {}", m_nodeSnapShot.GetNodeUniqueId(), m_editor.m_nodes.size());
 }
 
@@ -36,6 +42,7 @@ void AddNodeCommand::Redo()
 {
     NodeUniqueId nodeUid = m_editor.RestoreNode(m_nodeSnapShot);
     m_editor.SetNodePos(nodeUid, m_nodePos);
+    m_isActuallyAdded = true;
     SNELOG_INFO("AddNode Redo Done, nodeUid {}, m_nodes.size() = {}", nodeUid, m_editor.m_nodes.size());
 }
 
@@ -44,9 +51,17 @@ std::string AddNodeCommand::ToString() const
      return "AddNodeCommand, NodeUid is " + std::to_string(m_nodeSnapShot.GetNodeUniqueId()); 
 }
 
+AddEdgeCommand::~AddEdgeCommand()
+{
+    if (!m_isAcltuallyAdded)
+    {
+        m_editor.m_edgeUidGenerator.UnregisterUniqueID(m_createdEdgeUid);
+    }
+}
+
 AddEdgeCommand::AddEdgeCommand(NodeEditor& editor, PortUniqueId startPortId, PortUniqueId endPortId)
-    : m_editor(editor), m_startPortUId(startPortId), m_endPortUId(endPortId), m_createdEdgeUid(-1)
-{}
+    : m_editor(editor), m_startPortUId(startPortId), m_endPortUId(endPortId), m_createdEdgeUid(-1), m_isAcltuallyAdded(false)
+{ }
 
 void AddEdgeCommand::Execute()
 {
@@ -56,9 +71,11 @@ void AddEdgeCommand::Execute()
         // Capture snapshot copy after edge creation for redo
         m_edgeSnapshot = m_editor.m_edges.find(m_createdEdgeUid)->second;
         SNELOG_INFO("AddEdgeCommand Execute Success: startPortUid {} endPortUid {} edgeUid {}", m_startPortUId, m_endPortUId, m_createdEdgeUid);
+        m_isAcltuallyAdded = true;
     }
     else 
     {
+        m_isAcltuallyAdded = false;
         SNELOG_ERROR("AddEdgeCommand Execute failed: startPortUid {} endPortUid {}", m_startPortUId, m_endPortUId);
     }
 }
@@ -68,6 +85,7 @@ void AddEdgeCommand::Undo()
     if (m_createdEdgeUid == -1) return;
     m_edgeSnapshot = m_editor.m_edges.find(m_createdEdgeUid)->second;
     m_editor.DeleteEdge(m_createdEdgeUid, false);
+    m_isAcltuallyAdded = false;
 }
 
 void AddEdgeCommand::Redo()
@@ -75,6 +93,7 @@ void AddEdgeCommand::Redo()
     if (m_createdEdgeUid == -1) return;
     // Restore edge with original UID using the snapshot copy
     m_editor.RestoreEdge(m_edgeSnapshot);
+    m_isAcltuallyAdded = true;
 }
 
 std::string AddEdgeCommand::ToString() const 

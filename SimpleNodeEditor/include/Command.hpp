@@ -13,6 +13,12 @@ class ICommand
     public:
     ICommand() = default;
     virtual ~ICommand() = default;
+
+    ICommand(const ICommand&) = default;
+    ICommand(ICommand&&) = default;
+    ICommand& operator=(const ICommand&) = default;
+    ICommand& operator=(ICommand&&) = default;
+
     virtual void Execute() = 0;
     virtual void Undo() = 0;
     virtual void Redo() = 0;
@@ -42,13 +48,19 @@ private:
     ImVec2               m_nodePos;
     NodeDescription      m_nodeDesc;
     Node                 m_nodeSnapShot;
-    // std::vector<Edge>    m_deletedEdgeSnapshots; // Store snapshots of edges when undo
+    bool                 m_isActuallyAdded;
 };
 
 class AddEdgeCommand : public ICommand
 {
 public:
     AddEdgeCommand(NodeEditor& editor, PortUniqueId startPortId, PortUniqueId endPortId);
+
+    virtual ~AddEdgeCommand();
+    AddEdgeCommand(const AddEdgeCommand&) = default;
+    AddEdgeCommand(AddEdgeCommand&&) = default;
+    AddEdgeCommand& operator=(const AddEdgeCommand&) = default;
+    AddEdgeCommand& operator=(AddEdgeCommand&&) = default;
 
     void Execute() override;
     void Undo() override;
@@ -61,6 +73,7 @@ private:
     PortUniqueId m_endPortUId;
     EdgeUniqueId m_createdEdgeUid;
     Edge         m_edgeSnapshot;  // Store actual snapshot copy, not pointer
+    bool         m_isAcltuallyAdded;
 };
 
 class DeleteEdgeCommand : public ICommand
