@@ -8,6 +8,8 @@
 #include "Log.hpp"
 #include "DataStructureEditor.hpp"
 #include "Common.hpp"
+#include <imgui.h>
+#include <imnodes.h>
 
 namespace SimpleNodeEditor
 {
@@ -165,6 +167,7 @@ inline std::vector<std::vector<NodeUniqueId>> TopologicalSort(
         }
     }
 
+    // do the sorting 
     while (zeroDegreeNodes.size() != 0)
     {
         result.push_back(zeroDegreeNodes);
@@ -187,7 +190,7 @@ inline std::vector<std::vector<NodeUniqueId>> TopologicalSort(
         zeroDegreeNodes.swap(newZeroDegreeNodes);
     }
 
-    // all nodes' dgree must be zero
+    // finally, all nodes' degree must be zero
     bool allNodeDegreeZero = true;
     for (const auto& [nodeUid, degree] : degrees)
     {
@@ -201,6 +204,61 @@ inline std::vector<std::vector<NodeUniqueId>> TopologicalSort(
 
     return result;
 }
+
+inline void IMNODES_POP_STYLE_COL(uint32_t number) {
+    for (uint32_t i = 0; i < number; ++i)
+        ImNodes::PopColorStyle();
+}
+
+inline void IMGUI_POP_STYLE_COL(uint32_t number) {
+    for (uint32_t i = 0; i < number; ++i)
+        ImGui::PopStyleColor();
+}
+
+class OpacitySetter
+{
+public:
+    void SetOpacity(ImGuiCol_  type)
+    {
+        const ImVec4 originalColor = ImGui::GetStyle().Colors[type];
+        ImVec4 destColor = originalColor;
+        destColor.w = m_destOpacity;
+        ImGui::PushStyleColor(type, destColor);
+        m_imguiCount++;
+    }
+
+    void SetOpacity(ImNodesCol_ type)
+    {
+        const ImVec4 originalColor = ImGui::ColorConvertU32ToFloat4(ImNodes::GetStyle().Colors[type]);
+        ImVec4 destColor = originalColor; destColor.w = m_destOpacity;
+        ImNodes::PushColorStyle(type, ImGui::ColorConvertFloat4ToU32(destColor));
+        m_imnodesCount++;
+    }
+
+    template <typename... Args>
+    OpacitySetter(float destOpacity, Args... cols)
+        : m_destOpacity(destOpacity),
+          m_imnodesCount(0), m_imguiCount(0)
+    {
+        static_assert((std::disjunction_v<std::is_same<Args, ImNodesCol_>, 
+                                          std::is_same<Args, ImGuiCol_>> && ...), 
+                      "only support type ImNodesCol_ or type ImGuiCol_");
+
+        (SetOpacity(cols), ...);
+    }
+
+    ~OpacitySetter()
+    {
+        IMNODES_POP_STYLE_COL(m_imnodesCount);
+        IMGUI_POP_STYLE_COL(m_imguiCount);
+    }
+private:
+    float           m_destOpacity;
+    uint32_t        m_imguiCount;
+    uint32_t        m_imnodesCount;
+
+};
+
 
 } // end namespace SimpleNodeEditor
 

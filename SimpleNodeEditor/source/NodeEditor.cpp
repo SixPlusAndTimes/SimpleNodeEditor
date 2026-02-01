@@ -159,48 +159,24 @@ void NodeEditor::DrawMenu()
     }
 }
 
-inline void IMNODES_POP_STYLE_COL(uint32_t number) {
-	for (uint32_t i = 0; i < number; ++i)
-		ImNodes::PopColorStyle();
-}
-
-class OpacitySetter
-{
-public:
-    void SetOpacity(ImNodesCol_ type)
-    {
-        const ImVec4 originalColor = ImGui::ColorConvertU32ToFloat4(m_originalStyle->Colors[type]);
-        // ImVec4 destColor = originalColor; destColor.z = m_destOpacity;
-        ImVec4 destColor = {0.0f, 0.0f, 0.0f, 0.0f};
-        ImNodes::PushColorStyle(type, ImGui::ColorConvertFloat4ToU32(destColor));
-        m_count++;
-    }
-    OpacitySetter(float destOpacity, ImNodesStyle* originalStyle)
-    : m_count(0), m_destOpacity(destOpacity), m_originalStyle(originalStyle)
-    {
-        SetOpacity(ImNodesCol_NodeBackground);
-        SetOpacity(ImNodesCol_NodeBackgroundHovered);
-        SetOpacity(ImNodesCol_NodeBackgroundSelected);
-        SetOpacity(ImNodesCol_NodeOutline);
-        SetOpacity(ImNodesCol_TitleBar);
-        SetOpacity(ImNodesCol_TitleBarHovered);
-        SetOpacity(ImNodesCol_TitleBarSelected);
-    }
-    ~OpacitySetter()
-    {
-        IMNODES_POP_STYLE_COL(m_count);
-    }
-private:
-    uint32_t        m_count;
-    float           m_destOpacity;
-    ImNodesStyle*   m_originalStyle;
-
-};
 void NodeEditor::ShowNodes()
 {
     for (auto& [nodeUid, node] : m_nodes)
     {
-        OpacitySetter(node.GetOpacity(), node.GetStlye());
+        OpacitySetter opacitySetter(node.GetOpacity(),
+                                    ImNodesCol_NodeBackground,
+                                    ImNodesCol_NodeBackgroundHovered,
+                                    ImNodesCol_NodeBackgroundSelected,
+                                    ImNodesCol_NodeOutline,
+                                    ImNodesCol_TitleBar,
+                                    ImNodesCol_TitleBarHovered,
+                                    ImNodesCol_TitleBarSelected,
+                                    ImNodesCol_Pin,
+                                    ImNodesCol_PinHovered,
+                                    ImNodesCol_BoxSelector,
+                                    ImNodesCol_BoxSelectorOutline,
+                                    ImGuiCol_Text
+                                );
         ImNodes::BeginNode(nodeUid);
         ImNodes::BeginNodeTitleBar();
         ImGui::TextUnformatted(node.GetNodeTitle().data());
@@ -556,12 +532,7 @@ void NodeEditor::HandleAddNodes()
     {
         NodeDescription selectedNodeDescription =
             s_nodeDescriptionsNameDesMap.at(ret.value().first.data());
-
-        // NodeUniqueId newNodeUId = AddNewNodes(selectedNodeDescription);
-
-        // ImNodes::SetNodeScreenSpacePos(newNodeUId, ret.value().second);
         auto addNodeCmd = std::make_unique<AddNodeCommand>(*this, selectedNodeDescription, ret.value().second);
-
         ExecuteCommand(std::move(addNodeCmd));
     }
 }
@@ -583,7 +554,6 @@ NodeUniqueId NodeEditor::AddNewNodes(const NodeDescription& nodeDesc, const Yaml
 {
     SNE_ASSERT(yamlNode.m_nodeYamlId != -1);
     m_yamlNodeUidGenerator.RegisterUniqueID(yamlNode.m_nodeYamlId);
-
 
     Node newNode(nodeUid == -1 ? m_nodeUidGenerator.AllocUniqueID() : m_nodeUidGenerator.RegisterUniqueID(nodeUid),
                  Node::NodeType::NormalNode, yamlNode, *m_nodeStyle);
