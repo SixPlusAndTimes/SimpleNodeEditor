@@ -40,7 +40,7 @@ public:
     std::string_view GetPortname() const;
     PortId           GetPortId() const;
     PortUniqueId     GetPortUniqueId() const;
-    NodeUniqueId     OwnedByNodeUid() const; // return the uid of the node that this port belongs to
+    NodeUniqueId     GetOwnedNodeUid() const; // return the uid of the node that this port belongs to
     virtual bool     HasNoEdgeLinked() = 0; // may is a redundant method
 
     YamlPort::PortYamlId GetPortYamlId() const;
@@ -104,6 +104,8 @@ public:
     void            SetDestinationNodeUid(NodeUniqueId nodeUid);
     YamlEdge&       GetYamlEdge();
     const YamlEdge& GetYamlEdge() const;
+    float           GetOpacity() const {return m_opacity;}
+    void            SetOpacity(float opacity) {m_opacity = opacity;}
 
 private:
     PortUniqueId m_srcPortUid;
@@ -113,6 +115,7 @@ private:
     EdgeUniqueId m_edgeUid;
 
     YamlEdge m_yamlEdge;
+    float    m_opacity;
 };
 
 class Node
@@ -160,7 +163,8 @@ public:
     const YamlNode& GetYamlNode() const;
 
     std::string     ToString() const;
-    float           GetOpacity() const {return m_opacity;};
+    float           GetOpacity() const {return m_opacity;}
+    void            SetOpacity(float opacity) {m_opacity = opacity;}
     ImNodesStyle*   GetStlye() {return m_nodeStyle;};
 public:
 private:
@@ -176,7 +180,7 @@ private:
     ImNodesStyle* m_nodeStyle;
 
     std::string   m_nodeTitle; // nodetitle = nodename_in_nodedescription +  "_" + nodeid_in_yaml
-    float         m_opacity = 0.0f;
+    float         m_opacity;
 };
 } // namespace SimpleNodeEditor
 

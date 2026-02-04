@@ -65,7 +65,8 @@ AddEdgeCommand::AddEdgeCommand(NodeEditor& editor, PortUniqueId startPortId, Por
 
 void AddEdgeCommand::Execute()
 {
-    m_createdEdgeUid = m_editor.AddNewEdge(m_startPortUId, m_endPortUId);
+    // allow multiple inputports here
+    m_createdEdgeUid = m_editor.AddNewEdge(m_startPortUId, m_endPortUId, {}, false); 
     if (m_createdEdgeUid != -1)
     {
         // Capture snapshot copy after edge creation for redo

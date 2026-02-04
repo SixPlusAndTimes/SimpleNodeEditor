@@ -47,7 +47,7 @@ PortUniqueId Port::GetPortUniqueId() const
     return m_portUid;
 }
 
-NodeUniqueId Port::OwnedByNodeUid() const
+NodeUniqueId Port::GetOwnedNodeUid() const
 {
     return m_ownedByNodeUid;
 }
@@ -99,7 +99,8 @@ Edge::Edge(PortUniqueId sourcePortUid, PortUniqueId destinationPortUid, EdgeUniq
     : m_srcPortUid(sourcePortUid),
       m_dstPortUid(destinationPortUid),
       m_edgeUid(edgeUid),
-      m_yamlEdge(yamlEdge)
+      m_yamlEdge(yamlEdge),
+      m_opacity(1.0f)
 {
 }
 
@@ -110,7 +111,8 @@ Edge::Edge(PortUniqueId sourcePortUid, NodeUniqueId sourceNodeUid, PortUniqueId 
       m_dstPortUid(destinationPortUid),
       m_dstNodeUid(destinationNodeUid),
       m_edgeUid(edgeUid),
-      m_yamlEdge(yamlEdge)
+      m_yamlEdge(yamlEdge),
+      m_opacity(1.0f)
 {
 }
 
