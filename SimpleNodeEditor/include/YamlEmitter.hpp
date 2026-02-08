@@ -61,12 +61,20 @@ public:
                       const std::unordered_map<EdgeUniqueId, Edge>& egesMap,
                       const std::unordered_map<NodeUniqueId, Edge>& prunedEdgesMap);
 
+    std::string_view EmitPipeline(const std::string& pipelineName,
+                                   const std::unordered_map<NodeUniqueId, Node>& nodesMap,
+                                   const std::unordered_map<EdgeUniqueId, Edge>& egesMap);
+
 private:
+    void EmitNodeList(const std::unordered_map<NodeUniqueId, Node>& nodesMap);
     void EmitNodeList(const std::unordered_map<NodeUniqueId, Node>& nodesMap,
                       const std::unordered_map<NodeUniqueId, Node>& prunedNodesMap);
-    void EmitYamlNode(const YamlNode& yamlNode);
+
+    void EmitLinkList(const std::unordered_map<EdgeUniqueId, Edge>& edgesMap);
     void EmitLinkList(const std::unordered_map<EdgeUniqueId, Edge>& edgesMap,
                       const std::unordered_map<EdgeUniqueId, Edge>& prunedEdgesMap);
+
+    void EmitYamlNode(const YamlNode& yamlNode);
     void EmitYamlEdge(const YamlPort& srcPort, const std::vector<YamlPort>& dstPortVec);
 };
 

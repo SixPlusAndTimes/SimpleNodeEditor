@@ -1540,10 +1540,7 @@ void NodeEditor::SetNodePos(NodeUniqueId nodeUid, const ImVec2 pos)
 
 void NodeEditor::SaveToFile(std::unique_ptr<std::ostream> outputStream)
 {
-    *outputStream << m_pipelineEimtter.EmitPipeline(m_currentPipeLineName, m_nodes,
-                                                     m_pruningPolicy.GetPrunedNodes(),
-                                                     m_edges,
-                                                     m_pruningPolicy.GetPrunedEdges());
+    *outputStream << m_pipelineEimtter.EmitPipeline(m_currentPipeLineName, m_nodes, m_edges);
     outputStream->flush();
 }
 
@@ -1617,10 +1614,8 @@ bool NodeEditor::LoadPipelineFromStream(std::unique_ptr<std::istream> inputStrea
                         dstNode.FindPortUidAmongInports(yamlEdge.m_yamlDstPort.m_portYamlId),
                         yamlEdge,
                         false /*avoidMultipleInputLinks*/); // allow multiple edges there, multiple
-                // inportEdges will be pruned later
             }
 
-            // collect pruning rules to m_allPruningRules
             m_pruningPolicy.CollectPruningRules(yamlNodes, yamlEdges);
 
             if (m_pruningPolicy.ApplyCurrentPruningRule(m_nodes, m_edges))
@@ -1720,7 +1715,7 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
             m_needTopoSort        = true;
 
             m_currentPipeLineName = m_pipeLineParser.GetPipelineName();
-            }
+        }
     }
     else
     {

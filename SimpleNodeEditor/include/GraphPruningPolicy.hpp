@@ -37,19 +37,10 @@ public:
                                         std::unordered_map<EdgeUniqueId, Edge>& edgesMap,
                                         const std::string& changedGroup, const std::string& changeToType);
 
-    void RestorePruning(const std::string& changedGroup,
-                       const std::string& originType,
-                       const std::string& newType,
-                       std::unordered_map<NodeUniqueId, Node>& nodesMap,
-                       std::unordered_map<EdgeUniqueId, Edge>& edgesMap);
-
     void SyncPruningRules(const Node& node,
                          std::unordered_map<EdgeUniqueId, Edge>& edgesMap);
 
     void SyncPruningRuleBetweenNodeAndEdge(const Node& node, Edge& edge);
-
-    bool IsAllEdgesHasBeenPruned(NodeUniqueId nodeUid,
-                                const std::unordered_map<NodeUniqueId, Node>& nodesMap) const;
 
     const std::unordered_map<std::string, std::set<std::string>>& GetAllPruningRules() const;
     const std::unordered_map<std::string, std::string>& GetCurrentPruningRule() const;
@@ -60,6 +51,16 @@ public:
     void Clear();
 
 private:
+    bool IsAllEdgesHasBeenPruned(NodeUniqueId nodeUid,
+                                const std::unordered_map<NodeUniqueId, Node>& nodesMap) const;
+
+    void RestorePruning(const std::string& changedGroup,
+                       const std::string& originType,
+                       const std::string& newType,
+                       std::unordered_map<NodeUniqueId, Node>& nodesMap,
+                       std::unordered_map<EdgeUniqueId, Edge>& edgesMap);
+
+
     bool IsAllEdgesWillBePruned(const Node& node,
                                const std::unordered_set<EdgeUniqueId>& shouldBeDeleteEdges) const;
     std::unordered_map<std::string, std::set<std::string>> m_allPruningRules;
