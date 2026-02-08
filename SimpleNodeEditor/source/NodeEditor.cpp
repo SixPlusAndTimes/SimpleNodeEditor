@@ -13,9 +13,25 @@
 #include <algorithm>
 #include <numeric>
 #include <fstream>
+#include <optional>
 
 namespace SimpleNodeEditor
 {
+
+// Helper function for GetMatchedPruningRuleByGroup - used in HandleEdgeInfoEditing
+static std::optional<YamlPruningRule*> GetMatchedPruningRuleByGroup(
+    const YamlPruningRule& findRule, std::vector<YamlPruningRule>& ruleContainer)
+{
+    auto iter = std::find_if(ruleContainer.begin(), ruleContainer.end(),
+                             [&findRule](const YamlPruningRule& comp)
+                             { return findRule.m_Group == comp.m_Group; });
+
+    if (iter != ruleContainer.end())
+    {
+        return &*iter;
+    }
+    return std::nullopt;
+}
 void DebugDrawRect(ImRect rect)
 {
     ImDrawList* draw_list    = ImGui::GetWindowDrawList();
@@ -47,15 +63,12 @@ NodeEditor::NodeEditor()
       m_yamlNodeUidGenerator("yamlNodeUidAllocator"),
       m_minimap_location(ImNodesMiniMapLocation_TopRight),
       m_needTopoSort(false),
-      m_allPruningRules(),
-      m_currentPruninngRule(),
-      m_nodesPruned(),
-      m_edgesPruned(),
       m_currentPipeLineName(),
       m_nodeStyle(&ImNodes::GetStyle()),
       m_pipeLineParser(),
       m_fileDialog(),
-      m_commandQueue()
+      m_commandQueue(),
+      m_pruningPolicy()
 {
     // TODO: file path may be a constant value or configed in Config.yaml?
     NodeDescriptionParser        nodeTemplateParser("./resource/NodeDescriptions.yaml");
@@ -389,7 +402,10 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
     }
     ImGui::Separator();
 
-    for (auto& groupPair : m_allPruningRules)
+    const auto& allPruningRules = m_pruningPolicy.GetAllPruningRules();
+    const auto& currentPruningRule = m_pruningPolicy.GetCurrentPruningRule();
+
+    for (auto& groupPair : allPruningRules)
     {
         const std::string            group    = groupPair.first;
         const std::set<std::string>& typesSet = groupPair.second;
@@ -401,22 +417,28 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
         {
             for (size_t iterIndex = 0; iterIndex < types.size(); ++iterIndex)
             {
-                bool isSelected =
-                    iterIndex == GetMatchedIndex(types, m_currentPruninngRule.at(group));
+                auto targetIter = std::find_if(types.begin(), types.end(), 
+                    [&currentPruningRule, &group](const std::string& inputStr) {
+                        return currentPruningRule.at(group) == inputStr;
+                    });
+
+                size_t targetIndex = (targetIter != types.end()) ? std::distance(types.begin(), targetIter) : -1;
+                bool isSelected = (iterIndex == targetIndex);
+
                 if (ImGui::Selectable(types[iterIndex].c_str(), isSelected))
                 {
-                    if (m_currentPruninngRule[group] != types[iterIndex])
+                    if (currentPruningRule.at(group) != types[iterIndex])
                     {
-                        SNELOG_INFO("Select a different pruning rule, change the grapgh  ...");
-                        std::string originType{m_currentPruninngRule[group]};
-                        m_currentPruninngRule[group] = types[iterIndex];
-                        if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))
+                        SNELOG_INFO("Select a different pruning rule, change the graph  ...");
+                        std::string originType{currentPruningRule.at(group)};
+                        if (m_pruningPolicy.ChangePruningRule(m_nodes, m_edges, group, types[iterIndex]))
                         {
-                            RestorePruning(group, originType, m_currentPruninngRule[group]);
+
+                            SNELOG_INFO("ChangePruning rule success, group {}, newtype {}", group, types[iterIndex]);
                         }
                         else
                         {
-                            m_currentPruninngRule[group] = originType;
+                            SNELOG_WARN("ChangePruning rule success, group {}, newtype {}", group, types[iterIndex]);
                         }
                     }
                 }
@@ -443,12 +465,9 @@ void NodeEditor::ShowPruningRuleEditWinddow(const ImVec2& mainWindowDisplaySize)
         ImGui::SetNextItemShortcut(ImGuiKey_Enter);
         if (ImGui::Button("Done"))
         {
-            if (AddNewPruningRule(newPruneGroup, newPruneType, m_allPruningRules))
+            if (!m_pruningPolicy.AddNewPruningRule(newPruneGroup, newPruneType))
             {
-                if (!m_currentPruninngRule.contains(newPruneGroup))
-                {
-                    m_currentPruninngRule[newPruneGroup] = newPruneType;
-                }
+                SNELOG_ERROR("pruning policy add new pruning rule failed");
             }
             editing = false;
             newPruneGroup.clear();
@@ -720,7 +739,7 @@ EdgeUniqueId NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPor
         {
             FillYamlEdgePort(newEdge.GetYamlEdge().m_yamlDstPort, inputPort, m_nodes);
         }
-        SyncPruningRuleBetweenNodeAndEdge(m_nodes.at(inputPort.GetOwnedNodeUid()), newEdge);
+        m_pruningPolicy.SyncPruningRuleBetweenNodeAndEdge(m_nodes.at(inputPort.GetOwnedNodeUid()), newEdge);
     }
     else
     {
@@ -740,7 +759,7 @@ EdgeUniqueId NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPor
         {
             FillYamlEdgePort(newEdge.GetYamlEdge().m_yamlSrcPort, outpurPort, m_nodes);
         }
-        SyncPruningRuleBetweenNodeAndEdge(m_nodes.at(outpurPort.GetOwnedNodeUid()), newEdge);
+        m_pruningPolicy.SyncPruningRuleBetweenNodeAndEdge(m_nodes.at(outpurPort.GetOwnedNodeUid()), newEdge);
     }
     else
     {
@@ -752,7 +771,7 @@ EdgeUniqueId NodeEditor::AddNewEdge(PortUniqueId srcPortUid, PortUniqueId dstPor
     DumpEdge(newEdge);
     newEdge.GetYamlEdge().m_isValid = true;
     m_edges.emplace(newEdge.GetEdgeUniqueId(), (newEdge));
-    if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))
+    if (m_pruningPolicy.ApplyCurrentPruningRule(m_nodes, m_edges))
     {
         SNELOG_INFO( "AddNew Edge and apply pruning rule successfully");
     }
@@ -864,26 +883,6 @@ void NodeEditor::DeleteEdgesBeforDeleteNode(NodeUniqueId nodeUid, bool shouldUnr
         }
     }
 
-    if (shouldUnregisterUid && !m_edgesPruned.empty())
-    {
-        std::vector<EdgeUniqueId> pruned_to_delete;
-        for (const auto& pr : m_edgesPruned)
-        {
-            const EdgeUniqueId euid = pr.first;
-            const Edge&        edge = pr.second;
-            if (edge.GetSourceNodeUid() == nodeUid || edge.GetDestinationNodeUid() == nodeUid)
-            {
-                pruned_to_delete.push_back(euid);
-            }
-        }
-
-        for (EdgeUniqueId euid : pruned_to_delete)
-        {
-            m_edgeUidGenerator.UnregisterUniqueID(euid);
-            m_edgesPruned.erase(euid);
-            SNELOG_INFO("erased pruned edge {} related to node {}", euid, nodeUid);
-        }
-    }
     // check that we have already deleted all edges from Node
     for (InputPort& inPort : node.GetInputPorts())
     {
@@ -977,336 +976,6 @@ void NodeEditor::RearrangeNodesLayout(
     ImNodes::EditorContextResetPanning(ImVec2{0, ImGui::GetWindowHeight() / 2.0f});
 }
 
-void NodeEditor::CollectPruningRules(std::vector<YamlNode> yamlNodes,
-                                     std::vector<YamlEdge> yamlEdges)
-{
-    // collect pruning rules from nodes and edges
-    for (const YamlNode& yamlNode : yamlNodes)
-    {
-        for (const YamlPruningRule& pruningRule : yamlNode.m_PruningRules)
-        {
-            m_allPruningRules[pruningRule.m_Group].insert(pruningRule.m_Type);
-        }
-    }
-
-    for (const YamlEdge& yamlEdge : yamlEdges)
-    {
-        for (const YamlPruningRule& pruningRule : yamlEdge.m_yamlDstPort.m_PruningRules)
-        {
-            m_allPruningRules[pruningRule.m_Group].insert(pruningRule.m_Type);
-        }
-    }
-
-    if (m_allPruningRules.size() == 0)
-    {
-        SNELOG_INFO("no pruning rule in the current yamlfile"); // todo : add yamlfilename
-    }
-    // set defatul pruning rule
-    for (const auto& [group, type] : m_allPruningRules)
-    {
-        if (type.size() != 0)
-        {
-            if (type.size() == 1)
-            {
-                SNELOG_WARN("pruning rule, group[{}] only has one type!", group);
-            }
-            m_currentPruninngRule[group] = *(type.begin());
-            SNELOG_INFO("set default pruning rule, group[{}] type[{}]", group, *(type.begin()));
-        }
-    }
-}
-
-
-bool NodeEditor::AddNewPruningRule(
-    const std::string& newPruningGroup, const std::string& newPruningType,
-    std::unordered_map<std::string, std::set<std::string>>& allPruningRule)
-{
-    if (newPruningGroup.empty() || newPruningType.empty())
-    {
-        return false;
-    }
-
-    if (allPruningRule.contains(newPruningGroup))
-    {
-        if (allPruningRule.at(newPruningGroup).contains(newPruningType))
-        {
-            SNELOG_WARN("try to add exised pruning rule");
-            return false;
-        }
-        else
-        {
-            allPruningRule.at(newPruningGroup).insert(newPruningType);
-        }
-    }
-    else
-    {
-        allPruningRule.emplace(newPruningGroup, std::set{newPruningType});
-    }
-
-    return true;
-}
-
-bool IsAllEdgesWillBePruned(const Node& node,
-                                        const std::unordered_set<EdgeUniqueId>& shouldBeDeleteEdges)
-{
-    const std::vector<EdgeUniqueId>& edges = node.GetAllEdgeUids();
-
-    bool ret = true;
-    for (EdgeUniqueId edgeUid : edges)
-    {
-        if (!shouldBeDeleteEdges.contains(edgeUid))
-        {
-            SNELOG_ERROR("NodeUid[{}] NodeYamlId[{}], still has EdgeUid[{}] not pruned", node.GetNodeUniqueId(),
-                         node.GetYamlNode().m_nodeYamlId, edgeUid);
-            ret = false;
-        }
-    }
-    return ret;
-}
-
-bool NodeEditor::ApplyPruningRule(
-    const std::unordered_map<std::string, std::string>& currentPruningRule,
-    std::unordered_map<NodeUniqueId, Node>              nodesMap,
-    std::unordered_map<EdgeUniqueId, Edge>              edgesMap)
-{
-    bool                             applyPruningRuleSuccess = true;
-    std::unordered_set<NodeUniqueId> shouldBePrunedEdges;
-    std::unordered_set<NodeUniqueId> shouldBePrunedNodes;
-
-    for (const auto& [group, type] : currentPruningRule)
-    {
-        // prune edges first
-        for (const auto& [edgeUid, edge] : edgesMap)
-        {
-            for (auto& edgePruningRule : edge.GetYamlEdge().m_yamlDstPort.m_PruningRules)
-            {
-                if (edgePruningRule.m_Group == group && edgePruningRule.m_Type != type)
-                {
-                    auto iter = m_edges.find(edgeUid);
-                    if (iter != m_edges.end())
-                    {
-                        SNELOG_INFO(
-                            "Prune Edge with EdgeUid[{}] SrcNodeUid[{}] SrcNodeYamlId[{}] "
-                            "DstNodeUid[{}] DstNodeYamlId[{}]",
-                            edgeUid, edge.GetSourceNodeUid(),
-                            edge.GetYamlEdge().m_yamlSrcPort.m_nodeYamlId,
-                            edge.GetDestinationNodeUid(),
-                            edge.GetYamlEdge().m_yamlDstPort.m_nodeYamlId);
-                        shouldBePrunedEdges.insert(edgeUid);
-                        // m_edgesPruned.insert(*iter);
-                        // DeleteEdge(edgeUid);
-                    }
-                    else
-                    {
-                        SNELOG_ERROR("Cannot find edge in m_edges with edgeuid[{}]", edgeUid);
-                        applyPruningRuleSuccess = false;
-                        break;
-                    }
-                }
-            }
-        }
-
-        for (const auto& [nodeUid, node] : nodesMap)
-        {
-            for (auto& nodePruningRule : node.GetYamlNode().m_PruningRules)
-            {
-                if (nodePruningRule.m_Group == group && nodePruningRule.m_Type != type)
-                {
-                    // prune the node
-                    auto iter = m_nodes.find(nodeUid);
-                    if (iter != m_nodes.end())
-                    {
-                        if (IsAllEdgesWillBePruned(iter->second, shouldBePrunedEdges))
-                        {
-                            SNELOG_INFO("Prune Node with NodeUid[{}] NodeYamlId[{}]", nodeUid,
-                                        node.GetYamlNode().m_nodeYamlId);
-                            // m_nodesPruned.insert(*iter);
-                            // DeleteNode(nodeUid);
-                            shouldBePrunedNodes.insert(nodeUid);
-                        }
-                        else
-                        {
-                            SNELOG_ERROR(
-                                "Not All edges of Node({}) has been pruned, please check if all "
-                                "edges has the correspoding prune rule!!!",
-                                nodeUid);
-                            applyPruningRuleSuccess = false;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        SNELOG_ERROR("Cannot find node in m_nodes with nodeuid[{}]", nodeUid);
-                        applyPruningRuleSuccess = false;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    // actually do the pruning operation
-    if (applyPruningRuleSuccess)
-    {
-        for (EdgeUniqueId edgeUid : shouldBePrunedEdges)
-        {
-            m_edgesPruned.insert(*m_edges.find(edgeUid));
-            m_edges.find(edgeUid)->second.SetOpacity(0.2f);
-        }
-
-        for (NodeUniqueId nodeUid : shouldBePrunedNodes)
-        {
-            m_nodesPruned.insert(*m_nodes.find(nodeUid));
-            m_nodes.find(nodeUid)->second.SetOpacity(0.2f);
-        }
-    }
-
-    return applyPruningRuleSuccess;
-}
-
-void NodeEditor::RestorePruning(const std::string& changedGroup, const std::string& originType,
-                                const std::string& newType)
-{
-    SNE_ASSERT(originType != newType);
-
-    SNELOG_INFO("Restoring prunerule, group[{}], originType[{}], newType[{}]", changedGroup,
-                originType, newType);
-    // Restore pruned nodes first so ports exist when re-attaching edges.
-    for (auto it = m_nodesPruned.begin(); it != m_nodesPruned.end();)
-    {
-        const NodeUniqueId nodeUid   = it->first;
-        Node&              node      = it->second;
-        bool               erasedOne = false;
-        for (const auto& pruningRule : node.GetYamlNode().m_PruningRules)
-        {
-            if (pruningRule.m_Group == changedGroup && pruningRule.m_Type == newType)
-            {
-                SNE_ASSERT(pruningRule.m_Type != originType);
-                if (m_nodes.find(nodeUid) != m_nodes.end())
-                {
-                    m_nodes.find(nodeUid)->second.SetOpacity(1.0f);
-                    SNELOG_INFO("Resotre node with nodeUid[{}], yamlNodeName[{}], yamlNodeId[{}]",
-                                nodeUid, node.GetYamlNode().m_nodeName,
-                                node.GetYamlNode().m_nodeYamlId);
-
-                    it        = m_nodesPruned.erase(it);
-                    erasedOne = true;
-                }
-            }
-        }
-        if (!erasedOne) ++it;
-    }
-
-    // Restore pruned edges and reattach them to ports.
-    for (auto it = m_edgesPruned.begin(); it != m_edgesPruned.end();)
-    {
-        const EdgeUniqueId edgeUid   = it->first;
-        Edge&              edge      = it->second;
-        bool               erasedOne = false;
-        for (const auto& pruningRule : edge.GetYamlEdge().m_yamlDstPort.m_PruningRules)
-        {
-            if (pruningRule.m_Group == changedGroup && pruningRule.m_Type == newType)
-            {
-                SNE_ASSERT(pruningRule.m_Type != originType);
-                if (m_edges.find(edgeUid) != m_edges.end())
-                {
-                    SNELOG_INFO(
-                        "restore edge with edgeUid[{}], yamlSrcPortName[{}], yamlDstPortName[{}]",
-                        edgeUid, edge.GetYamlEdge().m_yamlSrcPort.m_portName,
-                        edge.GetYamlEdge().m_yamlDstPort.m_portName);
-                    m_edges.find(edgeUid)->second.SetOpacity(1.0f);
-                    erasedOne = true;
-                    it        = m_edgesPruned.erase(it);
-                }
-            }
-        }
-        if (!erasedOne) ++it;
-    }
-}
-
-// resotre nodes and edges that match the currentPruningRule
-bool NodeEditor::IsAllEdgesHasBeenPruned(NodeUniqueId nodeUid)
-{
-    Node& node = m_nodes.at(nodeUid);
-
-    for (InputPort& port : node.GetInputPorts())
-    {
-        if (!port.HasNoEdgeLinked())
-        {
-            SNELOG_ERROR("NodeUid[{}], InPortUid[{}], still has Edge ", node.GetNodeUniqueId(),
-                         port.GetPortUniqueId());
-            return false;
-        }
-    }
-
-    for (OutputPort& port : node.GetOutputPorts())
-    {
-        if (!port.HasNoEdgeLinked())
-        {
-            SNELOG_ERROR("NodeUid[{}], OutPortUid[{}], still has Edge ", node.GetNodeUniqueId(),
-                         port.GetPortUniqueId());
-            return false;
-        }
-    }
-
-    return true;
-}
-
-void NodeEditor::SyncPruningRules(const Node& node)
-{
-    for (EdgeUniqueId edgeUid : node.GetAllEdgeUids())
-    {
-        SyncPruningRuleBetweenNodeAndEdge(node, m_edges.at(edgeUid));
-    }
-}
-
-std::optional<YamlPruningRule*> GetMatchedPruningRuleByGroup(
-    const YamlPruningRule& findRule, std::vector<YamlPruningRule>& ruleContainer)
-{
-    auto iter = std::find_if(ruleContainer.begin(), ruleContainer.end(),
-                             [&findRule](const YamlPruningRule& comp)
-                             { return findRule.m_Group == comp.m_Group; });
-
-    if (iter != ruleContainer.end())
-    {
-        return &*iter;
-    }
-    return std::nullopt;
-}
-
-void NodeEditor::SyncPruningRuleBetweenNodeAndEdge(const Node& node, Edge& edge)
-{
-    // any pruning rule that the node has but the edge does not have will be automatically added in
-    // the yamledge if the pruning rule of node and edge are confilc, should we complain an error?
-    // or shutdown the APP?
-    for (const auto& pruningRule : node.GetYamlNode().m_PruningRules)
-    {
-        auto ret = GetMatchedPruningRuleByGroup(pruningRule,
-                                                edge.GetYamlEdge().m_yamlDstPort.m_PruningRules);
-        if (ret)
-        {
-            if (ret.value()->m_Type != pruningRule.m_Type)
-            {
-                SNELOG_WARN(
-                    "Pruning rules confliced, edge's rule will be overried! nodeUid[{}] "
-                    "nodeName[{}] "
-                    "pruning_mGroup[{}] pruning_mType[{}];"
-                    "edgeUid[{}] edgeSrcPortName[{}] edgeDstPortName[{}] pruning_mGroup[{}] "
-                    "pruning_mType[{}]",
-                    node.GetNodeUniqueId(), node.GetNodeTitle(), pruningRule.m_Group,
-                    pruningRule.m_Type, edge.GetEdgeUniqueId(),
-                    edge.GetYamlEdge().m_yamlSrcPort.m_portName,
-                    edge.GetYamlEdge().m_yamlDstPort.m_portName, ret.value()->m_Group,
-                    ret.value()->m_Type);
-                ret.value()->m_Type = pruningRule.m_Type;
-            }
-        }
-        else
-        {
-            edge.GetYamlEdge().m_yamlDstPort.m_PruningRules.push_back(pruningRule);
-        }
-    }
-}
 
 void NodeEditor::HandleNodeInfoEditing()
 {
@@ -1451,7 +1120,7 @@ void NodeEditor::HandleNodeInfoEditing()
         if (ImGui::SmallButton("AddPruningRule"))
         {
             ImGui::SetNextWindowPos(ImGui::GetMousePos(), ImGuiCond_Appearing);
-            if (!m_allPruningRules.empty())
+            if (!m_pruningPolicy.GetAllPruningRules().empty())
             {
                 ImGui::OpenPopup("AddNodePruningRule");
             }
@@ -1465,8 +1134,8 @@ void NodeEditor::HandleNodeInfoEditing()
         if (ImGui::BeginPopupModal("AddNodePruningRule", nullptr,
                                    ImGuiWindowFlags_AlwaysAutoResize))
         {
-            std::vector<std::string_view> groups{(m_allPruningRules | std::views::keys).begin(),
-                                                 (m_allPruningRules | std::views::keys).end()};
+            std::vector<std::string_view> groups{(m_pruningPolicy.GetAllPruningRules() | std::views::keys).begin(),
+                                                 (m_pruningPolicy.GetAllPruningRules() | std::views::keys).end()};
             static size_t                 selectedGroupIndex = 0;
             if (ImGui::BeginCombo("Group", groups[selectedGroupIndex].data()))
             {
@@ -1479,7 +1148,7 @@ void NodeEditor::HandleNodeInfoEditing()
                 ImGui::EndCombo();
             }
 
-            const auto& typeSet = m_allPruningRules.at(groups[selectedGroupIndex].data());
+            const auto& typeSet = m_pruningPolicy.GetAllPruningRules().at(groups[selectedGroupIndex].data());
             std::vector<std::string_view> types{typeSet.begin(), typeSet.end()};
             static size_t                 selectedTypeIndex = 0;
             // types for selected group
@@ -1550,8 +1219,8 @@ void NodeEditor::HandleNodeInfoEditing()
                     .SetNodeTitle(popUpYamlNode.m_nodeName + "_" +
                                   std::to_string(popUpYamlNode.m_nodeYamlId));
                 // sync pruning rule between node and edges
-                SyncPruningRules(m_nodes.at(nodeUidToBePoped));
-                if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))
+                m_pruningPolicy.SyncPruningRules(m_nodes.at(nodeUidToBePoped), m_edges);
+                if (m_pruningPolicy.ApplyCurrentPruningRule(m_nodes, m_edges))
                 {
                     SNELOG_INFO("ApplyPruningRuleSuccess");
                 }
@@ -1658,7 +1327,7 @@ void NodeEditor::HandleEdgeInfoEditing()
         if (ImGui::SmallButton("New"))
         {
             ImGui::SetNextWindowPos(ImGui::GetMousePos(), ImGuiCond_Appearing);
-            if (!m_allPruningRules.empty())
+            if (!m_pruningPolicy.GetAllPruningRules().empty())
             {
                 ImGui::OpenPopup("AddEdgePruningRule");
             }
@@ -1668,8 +1337,8 @@ void NodeEditor::HandleEdgeInfoEditing()
         if (ImGui::BeginPopupModal("AddEdgePruningRule", nullptr,
                                    ImGuiWindowFlags_AlwaysAutoResize))
         {
-            std::vector<std::string_view> groups{(m_allPruningRules | std::views::keys).begin(),
-                                                 (m_allPruningRules | std::views::keys).end()};
+            std::vector<std::string_view> groups{(m_pruningPolicy.GetAllPruningRules() | std::views::keys).begin(),
+                                                 (m_pruningPolicy.GetAllPruningRules() | std::views::keys).end()};
             static size_t                 selectedGroupIndex = 0;
             if (ImGui::BeginCombo("Group", groups[selectedGroupIndex].data()))
             {
@@ -1682,7 +1351,7 @@ void NodeEditor::HandleEdgeInfoEditing()
                 ImGui::EndCombo();
             }
 
-            const auto& typeSet = m_allPruningRules.at(groups[selectedGroupIndex].data());
+            const auto& typeSet = m_pruningPolicy.GetAllPruningRules().at(groups[selectedGroupIndex].data());
             std::vector<std::string_view> types{typeSet.begin(), typeSet.end()};
             static size_t                 selectedTypeIndex = 0;
             // types for selected group
@@ -1871,7 +1540,10 @@ void NodeEditor::SetNodePos(NodeUniqueId nodeUid, const ImVec2 pos)
 
 void NodeEditor::SaveToFile(std::unique_ptr<std::ostream> outputStream)
 {
-    *outputStream << m_pipelineEimtter.EmitPipeline(m_currentPipeLineName, m_nodes, m_nodesPruned, m_edges, m_edgesPruned);
+    *outputStream << m_pipelineEimtter.EmitPipeline(m_currentPipeLineName, m_nodes,
+                                                     m_pruningPolicy.GetPrunedNodes(),
+                                                     m_edges,
+                                                     m_pruningPolicy.GetPrunedEdges());
     outputStream->flush();
 }
 
@@ -1883,7 +1555,10 @@ void NodeEditor::SaveToFile(const std::string& fileName)
         std::ofstream outFile(fileName);
         if (outFile.is_open())
         {
-            outFile << m_pipelineEimtter.EmitPipeline(m_currentPipeLineName, m_nodes, m_nodesPruned, m_edges, m_edgesPruned);
+            outFile << m_pipelineEimtter.EmitPipeline(m_currentPipeLineName, m_nodes,
+                                                       m_pruningPolicy.GetPrunedNodes(),
+                                                       m_edges,
+                                                       m_pruningPolicy.GetPrunedEdges());
             SNELOG_INFO("Successfully saved pipeline to: {}", fileName);
             outFile.close();
         }
@@ -1945,12 +1620,12 @@ bool NodeEditor::LoadPipelineFromStream(std::unique_ptr<std::istream> inputStrea
                 // inportEdges will be pruned later
             }
 
-            // collect prunnig rules to m_allPruningRules
-            CollectPruningRules(yamlNodes, yamlEdges);
+            // collect pruning rules to m_allPruningRules
+            m_pruningPolicy.CollectPruningRules(yamlNodes, yamlEdges);
 
-            if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))
+            if (m_pruningPolicy.ApplyCurrentPruningRule(m_nodes, m_edges))
             {
-                for (const auto& [group, type] : m_currentPruninngRule)
+                for (const auto& [group, type] : m_pruningPolicy.GetCurrentPruningRule())
                 {
                     SNELOG_INFO(
                         "current pruning rule is : group[{}] type[{}], any node or edge that matches "
@@ -2023,12 +1698,12 @@ bool NodeEditor::LoadPipelineFromFile(const std::string& filePath)
                 // inportEdges will be pruned later
             }
 
-            // collect prunnig rules to m_allPruningRules
-            CollectPruningRules(yamlNodes, yamlEdges);
+            // collect pruning rules to m_allPruningRules
+            m_pruningPolicy.CollectPruningRules(yamlNodes, yamlEdges);
 
-            if (ApplyPruningRule(m_currentPruninngRule, m_nodes, m_edges))
+            if (m_pruningPolicy.ApplyCurrentPruningRule(m_nodes, m_edges))
             {
-                for (const auto& [group, type] : m_currentPruninngRule)
+                for (const auto& [group, type] : m_pruningPolicy.GetCurrentPruningRule())
                 {
                     SNELOG_INFO(
                         "current pruning rule is : group[{}] type[{}], any node or edge that matches "
@@ -2061,10 +1736,7 @@ void NodeEditor::ClearCurrentPipeLine()
     m_edges.clear();
     m_inportPorts.clear();
     m_outportPorts.clear();
-    m_allPruningRules.clear();
-    m_currentPruninngRule.clear();
-    m_nodesPruned.clear();
-    m_edgesPruned.clear();
+    m_pruningPolicy.Clear();
     m_commandQueue.Clear();
     m_portUidGenerator.Clear();
     m_nodeUidGenerator.Clear();

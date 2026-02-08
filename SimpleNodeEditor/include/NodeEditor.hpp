@@ -6,6 +6,7 @@
 #include "YamlParser.hpp"
 #include "YamlEmitter.hpp"
 #include "FileDialog.hpp"
+#include "GraphPruningPolicy.hpp"
 #include <unordered_set>
 #include "imnodes.h"
 #include <set>
@@ -66,20 +67,6 @@ public: // TODO: private
     // handle nodes layout afer toposorted
     void RearrangeNodesLayout(const std::vector<std::vector<NodeUniqueId>>& topologicalOrder,
                               const std::unordered_map<NodeUniqueId, Node>& nodesMap);
-    // pruning rule related
-    void CollectPruningRules(std::vector<YamlNode> yamlNodes, std::vector<YamlEdge> yamlEdges);
-
-    bool AddNewPruningRule(const std::string& newPruningGroup, const std::string& newPruningType,
-                           std::unordered_map<std::string, std::set<std::string>>& allPruningRule);
-    [[nodiscard]] bool ApplyPruningRule(
-        const std::unordered_map<std::string, std::string>& currentPruningRule,
-        std::unordered_map<NodeUniqueId, Node>              nodesMap,
-        std::unordered_map<EdgeUniqueId, Edge>              edgesMap);
-    void               RestorePruning(const std::string& group, const std::string& orignType,
-                                      const std::string& newType);
-    [[nodiscard]] bool IsAllEdgesHasBeenPruned(NodeUniqueId nodeUid);
-    void               SyncPruningRules(const Node& node);
-    void               SyncPruningRuleBetweenNodeAndEdge(const Node& node, Edge& edge);
 
     // handle user interactions
     void HandleNodeInfoEditing();
@@ -124,16 +111,6 @@ private:
     bool m_needTopoSort;
     // TODO : may hold the latest toposort res
 
-    // all pruning rule that colleceted from exsiting yamlfile or added by user
-    std::unordered_map<std::string, std::set<std::string>> m_allPruningRules;
-    // the current prunging value that applied to the the nodes and edges
-    // all pruned nodes or edges are stored in m_nodesPruned and m_edgesPruned
-    std::unordered_map<std::string, std::string> m_currentPruninngRule;
-    std::unordered_map<NodeUniqueId, Node>
-        m_nodesPruned; // store nodes that will not be rendered on canvas
-    std::unordered_map<EdgeUniqueId, Edge>
-        m_edgesPruned; // store edges that will not be rendered on canvas
-
     std::string m_currentPipeLineName;
 
     ImNodesStyle* m_nodeStyle;
@@ -146,6 +123,8 @@ private:
     FileDialog      m_fileDialog;
 
     CommandQueue m_commandQueue;
+
+    GraphPruningPolicy m_pruningPolicy;
 
 };
 } // namespace SimpleNodeEditor

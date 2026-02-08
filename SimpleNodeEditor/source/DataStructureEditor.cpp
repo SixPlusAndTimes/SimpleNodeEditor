@@ -76,7 +76,7 @@ EdgeUniqueId InputPort::GetEdgeUid() const
     return m_linkFrom;
 }
 
-bool InputPort::HasNoEdgeLinked()
+bool InputPort::HasNoEdgeLinked() const
 {
     return m_linkFrom == -1;
 }
@@ -89,7 +89,7 @@ OutputPort::OutputPort(PortUniqueId portUid, PortId portId, const std::string& n
                 portId, name);
 }
 
-bool OutputPort::HasNoEdgeLinked()
+bool OutputPort::HasNoEdgeLinked() const
 {
     return m_linkTos.size() == 0;
 }
