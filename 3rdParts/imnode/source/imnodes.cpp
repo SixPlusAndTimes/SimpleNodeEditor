@@ -1539,6 +1539,40 @@ void DrawPin(ImNodesEditorContext& editor, const int pin_idx)
     {
         pin_color = pin.ColorStyle.Hovered;
     }
+    else if (GImNodes->HoveredNodeIdx.HasValue())
+    {
+        // Highlight pins that are part of links connected to the hovered
+        // node. This highlights both the hovered node's pins and the pins on
+        // other nodes that those links connect to.
+        const int hovered_node_idx = GImNodes->HoveredNodeIdx.Value();
+        bool highlight = false;
+
+        for (int li = 0; li < editor.Links.Pool.size(); ++li)
+        {
+            if (!editor.Links.InUse[li])
+                continue;
+            const ImLinkData& l = editor.Links.Pool[li];
+
+            const int start_parent = editor.Pins.Pool[l.StartPinIdx].ParentNodeIdx;
+            const int end_parent = editor.Pins.Pool[l.EndPinIdx].ParentNodeIdx;
+
+            // If this link touches the hovered node...
+            if (start_parent == hovered_node_idx || end_parent == hovered_node_idx)
+            {
+                // ...and this pin participates in that link, highlight it.
+                if (l.StartPinIdx == pin_idx || l.EndPinIdx == pin_idx)
+                {
+                    highlight = true;
+                    break;
+                }
+            }
+        }
+
+        if (highlight)
+        {
+            pin_color = pin.ColorStyle.Hovered;
+        }
+    }
 
     DrawPinShape(pin.Pos, pin, pin_color, is_hovered);
 }
@@ -1665,6 +1699,23 @@ void DrawLink(ImNodesEditorContext& editor, const int link_idx)
         link_color = link.ColorStyle.Hovered;
     }
 
+    // If a node is hovered, highlight links that belong to that node by
+    // giving them the hovered link color.
+    if (GImNodes->HoveredNodeIdx.HasValue())
+    {
+        const int hovered_node_idx = GImNodes->HoveredNodeIdx.Value();
+        const bool link_belongs_to_hovered_node =
+            (start_pin.ParentNodeIdx == hovered_node_idx) ||
+            (end_pin.ParentNodeIdx == hovered_node_idx);
+
+        // If the link is connected to the hovered node and is not selected or
+        // explicitly hovered, apply the hovered link color for emphasis.
+        if (link_belongs_to_hovered_node && !editor.SelectedLinkIndices.contains(link_idx) && !link_hovered)
+        {
+            link_color = link.ColorStyle.Hovered;
+        }
+    }
+
 #if IMGUI_VERSION_NUM < 18000
     GImNodes->CanvasDrawList->AddBezierCurve(
 #else
@@ -1737,21 +1788,21 @@ void Initialize(ImNodesContext* context)
     context->NodeEditorImgCtx = ImGui::CreateContext(ImGui::GetIO().Fonts);
     context->NodeEditorImgCtx->IO.IniFilename = nullptr;
     context->OriginalImgCtx = nullptr;
-
+    
     context->CanvasOriginalOrigin = ImVec2(0.0f, 0.0f);
     context->CanvasOriginScreenSpace = ImVec2(0.0f, 0.0f);
     context->CanvasRectScreenSpace = ImRect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
     context->CurrentScope = ImNodesScope_None;
-
+    
     context->CurrentPinIdx = INT_MAX;
     context->CurrentNodeIdx = INT_MAX;
-
+    
     context->DefaultEditorCtx = EditorContextCreate();
     context->EditorCtx = context->DefaultEditorCtx;
-
+    
     context->CurrentAttributeFlags = ImNodesAttributeFlags_None;
     context->AttributeFlagStack.push_back(GImNodes->CurrentAttributeFlags);
-
+    
     StyleColorsDark(&context->Style);
 }
 
@@ -2184,11 +2235,11 @@ void StyleColorsDark(ImNodesStyle* dest)
     dest->Colors[ImNodesCol_TitleBarSelected] = IM_COL32(66, 150, 250, 255);
     // link colors match ImGui's slider grab colors
     dest->Colors[ImNodesCol_Link] = IM_COL32(61, 133, 224, 200);
-    dest->Colors[ImNodesCol_LinkHovered] = IM_COL32(66, 150, 250, 255);
+    dest->Colors[ImNodesCol_LinkHovered] = IM_COL32(2, 232, 252, 255);
     dest->Colors[ImNodesCol_LinkSelected] = IM_COL32(66, 150, 250, 255);
     // pin colors match ImGui's button colors
     dest->Colors[ImNodesCol_Pin] = IM_COL32(53, 150, 250, 180);
-    dest->Colors[ImNodesCol_PinHovered] = IM_COL32(53, 150, 250, 255);
+    dest->Colors[ImNodesCol_PinHovered] = IM_COL32(2, 232, 252, 255);
 
     dest->Colors[ImNodesCol_BoxSelector] = IM_COL32(61, 133, 224, 30);
     dest->Colors[ImNodesCol_BoxSelectorOutline] = IM_COL32(61, 133, 224, 150);

@@ -131,11 +131,6 @@ void MenuStyle()
             ImGui::StyleColorsDark();
             ImNodes::StyleColorsDark();
         }
-        if (ImGui::MenuItem("Light"))
-        {
-            ImGui::StyleColorsLight();
-            ImNodes::StyleColorsLight();
-        }
         ImGui::EndMenu();
     }
 }
@@ -357,12 +352,12 @@ void NodeEditor::ShowGrapghEditWindow(const ImVec2& mainWindowDisplaySize)
     // only afer calling ImNodes::EndNode in the ShowNodes() function can we get the rect of nodeUi,
     // and then we do toposort
     if (m_needTopoSort)
-    {
+    {            
         const auto& topoSortRes = TopologicalSort(m_nodes, m_edges);
         RearrangeNodesLayout(topoSortRes, m_nodes);
         m_needTopoSort = false;
-    }
-    ShowEdges();
+    }            
+    ShowEdges(); 
     ImNodes::MiniMap(0.2f, m_minimap_location);
     ImNodes::EndNodeEditor();
 
