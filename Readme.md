@@ -43,26 +43,31 @@ If you want intall it at another dir, just modify the default intallation path i
 
 # TODOS
 
-- [x] port口名字显示时排版美化
-- [x] pipeline name 编辑和保存
+基本功能:
 - [x] Node Edge 属性的显示和编辑功能 
 - [x] node Edge 的裁剪功能
 - [x] zoom in out 功能
 - [x] 手动toposort的功能，添加用户输入处理的逻辑？ 按下 S 键， 重新toposort
-- [x] file drop 功能
-- [ ] 截屏功能?
-- [ ] 重复代码太多了
+- [x] 支持linux平台的file operation dialog
 - [x] **notify 组件**
 - [x] node property 正确显示以及添加新的property
 - [x] **log 封装**
-- [ ] 如果nodedes中没有yamlpipeline中的对应的portid，别挂死，提示错误即可 
-- [ ] 允许不显示没有Edge连接的port
-- [x] **hover 在port上能够显示portid**
-- [ ] 自定义node颜色
-- [ ] 支持多个窗口切换，分别渲染不同的pipeline
+- [x] redo/undo功能（仅支持基本的添加删除操作）
+- [x] file drop 功能
+用户交互UI优化：
 - [x] **文件系统浏览、打开文件**
-- [x] 支持远程文件浏览、打开以及上传pipeline
+- [x] port口名字显示时排版美化
+- [x] **hover 在port上能够显示portid**
+- [ ] 允许不显示没有Edge连接的port
+- [ ] 异步化ssh连接过程，不阻塞ui线程
+- [ ] 支持多个窗口切换，分别渲染不同的pipeline
+- [ ] 常态\非常态显示portid的手动切换(用户选择)
+其他：
 - [x] bugfix: add node popup 不能滑动到底部 
-- [x] 支持linux平台的file operation dialog
-- [ ] 支持中文 
+- [x] pipeline name 编辑和保存
 - [x] bugfix: 前一个pipeline中裁剪掉的Edge和node也会加入新的的pipeline中
+- [ ] 自定义node颜色
+- [ ] 截屏功能?
+- [ ] 重复代码太多了
+- [ ] 如果nodedes中没有yamlpipeline中的对应的portid，别挂死，提示错误即可 
+- [ ] 支持中文 

@@ -215,6 +215,7 @@ bool GraphPruningPolicy::ApplyCurrentPruningRule(std::unordered_map<NodeUniqueId
     }
 
     // do the pruning operation
+    // the policy only set the opacity of nodes/edges to 0.2
     if (applyPruningRuleSuccess)
     {
         for (EdgeUniqueId edgeUid : shouldBePrunedEdges)

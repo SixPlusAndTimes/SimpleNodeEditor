@@ -107,6 +107,10 @@ bool FileDialog::Draw()
                     ImGui::EndCombo();
                 }
             }
+            else 
+            {
+                ImGui::Text("%s", m_directoryPath.String().c_str());
+            }
         # else
             ImGui::Text("%s", m_directoryPath.String().c_str());
         #endif
