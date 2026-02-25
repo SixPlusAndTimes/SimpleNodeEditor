@@ -48,6 +48,8 @@ void DegbugDrawCircle(const ImVec2& center, float radius)
     draw_list->AddCircleFilled(center, radius, color);
 }
 
+// User preference for port visibility mode
+
 // TODO : map with (nodetype,nodedescription) maybe more reasonable
 static std::unordered_map<std::string, NodeDescription>  s_nodeDescriptionsNameDesMap;
 static std::unordered_map<YamlNodeType, NodeDescription> s_nodeDescriptionsTypeDesMap;
@@ -68,7 +70,8 @@ NodeEditor::NodeEditor()
       m_pipeLineParser(),
       m_fileDialog(),
       m_commandQueue(),
-      m_pruningPolicy()
+      m_pruningPolicy(),
+      m_hideUnlinkedPorts(false)
 {
     // TODO: file path may be a constant value or configed in Config.yaml?
     NodeDescriptionParser        nodeTemplateParser("./resource/NodeDescriptions.yaml");
@@ -156,6 +159,19 @@ void NodeEditor::DrawFileMenu()
     }
 }
 
+void NodeEditor::DrawConfig()
+{
+    if (ImGui::BeginMenu("Config"))
+    {
+        ImGui::Checkbox("Hide Unlinked Ports", &m_hideUnlinkedPorts);
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Toggle between showing all ports and hiding unlinked ports");
+        }
+        ImGui::EndMenu();
+    }
+}
+
 void NodeEditor::DrawMenu()
 {
     if (ImGui::BeginMenuBar())
@@ -163,6 +179,7 @@ void NodeEditor::DrawMenu()
         DrawFileMenu();
         // ShowMiniMapMenu();
         MenuStyle();
+        DrawConfig();
         ImGui::EndMenuBar();
     }
 }
@@ -190,26 +207,58 @@ void NodeEditor::ShowNodes()
         ImGui::TextUnformatted(node.GetNodeTitle().data());
         ImNodes::EndNodeTitleBar();
 
-        // We want input and output labels to form two aligned columns even when the counts
-        // differ. Compute the max label widths and render rows = max(in_count, out_count).
-        const auto&  inPorts  = node.GetInputPorts();
-        const auto&  outPorts = node.GetOutputPorts();
-        const size_t inCount  = inPorts.size();
-        const size_t outCount = outPorts.size();
-        const size_t rows     = std::max(inCount, outCount);
+        const auto& allInPorts = node.GetInputPorts();
+        const auto& allOutPorts = node.GetOutputPorts();
+
+        std::vector<InputPort> visibleInPorts;
+        std::vector<OutputPort> visibleOutPorts;
+        visibleInPorts.reserve(allInPorts.size());
+        visibleOutPorts.reserve(allOutPorts.size());
+
+        // Use preference to decide whether to hide unlinked ports
+        if (m_hideUnlinkedPorts)
+        {
+            // Hide unlinked ports mode
+            for (const auto& inPort : allInPorts)
+            {
+                if (!inPort.HasNoEdgeLinked())
+                {
+                    visibleInPorts.push_back(inPort);
+                }
+            }
+
+            for (const auto& outPort : allOutPorts)
+            {
+                if (!outPort.HasNoEdgeLinked())
+                {
+                    visibleOutPorts.push_back(outPort);
+                }
+            }
+        }
+        else
+        {
+            // Show all ports mode (original behavior)
+            visibleInPorts = std::move(allInPorts);
+            visibleOutPorts = std::move(allOutPorts);
+        }
+
+        const size_t inCount = visibleInPorts.size();
+        const size_t outCount = visibleOutPorts.size();
+        const size_t rows = std::max(inCount, outCount);
 
         // compute max widths
         float maxInLabelWidth  = 0.0f;
         float maxOutLabelWidth = 0.0f;
-        for (const auto& p : inPorts)
+        for (const auto& inPort : visibleInPorts)
         {
-            auto n = p.GetPortname();
+            auto n = inPort.GetPortname();
             maxInLabelWidth =
                 std::max(maxInLabelWidth, ImGui::CalcTextSize(n.data(), n.data() + n.size()).x);
         }
-        for (const auto& p : outPorts)
+
+        for (const auto& outPort : visibleOutPorts)
         {
-            auto n = p.GetPortname();
+            auto n = outPort.GetPortname();
             maxOutLabelWidth =
                 std::max(maxOutLabelWidth, ImGui::CalcTextSize(n.data(), n.data() + n.size()).x);
         }
@@ -226,9 +275,9 @@ void NodeEditor::ShowNodes()
             // Input column (left)
             if (row < inCount)
             {
-                const InputPort&    ip = inPorts[row];
+                const InputPort& ip = visibleInPorts[row];
                 CustumiszedDrawData custumiszedDrawData{std::to_string(row), ImVec2{-15.f, -10.f},
-                                                                        ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text]) };
+                                                        ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text]) };
                 ImNodes::BeginInputAttribute(ip.GetPortUniqueId(), custumiszedDrawData);
                 ImGui::TextUnformatted(ip.GetPortname().data());
                 ImNodes::EndInputAttribute();
@@ -245,7 +294,7 @@ void NodeEditor::ShowNodes()
 
             if (row < outCount)
             {
-                const OutputPort& op = outPorts[row];
+                const OutputPort& op = visibleOutPorts[row];
                 // Measure text width and right-align it within the output column
                 auto        name  = op.GetPortname();
                 const float textW = ImGui::CalcTextSize(name.data(), name.data() + name.size()).x;

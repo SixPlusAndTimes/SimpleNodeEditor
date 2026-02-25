@@ -38,6 +38,7 @@ public: // TODO: private
     // draw ui infereface
     void DrawMenu();
     void DrawFileMenu();
+    void DrawConfig();
     void DrawFileDialog();
     void ShowNodes();
     void ShowEdges();
@@ -125,6 +126,7 @@ private:
     CommandQueue m_commandQueue;
 
     GraphPruningPolicy m_pruningPolicy;
+    bool               m_hideUnlinkedPorts;  // true: hide unlinked ports; false: show all ports
 
 };
 } // namespace SimpleNodeEditor
