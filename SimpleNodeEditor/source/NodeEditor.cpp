@@ -238,8 +238,8 @@ void NodeEditor::ShowNodes()
         else
         {
             // Show all ports mode (original behavior)
-            visibleInPorts = std::move(allInPorts);
-            visibleOutPorts = std::move(allOutPorts);
+            visibleInPorts = allInPorts;
+            visibleOutPorts = allOutPorts;
         }
 
         const size_t inCount = visibleInPorts.size();
@@ -276,7 +276,8 @@ void NodeEditor::ShowNodes()
             if (row < inCount)
             {
                 const InputPort& ip = visibleInPorts[row];
-                CustumiszedDrawData custumiszedDrawData{std::to_string(row), ImVec2{-15.f, -10.f},
+
+                CustumiszedDrawData custumiszedDrawData{std::to_string(ip.GetPortId()), ImVec2{-15.f, -10.f},
                                                         ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text]) };
                 ImNodes::BeginInputAttribute(ip.GetPortUniqueId(), custumiszedDrawData);
                 ImGui::TextUnformatted(ip.GetPortname().data());
@@ -300,7 +301,7 @@ void NodeEditor::ShowNodes()
                 const float textW = ImGui::CalcTextSize(name.data(), name.data() + name.size()).x;
                 const float textPosX = outColumnX + (maxOutLabelWidth - textW);
 
-                CustumiszedDrawData custumiszedDrawData{std::to_string(row), ImVec2{10.f, -10.f},
+                CustumiszedDrawData custumiszedDrawData{std::to_string(op.GetPortId()), ImVec2{10.f, -10.f},
                                                         ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text])};
                 ImNodes::BeginOutputAttribute(op.GetPortUniqueId(), custumiszedDrawData);
                 // Position the text so its right edge aligns with the column's right edge
@@ -1055,10 +1056,8 @@ void NodeEditor::HandleNodeInfoEditing()
              ImGuiWindowFlags_HorizontalScrollbar))
     {
 
-        // show basic node info
-        ImGui::Text("NodeInfoEditor");
+        ImGui::TextColored(COLOR_VISIBLE, "BasicInfos");
         ImGui::Separator();
-        ImGui::Text("BasicInfos:");
         ImGui::Text("NodeUid: %d", nodeUidToBePoped);
         ImGui::Text("NodeName: ");
         ImGui::SameLine();
@@ -1068,7 +1067,7 @@ void NodeEditor::HandleNodeInfoEditing()
         ImGui::Checkbox("IsSource ", reinterpret_cast<bool*>(&popUpYamlNode.m_isSrcNode));
         ImGui::Separator();
 
-        ImGui::TextUnformatted("Properties");
+        ImGui::TextColored(COLOR_VISIBLE, "Properties");
         ImGui::SameLine();
         if (ImGui::SmallButton("AddNewProperty"))
         {
@@ -1148,7 +1147,7 @@ void NodeEditor::HandleNodeInfoEditing()
 
         // button for add new pruning rule
         ImGui::Separator();
-        ImGui::TextUnformatted("Pruning Rules");
+        ImGui::TextColored(COLOR_VISIBLE, "PruningRules");
         ImGui::SameLine();
         if (ImGui::SmallButton("AddNewRule"))
         {
@@ -1332,11 +1331,12 @@ void NodeEditor::HandleEdgeInfoEditing()
             "Edge Info Editor", nullptr,
             ImGuiWindowFlags_HorizontalScrollbar))
     {
+        ImGui::TextColored(COLOR_VISIBLE, "BasicInfos");
         ImGui::Text("Edge UID: %d", edgeUidToBePoped);
         ImGui::Separator();
 
         // Source Port (read-only)
-        ImGui::TextUnformatted("Source Port:");
+        ImGui::TextColored(COLOR_VISIBLE, "Source Port Information");
         ImGui::Text("NodeId: %d", popUpYamlEdge.m_yamlSrcPort.m_nodeYamlId);
         ImGui::TextUnformatted(
             (std::string("NodeName: ") + popUpYamlEdge.m_yamlSrcPort.m_nodeName).c_str());
@@ -1347,7 +1347,7 @@ void NodeEditor::HandleEdgeInfoEditing()
         ImGui::Separator();
 
         // Destination Port (read-only)
-        ImGui::TextUnformatted("Destination Port:");
+        ImGui::TextColored(COLOR_VISIBLE, "Destination Port Information");
         ImGui::Text("NodeId: %d", popUpYamlEdge.m_yamlDstPort.m_nodeYamlId);
         ImGui::TextUnformatted(
             (std::string("NodeName: ") + popUpYamlEdge.m_yamlDstPort.m_nodeName).c_str());
@@ -1356,7 +1356,7 @@ void NodeEditor::HandleEdgeInfoEditing()
             (std::string("PortName: ") + popUpYamlEdge.m_yamlDstPort.m_portName).c_str());
 
         ImGui::Separator();
-        ImGui::TextUnformatted("DestinationPortPruningRules");
+        ImGui::TextColored(COLOR_VISIBLE, "DestinationPortPruningRules");
         // button for adding pruning rules
         ImGui::SameLine();
         if (ImGui::SmallButton("AddNew"))

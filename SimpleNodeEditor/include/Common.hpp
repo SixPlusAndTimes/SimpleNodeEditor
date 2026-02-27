@@ -65,6 +65,8 @@
 #define COLOR_GREEN_U32     IM_COL32(0, 255, 0, 255)
 #define COLOR_BLUE          ImVec4(0.0f, 0.f, 1.f, 1.f)
 #define COLOR_BLUE_U32      IM_COL32(0, 0, 255, 255)
+#define COLOR_VISIBLE_U32   IM_COL32(95, 207, 166, 255)
+#define COLOR_VISIBLE   ImGui::ColorConvertU32ToFloat4(COLOR_VISIBLE_U32)
 #endif
 
 inline unsigned long long size_b(unsigned long long value)

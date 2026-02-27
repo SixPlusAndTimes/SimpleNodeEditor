@@ -72,3 +72,4 @@ If you want intall it at another dir, just modify the default intallation path i
 - [ ] 重复代码太多了
 - [ ] 如果nodedes中没有yamlpipeline中的对应的portid，别挂死，提示错误即可 
 - [ ] 支持中文 
+- [ ] bug: 新添加pruneRule 时有显示bug
